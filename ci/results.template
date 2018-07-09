@@ -1,0 +1,39 @@
+# ![logo](https://ls-ci.nyc3.digitaloceanspaces.com/ls64x64.png)
+# Test Results {{ image }}:{{ meta_tag }}
+
+## Cumulative: {{ report_status }}
+
+| Test | Result |
+| ----------------------- | --- |{% for test in report_tests %}
+| {{ test[0] }} | {{ test[1] }} |{% endfor %}
+{% for container in report_containers %}
+## {{ image }}:{{ container["tag"] }}
+
+### Screenshot
+
+[![{{ container["tag"] }}](https://ls-ci.nyc3.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png =600x*)](https://ls-ci.nyc3.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png)
+
+### Logs
+
+<details><summary>Expand</summary>
+<p>
+
+```
+{{ container["logs"] }}
+```
+</p>
+</details>
+
+### Package info
+
+<details><summary>Expand</summary>
+<p>
+
+```
+{{ container["sysinfo"] }}
+```
+
+</p>
+</details>
+
+{% endfor %}

@@ -1,0 +1,19 @@
+<html>
+  <body>
+    <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      <title>CI Results</title>
+    </head>
+    <div id="results"></div>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.8.6/showdown.min.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf-8">
+      $.get('report.md').done(function (data) {
+        var converter = new showdown.Converter({parseImgDimensions: true,tables: true,ghCodeBlocks: true});
+        $('#results').append(converter.makeHtml(data))
+      });
+    </script>
+  </body>
+</html>
