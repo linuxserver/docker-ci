@@ -17,11 +17,11 @@
 | IRC | freenode at `#linuxserver.io` more information at:- [IRC][ircurl]
 | Podcast | Covers everything to do with getting the most from your Linux Server plus a focus on all things Docker and containerisation! [Linuxserver.io Podcast][podcasturl] |
 
-# [linuxserver/ci](huburl)
+# [linuxserver/ci][huburl]
 
 **This container is not meant for public consumption as it is hard coded to LinuxServer endpoints for storage of resulting reports**
 
-The purpose of this container is to accept environment variables from our build system [linuxserver/pipeline-triggers](pipelineurl) to perform basic continuous integration on the software being built.
+The purpose of this container is to accept environment variables from our build system [linuxserver/pipeline-triggers][pipelineurl] to perform basic continuous integration on the software being built.
 
 ## Usage
 
