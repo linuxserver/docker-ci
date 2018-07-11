@@ -26,7 +26,7 @@ global report_containers
 global report_status
 report_tests = []
 report_containers = []
-report_status = 'pass'
+report_status = 'PASS'
 
 #############
 # Functions #
@@ -39,7 +39,43 @@ def core_fail(message):
 
 # If any of the tests are marked failed do not push the resulting images
 def mark_fail():
-    report_status = 'fail'
+    report_status = 'FAIL'
+
+# Remove container forcefully
+def remove_container(container):
+    container.remove(force='true')
+
+# Convert env input to dictionary
+def convert_env(vars):
+    global dockerenv
+    dockerenv = {}
+    try:
+        if '|' in vars:
+            for varpair in vars.split('|'):
+                var = varpair.split('=')
+                dockerenv[var[0]] = var[1]
+        else:
+            var = vars.split('=')
+            dockerenv[var[0]] = var[1]
+    except Exception as error:
+        core_fail(str(error))
+
+# Set the optional parameters
+global webauth
+global webpath
+global dockerenv
+try:
+    webauth = os.environ["WEB_AUTH"]
+except KeyError:
+    webauth = 'user:password'
+try:
+    webpath = os.environ["WEB_PATH"]
+except KeyError:
+    webpath = ''
+try:
+    convert_env(os.environ["DOCKER_ENV"])
+except KeyError:
+    dockerenv = {}
 
 # Make sure all needed env variables are set
 def check_env():
@@ -92,19 +128,16 @@ def take_screenshot(endpoint,container_tag):
     except TimeoutException as error:
         report_tests.append(['Screenshot ' + container_tag,'FAIL TIMEOUT'])
         mark_fail()
-
-# Remove container forcefully
-def remove_container(container):
-    container.remove(force='true')
+    except WebDriverException as error:
+        report_tests.append(['Screenshot ' + container_tag,'FAIL UNKNOWN'])
+        mark_fail()
 
 # Main container test logic
 def container_test(tag):
     # Start the container
-    container = client.containers.run(image + ':' + tag, detach=True,
-        environment={
-        "APP_URL":"_",
-        "DB_CONNECTION":"sqlite_testing"
-        })
+    container = client.containers.run(image + ':' + tag,
+        detach=True,
+        environment=dockerenv)
     # Watch the logs for no more than 2 minutes
     t_end = time.time() + 60 * 2
     logsfound = False
@@ -118,7 +151,6 @@ def container_test(tag):
         except Exception as error:
             print(error)
             remove_container(container)
-            core_fail('Error getting container logs')
     if logsfound == True:
         report_tests.append(['Startup ' + tag,'PASS'])
     elif logsfound == False:
@@ -133,7 +165,7 @@ def container_test(tag):
         proto = 'http://'
     container.reload()
     ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
-    take_screenshot(proto + ip + ':' + port ,tag)
+    take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
     # Dump package information
     if base == 'alpine':
         command = 'apk info -v'
@@ -147,11 +179,20 @@ def container_test(tag):
         print(error)
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
         mark_fail()
+    # Grab build version
+    try:
+        build_version = container.attrs["Config"]["Labels"]["build_version"]
+        report_tests.append(['Get Build Version ' + tag,'PASS'])
+    except Exception as error:
+        build_version = 'ERROR'
+        report_tests.append(['Get Build Version ' + tag,'FAIL'])
+        mark_fail()
     # Add the info to the report
     report_containers.append({
     "tag":tag,
     "logs":logblob,
-    "sysinfo":packages
+    "sysinfo":packages,
+    "build_version":build_version
     })
     #Cleanup
     remove_container(container)

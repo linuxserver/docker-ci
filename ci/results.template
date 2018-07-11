@@ -8,6 +8,7 @@
 | {{ test[0] }} | {{ test[1] }} |{% endfor %}
 {% for container in report_containers %}
 ## {{ image }}:{{ container["tag"] }}
+### Build Version: {{ container["build_version"] }}
 
 ### Screenshot
 
