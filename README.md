@@ -44,6 +44,6 @@ sudo docker run --rm -i \
 -e WEB_PATH="<optional, format /yourpath>" \
 -e DO_REGION=<optional, custom Digital Ocean Region> \
 -e DO_BUCKET=<optional, custom Digital Ocean Bucket> \
--t linuxserver/ci:latest \
+-t lsiodev/ci:latest \
 python /ci/ci.py
 ```

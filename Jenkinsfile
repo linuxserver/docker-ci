@@ -14,8 +14,8 @@ pipeline {
     BUILD_VERSION_ARG = 'none'
     LS_USER = 'linuxserver'
     LS_REPO = 'docker-ci'
-    DOCKERHUB_IMAGE = 'linuxserver/ci'
-    DEV_DOCKERHUB_IMAGE = 'lsiodev/ci'
+    DOCKERHUB_IMAGE = 'lsiodev/ci'
+    DEV_DOCKERHUB_IMAGE = 'lsiodev/ci-dev'
     PR_DOCKERHUB_IMAGE = 'lspipepr/ci'
     BUILDS_DISCORD = credentials('build_webhook_url')
     GITHUB_TOKEN = credentials('github_token')
