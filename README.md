@@ -42,6 +42,8 @@ sudo docker run --rm -i \
 -e DOCKER_ENV="<optional, Array of env vars seperated by | IE test=test|test2=test2 or single var>" \
 -e WEB_AUTH="<optional, format user:passord>" \
 -e WEB_PATH="<optional, format /yourpath>" \
+-e DO_REGION=<optional, custom Digital Ocean Region> \
+-e DO_BUCKET=<optional, custom Digital Ocean Bucket> \
 -t linuxserver/ci:latest \
 python /ci/ci.py
 ```

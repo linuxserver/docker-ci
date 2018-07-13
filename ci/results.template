@@ -12,7 +12,7 @@
 
 ### Screenshot
 
-[![{{ container["tag"] }}](https://ls-ci.nyc3.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png =600x*)](https://ls-ci.nyc3.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png)
+[![{{ container["tag"] }}](https://{{ bucket }}.{{ region }}.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png =600x*)](https://{{ bucket }}.{{ region }}.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png)
 
 ### Logs
 

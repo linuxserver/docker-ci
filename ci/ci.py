@@ -64,6 +64,8 @@ def convert_env(vars):
 global webauth
 global webpath
 global dockerenv
+global region
+global bucket
 try:
     webauth = os.environ["WEB_AUTH"]
 except KeyError:
@@ -76,6 +78,15 @@ try:
     convert_env(os.environ["DOCKER_ENV"])
 except KeyError:
     dockerenv = {}
+try:
+    region = os.environ["DO_REGION"]
+except KeyError:
+    region = 'ams3'
+try:
+    bucket = os.environ["DO_BUCKET"]
+except KeyError:
+    bucket = 'lsio-ci'
+
 
 # Make sure all needed env variables are set
 def check_env():
@@ -207,7 +218,9 @@ def report_render():
         report_containers=report_containers,
         report_status=report_status,
         meta_tag=meta_tag,
-        image=image)
+        image=image,
+        bucket=bucket,
+        region=region)
     with open(outdir + 'report.md', 'w') as f:
         f.write(markdown)
 
@@ -216,8 +229,8 @@ def report_upload():
     destination_dir = image + '/' + meta_tag + '/'
     spaces = session.client(
         's3',
-        region_name='nyc3',
-        endpoint_url='https://nyc3.digitaloceanspaces.com',
+        region_name=region,
+        endpoint_url='https://' + region + '.digitaloceanspaces.com',
         aws_access_key_id=spaces_key,
         aws_secret_access_key=spaces_secret)
     # Index file upload
@@ -225,7 +238,7 @@ def report_upload():
     try:
         spaces.upload_file(
             index_file,
-            'ls-ci',
+            bucket,
             destination_dir + 'index.html',
             ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
     except Exception as error:
@@ -235,7 +248,7 @@ def report_upload():
         try:
             spaces.upload_file(
                 outdir + filename,
-                'ls-ci',
+                bucket,
                 destination_dir + filename,
                 ExtraArgs={'ACL': "public-read"})
         except Exception as error:

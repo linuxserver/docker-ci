@@ -1,11 +1,10 @@
 FROM python:alpine
-
 LABEL maintainer="TheLamer"
 
 RUN \
  echo "**** install runtime packages ****" && \
  apk add --no-cache \
-	chromium \
+  chromium \
   chromium-chromedriver \
   docker && \
  echo "**** Install python deps ****" && \
