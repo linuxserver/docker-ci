@@ -180,7 +180,7 @@ def container_test(tag):
     # Dump package information
     if base == 'alpine':
         command = 'apk info -v'
-    elif base == 'debian':
+    elif base == 'debian' or base == 'ubuntu':
         command = 'apt list'
     try:
         info = container.exec_run(command)
