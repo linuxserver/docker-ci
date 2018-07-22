@@ -5,6 +5,8 @@ import boto3
 import time
 import sys
 import docker
+import requests
+import anybadge
 from selenium import webdriver
 from selenium.common.exceptions import ErrorInResponseException,TimeoutException
 from jinja2 import Template
@@ -66,6 +68,10 @@ global webpath
 global dockerenv
 global region
 global bucket
+global screenshot
+global port
+global ssl
+global testdelay
 try:
     webauth = os.environ["WEB_AUTH"]
 except KeyError:
@@ -86,24 +92,33 @@ try:
     bucket = os.environ["DO_BUCKET"]
 except KeyError:
     bucket = 'lsio-ci'
-
+try:
+    screenshot = os.environ["WEB_SCREENSHOT"]
+except KeyError:
+    screenshot = 'false'
+try:
+    port = os.environ["PORT"]
+except KeyError:
+    port = '80'
+try:
+    ssl = os.environ["SSL"]
+except KeyError:
+    ssl = 'false'
+try:
+    testdelay = os.environ["DELAY_START"]
+except KeyError:
+    testdelay = '5'
 
 # Make sure all needed env variables are set
 def check_env():
     try:
         global image
-        global testdelay
         global tags
         global meta_tag
-        global port
-        global ssl
         global base
         global spaces_key
         global spaces_secret
         image = os.environ["IMAGE"]
-        testdelay = os.environ["DELAY_START"]
-        port = os.environ["PORT"]
-        ssl = os.environ["SSL"]
         base = os.environ["BASE"]
         spaces_key = os.environ["ACCESS_KEY"]
         spaces_secret = os.environ["SECRET_KEY"]
@@ -130,9 +145,13 @@ def  create_dir():
 # Take a screenshot using the webdriver
 def take_screenshot(endpoint,container_tag):
     try:
+        requests.get(endpoint, timeout=3)
         driver.get(endpoint)
         driver.get_screenshot_as_file(outdir + container_tag + '.png')
         report_tests.append(['Screenshot ' + container_tag,'PASS'])
+    except (requests.Timeout, requests.ConnectionError, KeyError) as e:
+        report_tests.append(['Screenshot ' + container_tag,'FAIL CONNECTION ERROR'])
+        mark_fail()
     except ErrorInResponseException as error:
         report_tests.append(['Screenshot ' + container_tag,'FAIL SERVER ERROR'])
         mark_fail()
@@ -167,16 +186,17 @@ def container_test(tag):
     elif logsfound == False:
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
         mark_fail()
-    # Sleep for the user specified amount of time
-    time.sleep(int(testdelay))
-    # Take a screenshot
-    if ssl == 'true':
-        proto = 'https://'
-    else:
-        proto = 'http://'
-    container.reload()
-    ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
-    take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
+    if screenshot == 'true':
+        # Sleep for the user specified amount of time
+        time.sleep(int(testdelay))
+        # Take a screenshot
+        if ssl == 'true':
+            proto = 'https://'
+        else:
+            proto = 'http://'
+        container.reload()
+        ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
+        take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
     # Dump package information
     if base == 'alpine':
         command = 'apk info -v'
@@ -220,13 +240,23 @@ def report_render():
         meta_tag=meta_tag,
         image=image,
         bucket=bucket,
-        region=region)
+        region=region,
+        screenshot=screenshot)
     with open(outdir + 'report.md', 'w') as f:
         f.write(markdown)
+
+# Render the markdown file for upload
+def badge_render():
+    try:
+        badge = anybadge.Badge('CI', report_status, thresholds={'PASS': 'green', 'FAIL': 'red'})
+        badge.write_badge(outdir + 'badge.svg')
+    except Exception as error:
+        print(error)
 
 # Upload report to DO Spaces
 def report_upload():
     destination_dir = image + '/' + meta_tag + '/'
+    latest_dir = image + '/latest/'
     spaces = session.client(
         's3',
         region_name=region,
@@ -241,16 +271,33 @@ def report_upload():
             bucket,
             destination_dir + 'index.html',
             ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
+        spaces.upload_file(
+            index_file,
+            bucket,
+            latest_dir + 'index.html',
+            ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
     except Exception as error:
         core_fail('Upload Error ' + str(error))
     # Loop for all others
     for filename in os.listdir(outdir):
+        # Set content types for files
+        if filename.lower().endswith('.svg'):
+            CT = 'image/svg+xml'
+        elif filename.lower().endswith('.png'):
+            CT = 'image/png'
+        elif filename.lower().endswith('.md'):
+            CT = 'text/markdown'
         try:
             spaces.upload_file(
                 outdir + filename,
                 bucket,
                 destination_dir + filename,
-                ExtraArgs={'ACL': "public-read"})
+                ExtraArgs={'ContentType': CT,'ACL': "public-read"})
+            spaces.upload_file(
+                outdir + filename,
+                bucket,
+                latest_dir + filename,
+                ExtraArgs={'ContentType': CT,'ACL': "public-read"})
         except Exception as error:
             core_fail('Upload Error ' + str(error))
 
@@ -266,6 +313,7 @@ for tag in tags:
 # Quit selenium webdriver
 driver.quit()
 report_render()
+badge_render()
 report_upload()
 # Exit based on test results
 if report_status == 'pass':

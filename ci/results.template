@@ -10,10 +10,10 @@
 ## {{ image }}:{{ container["tag"] }}
 ### Build Version: {{ container["build_version"] }}
 
-### Screenshot
+{% if screenshot == 'true' %}### Screenshot
 
-[![{{ container["tag"] }}](https://{{ bucket }}.{{ region }}.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png =600x*)](https://{{ bucket }}.{{ region }}.digitaloceanspaces.com/{{ image }}/{{ meta_tag }}/{{ container["tag"] }}.png)
-
+[![{{ container["tag"] }}]({{ container["tag"] }}.png =600x*)]({{ container["tag"] }}.png)
+{% endif %}
 ### Logs
 
 <details><summary>Expand</summary>

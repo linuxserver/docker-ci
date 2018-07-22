@@ -31,11 +31,8 @@ The container can be run locally, but it is meant to be integrated into the Linu
 sudo docker run --rm -i \
 -v /var/run/docker.sock:/var/run/docker.sock \
 -e IMAGE="linuxserver/<dockerimage>" \
--e DELAY_START=<time in seconds> \
 -e TAGS="<single tag or array seperated by |>" \
 -e META_TAG=<manifest main dockerhub tag> \
--e PORT=<port web application listens on internal docker port> \
--e SSL=<true/false> \
 -e BASE=<alpine or debian based distro> \
 -e SECRET_KEY=<Digital Ocean spaces secret> \
 -e ACCESS_KEY=<Digital Ocean spaces key> \
@@ -44,6 +41,10 @@ sudo docker run --rm -i \
 -e WEB_PATH="<optional, format /yourpath>" \
 -e DO_REGION=<optional, custom Digital Ocean Region> \
 -e DO_BUCKET=<optional, custom Digital Ocean Bucket> \
+-e WEB_SCREENSHOT=<optional, set to false if not a web app> \
+-e DELAY_START=<optional, time in seconds to delay before taking screenshot> \
+-e PORT=<optional, port web application listens on internal docker port> \
+-e SSL=<optional , use ssl for the screenshot true/false> \
 -t lsiodev/ci:latest \
 python /ci/ci.py
 ```
