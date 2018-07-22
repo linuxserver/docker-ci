@@ -41,6 +41,7 @@ def core_fail(message):
 
 # If any of the tests are marked failed do not push the resulting images
 def mark_fail():
+    global report_status
     report_status = 'FAIL'
 
 # Remove container forcefully
