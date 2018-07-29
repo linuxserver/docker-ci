@@ -163,7 +163,7 @@ def take_screenshot(endpoint,container_tag):
 # Main container test logic
 def container_test(tag):
     # Start the container
-    print('Starting ' tag)
+    print('Starting ' + tag)
     container = client.containers.run(image + ':' + tag,
         detach=True,
         environment=dockerenv)
@@ -181,10 +181,10 @@ def container_test(tag):
             print(error)
             remove_container(container)
     if logsfound == True:
-	print('Startup completed for ' tag)
+	print('Startup completed for ' + tag)
         report_tests.append(['Startup ' + tag,'PASS'])
     elif logsfound == False:
-        print('Startup failed for ' tag)
+        print('Startup failed for ' + tag)
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
         mark_fail()
     if screenshot == 'true':
@@ -199,7 +199,7 @@ def container_test(tag):
         ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
         take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
     # Dump package information
-    print('Dumping package info for ' tag)
+    print('Dumping package info for ' + tag)
     if base == 'alpine':
         command = 'apk info -v'
     elif base == 'debian' or base == 'ubuntu':
@@ -208,7 +208,7 @@ def container_test(tag):
         info = container.exec_run(command)
         packages = info[1].decode("utf-8")
         report_tests.append(['Dump Versions ' + tag,'PASS'])
-        print('Got Package info for ' tag)
+        print('Got Package info for ' + tag)
     except Exception as error:
         print(error)
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
