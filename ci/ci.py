@@ -152,16 +152,12 @@ def take_screenshot(endpoint,container_tag):
         report_tests.append(['Screenshot ' + container_tag,'PASS'])
     except (requests.Timeout, requests.ConnectionError, KeyError) as e:
         report_tests.append(['Screenshot ' + container_tag,'FAIL CONNECTION ERROR'])
-        mark_fail()
     except ErrorInResponseException as error:
         report_tests.append(['Screenshot ' + container_tag,'FAIL SERVER ERROR'])
-        mark_fail()
     except TimeoutException as error:
         report_tests.append(['Screenshot ' + container_tag,'FAIL TIMEOUT'])
-        mark_fail()
     except WebDriverException as error:
         report_tests.append(['Screenshot ' + container_tag,'FAIL UNKNOWN'])
-        mark_fail()
 
 # Main container test logic
 def container_test(tag):
