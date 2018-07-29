@@ -145,6 +145,7 @@ def  create_dir():
 
 # Take a screenshot using the webdriver
 def take_screenshot(endpoint,container_tag):
+    print('Taking screenshot of ' + container_tag + ' at ' + endpoint)
     try:
         requests.get(endpoint, timeout=3)
         driver.get(endpoint)
@@ -162,6 +163,7 @@ def take_screenshot(endpoint,container_tag):
 # Main container test logic
 def container_test(tag):
     # Start the container
+    print('Starting ' tag)
     container = client.containers.run(image + ':' + tag,
         detach=True,
         environment=dockerenv)
@@ -179,8 +181,10 @@ def container_test(tag):
             print(error)
             remove_container(container)
     if logsfound == True:
+	print('Startup completed for ' tag)
         report_tests.append(['Startup ' + tag,'PASS'])
     elif logsfound == False:
+        print('Startup failed for ' tag)
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
         mark_fail()
     if screenshot == 'true':
@@ -195,6 +199,7 @@ def container_test(tag):
         ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
         take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
     # Dump package information
+    print('Dumping package info for ' tag)
     if base == 'alpine':
         command = 'apk info -v'
     elif base == 'debian' or base == 'ubuntu':
@@ -203,6 +208,7 @@ def container_test(tag):
         info = container.exec_run(command)
         packages = info[1].decode("utf-8")
         report_tests.append(['Dump Versions ' + tag,'PASS'])
+        print('Got Package info for ' tag)
     except Exception as error:
         print(error)
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
@@ -228,6 +234,7 @@ def container_test(tag):
 
 # Render the markdown file for upload
 def report_render():
+    print('Rendering Report')
     with open(os.path.dirname(os.path.realpath(__file__)) + '/results.template') as file_:
         template = Template(file_.read())
     markdown = template.render(
@@ -252,6 +259,7 @@ def badge_render():
 
 # Upload report to DO Spaces
 def report_upload():
+    print('Uploading Report')
     destination_dir = image + '/' + meta_tag + '/'
     latest_dir = image + '/latest/'
     spaces = session.client(
@@ -314,6 +322,8 @@ badge_render()
 report_upload()
 # Exit based on test results
 if report_status == 'PASS':
+    print('Tests Passed exiting 0')
     sys.exit(0)
 elif report_status == 'FAIL':
+    print('Tests Failed exiting 1')
     sys.exit(1)
