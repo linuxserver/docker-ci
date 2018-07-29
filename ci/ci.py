@@ -313,7 +313,7 @@ report_render()
 badge_render()
 report_upload()
 # Exit based on test results
-if report_status == 'pass':
+if report_status == 'PASS':
     sys.exit(0)
-elif report_status == 'fail':
+elif report_status == 'FAIL':
     sys.exit(1)
