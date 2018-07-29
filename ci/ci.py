@@ -181,7 +181,7 @@ def container_test(tag):
             print(error)
             remove_container(container)
     if logsfound == True:
-	print('Startup completed for ' + tag)
+        print('Startup completed for ' + tag)
         report_tests.append(['Startup ' + tag,'PASS'])
     elif logsfound == False:
         print('Startup failed for ' + tag)
