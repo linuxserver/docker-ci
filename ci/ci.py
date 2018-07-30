@@ -297,12 +297,12 @@ def report_upload():
                 outdir + filename,
                 bucket,
                 destination_dir + filename,
-                ExtraArgs={'ContentType': CT,'ACL': "public-read"})
+                ExtraArgs={'ContentType': CT,'ACL': "public-read",'CacheControl': 'no-cache'})
             spaces.upload_file(
                 outdir + filename,
                 bucket,
                 latest_dir + filename,
-                ExtraArgs={'ContentType': CT,'ACL': "public-read"})
+                ExtraArgs={'ContentType': CT,'ACL': "public-read",'CacheControl': 'no-cache'})
         except Exception as error:
             core_fail('Upload Error ' + str(error))
 
