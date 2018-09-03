@@ -143,23 +143,6 @@ def  create_dir():
     except:
         os.makedirs(outdir)
 
-# Take a screenshot using the webdriver
-def take_screenshot(endpoint,container_tag):
-    print('Taking screenshot of ' + container_tag + ' at ' + endpoint)
-    try:
-        requests.get(endpoint, timeout=3)
-        driver.get(endpoint)
-        driver.get_screenshot_as_file(outdir + container_tag + '.png')
-        report_tests.append(['Screenshot ' + container_tag,'PASS'])
-    except (requests.Timeout, requests.ConnectionError, KeyError) as e:
-        report_tests.append(['Screenshot ' + container_tag,'FAIL CONNECTION ERROR'])
-    except ErrorInResponseException as error:
-        report_tests.append(['Screenshot ' + container_tag,'FAIL SERVER ERROR'])
-    except TimeoutException as error:
-        report_tests.append(['Screenshot ' + container_tag,'FAIL TIMEOUT'])
-    except WebDriverException as error:
-        report_tests.append(['Screenshot ' + container_tag,'FAIL UNKNOWN'])
-
 # Main container test logic
 def container_test(tag):
     # Start the container
@@ -187,17 +170,6 @@ def container_test(tag):
         print('Startup failed for ' + tag)
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
         mark_fail()
-    if screenshot == 'true':
-        # Sleep for the user specified amount of time
-        time.sleep(int(testdelay))
-        # Take a screenshot
-        if ssl == 'true':
-            proto = 'https://'
-        else:
-            proto = 'http://'
-        container.reload()
-        ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
-        take_screenshot(proto + webauth + '@' + ip + ':' + port + webpath ,tag)
     # Dump package information
     print('Dumping package info for ' + tag)
     if base == 'alpine':
@@ -213,6 +185,32 @@ def container_test(tag):
         print(error)
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
         mark_fail()
+    # Screenshot web interface and check connectivity
+    if screenshot == 'true':
+        # Sleep for the user specified amount of time
+        time.sleep(int(testdelay))
+        # Take a screenshot
+        if ssl == 'true':
+            proto = 'https://'
+        else:
+            proto = 'http://'
+        container.reload()
+        ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
+        endpoint = proto + webauth + '@' + ip + ':' + port + webpath
+        print('Taking screenshot of ' + tag + ' at ' + endpoint)
+        try:
+            requests.get(endpoint, timeout=3)
+            driver.get(endpoint)
+            driver.get_screenshot_as_file(outdir + tag + '.png')
+            report_tests.append(['Screenshot ' + tag,'PASS'])
+        except (requests.Timeout, requests.ConnectionError, KeyError) as e:
+            report_tests.append(['Screenshot ' + tag,'FAIL CONNECTION ERROR'])
+        except ErrorInResponseException as error:
+            report_tests.append(['Screenshot ' + tag,'FAIL SERVER ERROR'])
+        except TimeoutException as error:
+            report_tests.append(['Screenshot ' + tag,'FAIL TIMEOUT'])
+        except WebDriverException as error:
+            report_tests.append(['Screenshot ' + tag,'FAIL UNKNOWN'])
     # Grab build version
     try:
         build_version = container.attrs["Config"]["Labels"]["build_version"]
@@ -221,6 +219,8 @@ def container_test(tag):
         build_version = 'ERROR'
         report_tests.append(['Get Build Version ' + tag,'FAIL'])
         mark_fail()
+    # Grab container logs for last time before destruction
+    logblob = container.logs().decode("utf-8")
     # Add the info to the report
     report_containers.append({
     "tag":tag,
