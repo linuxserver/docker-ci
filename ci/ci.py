@@ -13,15 +13,6 @@ from jinja2 import Template
 client = docker.from_env()
 session = boto3.session.Session()
 
-# Selenium webdriver options
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument('--no-sandbox')
-chrome_options.add_argument('--headless')
-chrome_options.add_argument('--disable-gpu')
-chrome_options.add_argument('--window-size=1920x1080')
-driver = webdriver.Chrome(chrome_options=chrome_options)
-driver.set_page_load_timeout(10)
-
 # Global Vars
 global report_tests
 global report_containers
@@ -199,10 +190,20 @@ def container_test(tag):
         endpoint = proto + webauth + '@' + ip + ':' + port + webpath
         print('Taking screenshot of ' + tag + ' at ' + endpoint)
         try:
+            # Selenium webdriver options
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1920x1080')
+            driver = webdriver.Chrome(chrome_options=chrome_options)
+            driver.set_page_load_timeout(10)
             requests.get(endpoint, timeout=3)
             driver.get(endpoint)
             driver.get_screenshot_as_file(outdir + tag + '.png')
             report_tests.append(['Screenshot ' + tag,'PASS'])
+            # Quit selenium webdriver
+            driver.quit()
         except (requests.Timeout, requests.ConnectionError, KeyError) as e:
             report_tests.append(['Screenshot ' + tag,'FAIL CONNECTION ERROR'])
         except ErrorInResponseException as error:
@@ -315,8 +316,6 @@ create_dir()
 # Run through all the tags
 for tag in tags:
     container_test(tag)
-# Quit selenium webdriver
-driver.quit()
 report_render()
 badge_render()
 report_upload()
