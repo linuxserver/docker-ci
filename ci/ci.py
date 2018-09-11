@@ -325,7 +325,7 @@ def report_upload():
 check_env()
 create_dir()
 # Run through all the tags
-pool=Pool()
+pool=Pool(processes=3)
 r = pool.map_async(container_test, tags, callback=update_globals)
 r.wait()
 report_render()
