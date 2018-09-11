@@ -7,6 +7,7 @@ import sys
 import docker
 import requests
 import anybadge
+from multiprocessing.pool import Pool
 from selenium import webdriver
 from selenium.common.exceptions import ErrorInResponseException,TimeoutException
 from jinja2 import Template
@@ -30,11 +31,6 @@ def core_fail(message):
     print(message)
     sys.exit(1)
 
-# If any of the tests are marked failed do not push the resulting images
-def mark_fail():
-    global report_status
-    report_status = 'FAIL'
-
 # Remove container forcefully
 def remove_container(container):
     container.remove(force='true')
@@ -53,6 +49,17 @@ def convert_env(vars):
             dockerenv[var[0]] = var[1]
     except Exception as error:
         core_fail(str(error))
+
+# Update global variables from threaded testing process
+def update_globals(data):
+    for (tests,containers,status) in data:
+        for test in tests:
+           report_tests.append(test)
+        for container in containers:
+           report_containers.append(container)
+        if status == 'FAIL':
+           global report_status
+           report_status = 'FAIL'
 
 # Set the optional parameters
 global webauth
@@ -136,6 +143,9 @@ def  create_dir():
 
 # Main container test logic
 def container_test(tag):
+    report_tests = []
+    report_containers = []
+    report_status = 'PASS'
     # Start the container
     print('Starting ' + tag)
     container = client.containers.run(image + ':' + tag,
@@ -160,7 +170,7 @@ def container_test(tag):
     elif logsfound == False:
         print('Startup failed for ' + tag)
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
-        mark_fail()
+        report_status = 'FAIL'
     # Dump package information
     print('Dumping package info for ' + tag)
     if base == 'alpine':
@@ -175,7 +185,7 @@ def container_test(tag):
     except Exception as error:
         print(error)
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
-        mark_fail()
+        report_status = 'FAIL'
     # Screenshot web interface and check connectivity
     if screenshot == 'true':
         # Sleep for the user specified amount of time
@@ -219,7 +229,7 @@ def container_test(tag):
     except Exception as error:
         build_version = 'ERROR'
         report_tests.append(['Get Build Version ' + tag,'FAIL'])
-        mark_fail()
+        report_status = 'FAIL'
     # Grab container logs for last time before destruction
     logblob = container.logs().decode("utf-8")
     # Add the info to the report
@@ -231,7 +241,8 @@ def container_test(tag):
     })
     #Cleanup
     remove_container(container)
-
+    # Return info to global update callback    
+    return (report_tests,report_containers,report_status)
 
 # Render the markdown file for upload
 def report_render():
@@ -314,8 +325,9 @@ def report_upload():
 check_env()
 create_dir()
 # Run through all the tags
-for tag in tags:
-    container_test(tag)
+pool=Pool()
+r = pool.map_async(container_test, tags, callback=update_globals)
+r.wait()
 report_render()
 badge_render()
 report_upload()
