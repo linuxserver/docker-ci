@@ -15,9 +15,9 @@ client = docker.from_env()
 session = boto3.session.Session()
 
 # Global Vars
+global report_status
 global report_tests
 global report_containers
-global report_status
 report_tests = []
 report_containers = []
 report_status = 'PASS'
@@ -30,10 +30,6 @@ report_status = 'PASS'
 def core_fail(message):
     print(message)
     sys.exit(1)
-
-# Remove container forcefully
-def remove_container(container):
-    container.remove(force='true')
 
 # Convert env input to dictionary
 def convert_env(vars):
@@ -52,13 +48,13 @@ def convert_env(vars):
 
 # Update global variables from threaded testing process
 def update_globals(data):
+    global report_status
     for (tests,containers,status) in data:
         for test in tests:
            report_tests.append(test)
         for container in containers:
            report_containers.append(container)
         if status == 'FAIL':
-           global report_status
            report_status = 'FAIL'
 
 # Set the optional parameters
@@ -143,9 +139,22 @@ def  create_dir():
 
 # Main container test logic
 def container_test(tag):
+    # Vars for the threaded process
     report_tests = []
     report_containers = []
     report_status = 'PASS'
+    # End the test with as much info as we have
+    def endtest(container,report_tests,report_containers,report_status,tag,build_version,packages):
+        logblob = container.logs().decode("utf-8")
+        container.remove(force='true')
+        # Add the info to the report
+        report_containers.append({
+        "tag":tag,
+        "logs":logblob,
+        "sysinfo":packages,
+        "build_version":build_version
+        })
+        return (report_tests,report_containers,report_status)
     # Start the container
     print('Starting ' + tag)
     container = client.containers.run(image + ':' + tag,
@@ -162,8 +171,22 @@ def container_test(tag):
                 break
             time.sleep(1)
         except Exception as error:
-            print(error)
-            remove_container(container)
+            print('Startup failed for ' + tag)
+            report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
+            report_status = 'FAIL'
+            (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,'ERROR','ERROR')
+            return (report_tests,report_containers,report_status)
+    # Grab build version
+    try:
+        build_version = container.attrs["Config"]["Labels"]["build_version"]
+        report_tests.append(['Get Build Version ' + tag,'PASS'])
+    except Exception as error:
+        build_version = 'ERROR'
+        report_tests.append(['Get Build Version ' + tag,'FAIL'])
+        report_status = 'FAIL'
+        (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,'ERROR')
+        return (report_tests,report_containers,report_status)
+    # Check if the startup marker was found in the logs during the 2 minute spinup
     if logsfound == True:
         print('Startup completed for ' + tag)
         report_tests.append(['Startup ' + tag,'PASS'])
@@ -171,6 +194,8 @@ def container_test(tag):
         print('Startup failed for ' + tag)
         report_tests.append(['Startup ' + tag,'FAIL INIT NOT FINISHED'])
         report_status = 'FAIL'
+        (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,'ERROR')
+        return (report_tests,report_containers,report_status)
     # Dump package information
     print('Dumping package info for ' + tag)
     if base == 'alpine':
@@ -183,9 +208,12 @@ def container_test(tag):
         report_tests.append(['Dump Versions ' + tag,'PASS'])
         print('Got Package info for ' + tag)
     except Exception as error:
-        print(error)
+        packages = 'ERROR'
+        print(str(error))
         report_tests.append(['Dump Versions ' + tag,'FAIL'])
         report_status = 'FAIL'
+        (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,packages)
+        return (report_tests,report_containers,report_status)
     # Screenshot web interface and check connectivity
     if screenshot == 'true':
         # Sleep for the user specified amount of time
@@ -222,26 +250,8 @@ def container_test(tag):
             report_tests.append(['Screenshot ' + tag,'FAIL TIMEOUT'])
         except WebDriverException as error:
             report_tests.append(['Screenshot ' + tag,'FAIL UNKNOWN'])
-    # Grab build version
-    try:
-        build_version = container.attrs["Config"]["Labels"]["build_version"]
-        report_tests.append(['Get Build Version ' + tag,'PASS'])
-    except Exception as error:
-        build_version = 'ERROR'
-        report_tests.append(['Get Build Version ' + tag,'FAIL'])
-        report_status = 'FAIL'
-    # Grab container logs for last time before destruction
-    logblob = container.logs().decode("utf-8")
-    # Add the info to the report
-    report_containers.append({
-    "tag":tag,
-    "logs":logblob,
-    "sysinfo":packages,
-    "build_version":build_version
-    })
-    #Cleanup
-    remove_container(container)
-    # Return info to global update callback    
+    # If all info is present end test
+    (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,packages)
     return (report_tests,report_containers,report_status)
 
 # Render the markdown file for upload
@@ -261,7 +271,7 @@ def report_render():
     with open(outdir + 'report.md', 'w') as f:
         f.write(markdown)
 
-# Render the markdown file for upload
+# Render the badge file for upload
 def badge_render():
     try:
         badge = anybadge.Badge('CI', report_status, thresholds={'PASS': 'green', 'FAIL': 'red'})
