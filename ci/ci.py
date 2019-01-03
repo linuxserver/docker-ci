@@ -160,8 +160,8 @@ def container_test(tag):
     container = client.containers.run(image + ':' + tag,
         detach=True,
         environment=dockerenv)
-    # Watch the logs for no more than 2 minutes
-    t_end = time.time() + 60 * 2
+    # Watch the logs for no more than 5 minutes
+    t_end = time.time() + 60 * 5
     logsfound = False
     while time.time() < t_end:
         try:
