@@ -7,6 +7,8 @@ import sys
 import docker
 import requests
 import anybadge
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from multiprocessing.pool import Pool
 from selenium import webdriver
 from selenium.common.exceptions import ErrorInResponseException,TimeoutException
@@ -234,9 +236,14 @@ def container_test(tag):
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920x1080')
-            driver = webdriver.Chrome(chrome_options=chrome_options)
-            driver.set_page_load_timeout(10)
-            requests.get(endpoint, timeout=3)
+            chrome_options.add_argument('--delay=60')
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.set_page_load_timeout(60)
+            session = requests.Session()
+            retries = Retry(total=4, backoff_factor=2, status_forcelist=[ 502, 503, 504 ])
+            session.mount(proto, HTTPAdapter(max_retries=retries))
+            session.get(endpoint)
+            time.sleep(10)
             driver.get(endpoint)
             driver.get_screenshot_as_file(outdir + tag + '.png')
             report_tests.append(['Screenshot ' + tag,'PASS'])
