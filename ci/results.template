@@ -1,4 +1,4 @@
-# ![logo](https://ls-ci.nyc3.digitaloceanspaces.com/ls64x64.png)
+# ![logo](https://www.linuxserver.io/static/logo-transparent-bg.87795b96.png)
 # Test Results {{ image }}:{{ meta_tag }}
 
 ## Cumulative: {{ report_status }}
