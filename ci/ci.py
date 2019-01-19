@@ -216,10 +216,10 @@ def container_test(tag):
         report_status = 'FAIL'
         (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,packages)
         return (report_tests,report_containers,report_status)
+    # Sleep for the user specified amount of time
+    time.sleep(int(testdelay))
     # Screenshot web interface and check connectivity
     if screenshot == 'true':
-        # Sleep for the user specified amount of time
-        time.sleep(int(testdelay))
         # Take a screenshot
         if ssl == 'true':
             proto = 'https://'
