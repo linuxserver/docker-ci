@@ -236,7 +236,6 @@ def container_test(tag):
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920x1080')
-            chrome_options.add_argument('--delay=60')
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
             if proto == "http://":
@@ -244,8 +243,8 @@ def container_test(tag):
                 retries = Retry(total=4, backoff_factor=2, status_forcelist=[ 502, 503, 504 ])
                 session.mount(proto, HTTPAdapter(max_retries=retries))
                 session.get(endpoint)
-            time.sleep(10)
             driver.get(endpoint)
+            time.sleep(10)
             driver.get_screenshot_as_file(outdir + tag + '.png')
             report_tests.append(['Screenshot ' + tag,'PASS'])
             # Quit selenium webdriver
