@@ -48,3 +48,7 @@ sudo docker run --rm -i \
 -t lsiodev/ci:latest \
 python /ci/ci.py
 ```
+
+The following line is only in this repo for loop testing:
+
+- { date: "01.01.50:", desc: "I am the release message for this internal repo." }

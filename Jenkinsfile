@@ -1,43 +1,44 @@
 pipeline {
-  agent any
-  // Configuraiton for the variables used for this specific repo
+  agent {
+    label 'X86-64-MULTI'
+  }
+  // Input to determine if this is a package check
+  parameters {
+     string(defaultValue: 'false', description: 'package check run', name: 'PACKAGE_CHECK')
+  }
+  // Configuration for the variables used for this specific repo
   environment {
-    EXT_RELEASE_TYPE = 'os'
-    EXT_GIT_BRANCH = 'none'
-    EXT_USER = 'none'
-    EXT_REPO = 'none'
-    EXT_NPM = 'none'
-    EXT_PIP = 'none'
-    EXT_BLOB = 'none'
-    JSON_URL = 'none'
-    JSON_PATH = 'none'
-    BUILD_VERSION_ARG = 'none'
+    BUILDS_DISCORD=credentials('build_webhook_url')
+    GITHUB_TOKEN=credentials('498b4638-2d02-4ce5-832d-8a57d01d97ab')
+    BUILD_VERSION_ARG = 'OS'
     LS_USER = 'linuxserver'
     LS_REPO = 'docker-ci'
+    CONTAINER_NAME = 'ci'
     DOCKERHUB_IMAGE = 'lsiodev/ci'
     DEV_DOCKERHUB_IMAGE = 'lsiodev/ci-dev'
     PR_DOCKERHUB_IMAGE = 'lspipepr/ci'
-    BUILDS_DISCORD = credentials('build_webhook_url')
-    GITHUB_TOKEN = credentials('github_token')
-    DIST_IMAGE = 'alpine'
-    DIST_TAG = '3.7'
-    DIST_PACKAGES = 'chromium \
-                     chromium-chromedriver \
-                     docker'
-    DIST_REPO = 'none'
-    DIST_REPO_PACKAGES = 'none'
+    DIST_IMAGE = 'ubuntu'
     MULTIARCH='false'
+    CI='false'
+    CI_WEB='false'
+    CI_PORT='80'
+    CI_SSL='true'
+    CI_DELAY='30'
+    CI_DOCKERENV='TZ=US/Pacific'
+    CI_AUTH='user:password'
+    CI_WEBPATH=''
   }
   stages {
     // Setup all the basic environment variables needed for the build
     stage("Set ENV Variables base"){
       steps{
         script{
+          env.EXIT_STATUS = ''
           env.LS_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${LS_USER}/${LS_REPO}/releases/latest | jq -r '. | .tag_name' ''',
+            script: '''docker run --rm alexeiled/skopeo sh -c 'skopeo inspect docker://docker.io/'${DOCKERHUB_IMAGE}':latest 2>/dev/null' | jq -r '.Labels.build_version' | awk '{print $3}' | grep '\\-ls' || : ''',
             returnStdout: true).trim()
           env.LS_RELEASE_NOTES = sh(
-            script: '''git log -1 --pretty=%B | sed -E ':a;N;$!ba;s/\\r{0,1}\\n/\\\\n/g' ''',
+            script: '''cat readme-vars.yml | awk -F \\" '/date: "[0-9][0-9].[0-9][0-9].[0-9][0-9]:/ {print $4;exit;}' | sed -E ':a;N;$!ba;s/\\r{0,1}\\n/\\\\n/g' ''',
             returnStdout: true).trim()
           env.GITHUB_DATE = sh(
             script: '''date '+%Y-%m-%dT%H:%M:%S%:z' ''',
@@ -45,13 +46,17 @@ pipeline {
           env.COMMIT_SHA = sh(
             script: '''git rev-parse HEAD''',
             returnStdout: true).trim()
-          env.CODE_URL = sh(
-            script: '''echo https://github.com/${LS_USER}/${LS_REPO}/commit/${GIT_COMMIT}''',
-            returnStdout: true).trim()
-          env.DOCKERHUB_LINK = sh(
-            script: '''echo https://hub.docker.com/r/${DOCKERHUB_IMAGE}/tags/''',
-            returnStdout: true).trim()
+          env.CODE_URL = 'https://github.com/' + env.LS_USER + '/' + env.LS_REPO + '/commit/' + env.GIT_COMMIT
+          env.DOCKERHUB_LINK = 'https://hub.docker.com/r/' + env.DOCKERHUB_IMAGE + '/tags/'
           env.PULL_REQUEST = env.CHANGE_ID
+          env.LICENSE_TAG = sh(
+            script: '''#!/bin/bash
+                       if [ -e LICENSE ] ; then
+                         cat LICENSE | md5sum | cut -c1-8
+                       else
+                         echo none
+                       fi''',
+            returnStdout: true).trim()
         }
         script{
           env.LS_RELEASE_NUMBER = sh(
@@ -61,12 +66,9 @@ pipeline {
         script{
           env.LS_TAG_NUMBER = sh(
             script: '''#! /bin/bash
-                       # Get the commit for the current tag
                        tagsha=$(git rev-list -n 1 ${LS_RELEASE} 2>/dev/null)
-                       # If this is a new commit then increment the LinuxServer release version
                        if [ "${tagsha}" == "${COMMIT_SHA}" ]; then
                          echo ${LS_RELEASE_NUMBER}
-                       # If the commit is empty for this job do not increment
                        elif [ -z "${GIT_COMMIT}" ]; then
                          echo ${LS_RELEASE_NUMBER}
                        else
@@ -79,56 +81,17 @@ pipeline {
     /* #######################
        Package Version Tagging
        ####################### */
-    // If this is an alpine base image determine the base package tag to use
-    stage("Set Package tag Alpine"){
-      when {
-        expression {
-          env.DIST_IMAGE == 'alpine' && env.DIST_PACKAGES != 'none'
-        }
-      }
-      steps{
-        echo 'Grabbing the latest alpine base image'
-        sh '''docker pull alpine:${DIST_TAG}'''
-        echo 'Generating the package hash from the current versions'
-        script{
-          env.PACKAGE_TAG = sh(
-            script: '''docker run --rm alpine:${DIST_TAG} sh -c 'apk update --quiet\
-                       && apk info '"${DIST_PACKAGES}"' | md5sum | cut -c1-8' ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If this is an ubuntu base image determine the base package tag to use
-    stage("Set Package tag Ubuntu"){
-      when {
-        expression {
-          env.DIST_IMAGE == 'ubuntu' && env.DIST_PACKAGES != 'none'
-        }
-      }
-      steps{
-        echo 'Grabbing the latest alpine base image'
-        sh '''docker pull ubuntu:${DIST_TAG}'''
-        echo 'Generating the package hash from the current versions'
-        script{
-          env.PACKAGE_TAG = sh(
-            script: '''docker run --rm ubuntu:${DIST_TAG} sh -c\
-                       'apt-get --allow-unauthenticated update -qq >/dev/null 2>&1 &&\
-                        apt-cache --no-all-versions show '"${DIST_PACKAGES}"' | md5sum | cut -c1-8' ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If there are no base packages to tag in this build config set to none
-    stage("Set Package tag none"){
-      when {
-        expression {
-          env.DIST_PACKAGES == 'none'
-        }
-      }
+    // Grab the current package versions in Git to determine package tag
+    stage("Set Package tag"){
       steps{
         script{
           env.PACKAGE_TAG = sh(
-            script: '''echo none''',
+            script: '''#!/bin/bash
+                       if [ -e package_versions.txt ] ; then
+                         cat package_versions.txt | md5sum | cut -c1-8
+                       else
+                         echo none
+                       fi''',
             returnStdout: true).trim()
         }
       }
@@ -136,28 +99,8 @@ pipeline {
     /* ########################
        External Release Tagging
        ######################## */
-    // If this is a stable github release use the latest endpoint from github to determine the ext tag
-    stage("Set ENV github_stable"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'github_stable'
-        }
-      }
-      steps{
-        script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases/latest | jq -r '. | .tag_name' ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
     // If this is an os release set release type to none to indicate no external release
     stage("Set ENV os"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'os'
-        }
-      }
       steps{
         script{
           env.EXT_RELEASE = env.PACKAGE_TAG
@@ -165,267 +108,397 @@ pipeline {
         }
       }
     }
-    // If this is a stable or devel github release generate the link for the build message
-    stage("Set ENV github_link"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'github_stable' || env.EXT_RELEASE_TYPE == 'github_devel'
-        }
-      }
+    // Sanitize the release tag and strip illegal docker or github characters
+    stage("Sanitize tag"){
       steps{
         script{
-          env.RELEASE_LINK = sh(
-            script: '''echo https://github.com/${EXT_USER}/${EXT_REPO}/releases/tag/${EXT_RELEASE}''',
+          env.EXT_RELEASE_CLEAN = sh(
+            script: '''echo ${EXT_RELEASE} | sed 's/[~,%@+;:/]//g' ''',
             returnStdout: true).trim()
         }
       }
     }
-    // If this is a deb repo release calculate a hash for the package version
-    stage("Set EXT tag deb repo"){
+    // If this is a master build use live docker endpoints
+    stage("Set ENV live build"){
       when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'deb_repo'
-        }
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
       }
-      steps{
-        echo 'Grabbing the latest base image'
-        sh '''docker pull ${DIST_IMAGE}:${DIST_TAG}'''
-        echo 'Generating the package hash from the current versions'
+      steps {
         script{
-          env.EXT_RELEASE = sh(
-            script: '''docker run --rm ${DIST_IMAGE}:${DIST_TAG} bash -c\
-                       'echo -e "'"${DIST_REPO}"'" > /etc/apt/sources.list.d/check.list \
-                        && apt-get --allow-unauthenticated update -qq >/dev/null 2>&1\
-                        && apt-cache --no-all-versions show '"${DIST_REPO_PACKAGES}"' | md5sum | cut -c1-8' ''',
-            returnStdout: true).trim()
-          env.RELEASE_LINK = 'deb_repo'
+          env.IMAGE = env.DOCKERHUB_IMAGE
+          if (env.MULTIARCH == 'true') {
+            env.CI_TAGS = 'amd64-' + env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER + '|arm32v7-' + env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER + '|arm64v8-' + env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER
+          } else {
+            env.CI_TAGS = env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER
+          }
+          env.META_TAG = env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER
         }
       }
     }
-    // If this is an alpine repo change for external version determine an md5 from the version string
-    stage("Set tag Alpine Repo"){
+    // If this is a dev build use dev docker endpoints
+    stage("Set ENV dev build"){
       when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'alpine_repo'
-        }
+        not {branch "master"}
+        environment name: 'CHANGE_ID', value: ''
       }
-      steps{
-        echo 'Grabbing the latest alpine base image'
-        sh '''docker pull alpine:${DIST_TAG}'''
-        echo 'Generating the package hash from the current versions'
+      steps {
         script{
-          env.EXT_RELEASE = sh(
-            script: '''docker run --rm alpine:${DIST_TAG} sh -c 'apk update --quiet --repository '"${DIST_REPO}"'\
-                       && apk info --repository '"${DIST_REPO}"' '"${DIST_REPO_PACKAGES}"' | md5sum | cut -c1-8' ''',
-            returnStdout: true).trim()
-            env.RELEASE_LINK = 'alpine_repo'
+          env.IMAGE = env.DEV_DOCKERHUB_IMAGE
+          if (env.MULTIARCH == 'true') {
+            env.CI_TAGS = 'amd64-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-dev-' + env.COMMIT_SHA + '|arm32v7-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-dev-' + env.COMMIT_SHA + '|arm64v8-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-dev-' + env.COMMIT_SHA
+          } else {
+            env.CI_TAGS = env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-dev-' + env.COMMIT_SHA
+          }
+          env.META_TAG = env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-dev-' + env.COMMIT_SHA
+          env.DOCKERHUB_LINK = 'https://hub.docker.com/r/' + env.DEV_DOCKERHUB_IMAGE + '/tags/'
         }
       }
     }
-    // If this is a github commit trigger determine the current commit at head
-    stage("Set ENV github_commit"){
+    // If this is a pull request build use dev docker endpoints
+    stage("Set ENV PR build"){
       when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'github_commit'
-        }
+        not {environment name: 'CHANGE_ID', value: ''}
       }
-      steps{
+      steps {
         script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/commits/${EXT_GIT_BRANCH} | jq -r '. | .sha' | cut -c1-8 ''',
-            returnStdout: true).trim()
+          env.IMAGE = env.PR_DOCKERHUB_IMAGE
+          if (env.MULTIARCH == 'true') {
+            env.CI_TAGS = 'amd64-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-pr-' + env.PULL_REQUEST + '|arm32v7-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-pr-' + env.PULL_REQUEST + '|arm64v8-' + env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-pr-' + env.PULL_REQUEST
+          } else {
+            env.CI_TAGS = env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-pr-' + env.PULL_REQUEST
+          }
+          env.META_TAG = env.EXT_RELEASE_CLEAN + '-pkg-' + env.PACKAGE_TAG + '-pr-' + env.PULL_REQUEST
+          env.CODE_URL = 'https://github.com/' + env.LS_USER + '/' + env.LS_REPO + '/pull/' + env.PULL_REQUEST
+          env.DOCKERHUB_LINK = 'https://hub.docker.com/r/' + env.PR_DOCKERHUB_IMAGE + '/tags/'
         }
       }
     }
-    // If this is a github commit trigger Set the external release link
-    stage("Set ENV commit_link"){
+    // Run ShellCheck
+    stage('ShellCheck') {
       when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'github_commit'
-        }
+        environment name: 'CI', value: 'true'
       }
-      steps{
-        script{
-          env.RELEASE_LINK = sh(
-            script: '''echo https://github.com/${EXT_USER}/${EXT_REPO}/commit/${EXT_RELEASE} ''',
-            returnStdout: true).trim()
+      steps {
+        withCredentials([
+          string(credentialsId: 'spaces-key', variable: 'DO_KEY'),
+          string(credentialsId: 'spaces-secret', variable: 'DO_SECRET')
+        ]) {
+          script{
+            env.SHELLCHECK_URL = 'https://lsio-ci.ams3.digitaloceanspaces.com/' + env.IMAGE + '/' + env.META_TAG + '/shellcheck-result.xml'
+          }
+          sh '''curl -sL https://raw.githubusercontent.com/linuxserver/docker-shellcheck/master/checkrun.sh | /bin/bash'''
+          sh '''#! /bin/bash
+                set -e
+                docker pull lsiodev/spaces-file-upload:latest
+                docker run --rm \
+                -e DESTINATION=\"${IMAGE}/${META_TAG}/shellcheck-result.xml\" \
+                -e FILE_NAME="shellcheck-result.xml" \
+                -e MIMETYPE="text/xml" \
+                -v ${WORKSPACE}:/mnt \
+                -e SECRET_KEY=\"${DO_SECRET}\" \
+                -e ACCESS_KEY=\"${DO_KEY}\" \
+                -t lsiodev/spaces-file-upload:latest \
+                python /upload.py'''
         }
       }
     }
-    // If this is a github tag trigger determine the current tag
-    stage("Set ENV github_tag"){
+    // Use helper containers to render templated files
+    stage('Update-Templates') {
       when {
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
         expression {
-          env.EXT_RELEASE_TYPE == 'github_tag'
+          env.CONTAINER_NAME != null
         }
       }
-      steps{
+      steps {
+        sh '''#! /bin/bash
+              set -e
+              TEMPDIR=$(mktemp -d)
+              docker pull linuxserver/jenkins-builder:latest
+              docker run --rm -e CONTAINER_NAME=${CONTAINER_NAME} -e GITHUB_BRANCH=master -v ${TEMPDIR}:/ansible/jenkins linuxserver/jenkins-builder:latest 
+              docker pull linuxserver/doc-builder:latest
+              docker run --rm -e CONTAINER_NAME=${CONTAINER_NAME} -e GITHUB_BRANCH=master -v ${TEMPDIR}:/ansible/readme linuxserver/doc-builder:latest
+              if [ "$(md5sum ${TEMPDIR}/${LS_REPO}/Jenkinsfile | awk '{ print $1 }')" != "$(md5sum Jenkinsfile | awk '{ print $1 }')" ] || \
+                 [ "$(md5sum ${TEMPDIR}/${CONTAINER_NAME}/README.md | awk '{ print $1 }')" != "$(md5sum README.md | awk '{ print $1 }')" ] || \
+                 [ "$(cat ${TEMPDIR}/${LS_REPO}/LICENSE | md5sum | cut -c1-8)" != "${LICENSE_TAG}" ]; then
+                mkdir -p ${TEMPDIR}/repo
+                git clone https://github.com/${LS_USER}/${LS_REPO}.git ${TEMPDIR}/repo/${LS_REPO}
+                git --git-dir ${TEMPDIR}/repo/${LS_REPO}/.git checkout -f master
+                cp ${TEMPDIR}/${CONTAINER_NAME}/README.md ${TEMPDIR}/repo/${LS_REPO}/
+                cp ${TEMPDIR}/docker-${CONTAINER_NAME}/Jenkinsfile ${TEMPDIR}/repo/${LS_REPO}/
+                cp ${TEMPDIR}/docker-${CONTAINER_NAME}/LICENSE ${TEMPDIR}/repo/${LS_REPO}/
+                cd ${TEMPDIR}/repo/${LS_REPO}/
+                git --git-dir ${TEMPDIR}/repo/${LS_REPO}/.git add Jenkinsfile README.md LICENSE
+                git --git-dir ${TEMPDIR}/repo/${LS_REPO}/.git commit -m 'Bot Updating Templated Files'
+                git --git-dir ${TEMPDIR}/repo/${LS_REPO}/.git push https://LinuxServer-CI:${GITHUB_TOKEN}@github.com/${LS_USER}/${LS_REPO}.git --all
+                echo "true" > /tmp/${COMMIT_SHA}-${BUILD_NUMBER}
+              else
+                echo "false" > /tmp/${COMMIT_SHA}-${BUILD_NUMBER}
+              fi
+              mkdir -p ${TEMPDIR}/gitbook
+              git clone https://github.com/linuxserver/docker-documentation.git ${TEMPDIR}/gitbook/docker-documentation
+              if [[ "${BRANCH_NAME}" == "master" ]] && [[ (! -f ${TEMPDIR}/gitbook/docker-documentation/images/docker-${CONTAINER_NAME}.md) || ("$(md5sum ${TEMPDIR}/gitbook/docker-documentation/images/docker-${CONTAINER_NAME}.md | awk '{ print $1 }')" != "$(md5sum ${TEMPDIR}/${CONTAINER_NAME}/docker-${CONTAINER_NAME}.md | awk '{ print $1 }')") ]]; then
+                cp ${TEMPDIR}/${CONTAINER_NAME}/docker-${CONTAINER_NAME}.md ${TEMPDIR}/gitbook/docker-documentation/images/
+                cd ${TEMPDIR}/gitbook/docker-documentation/
+                git add images/docker-${CONTAINER_NAME}.md
+                git commit -m 'Bot Updating Templated Files'
+                git push https://LinuxServer-CI:${GITHUB_TOKEN}@github.com/linuxserver/docker-documentation.git --all
+              fi
+              rm -Rf ${TEMPDIR}'''
         script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/tags | jq -r '.[0] | .name' ''',
-            returnStdout: true).trim()
-          env.EXT_COMMIT_URL = sh(
-            script: '''curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/tags | jq -r '.[0] | .commit.url' ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If this is a github tag trigger Set the external release link
-    stage("Set ENV tag_link"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'github_tag'
-        }
-      }
-      steps{
-        script{
-          env.RELEASE_LINK = sh(
-            script: '''echo https://github.com/${EXT_USER}/${EXT_REPO}/releases/tag/${EXT_RELEASE} ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If this is a npm version change set the external release verison and link
-    stage("Set ENV npm_version"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'npm_version'
-        }
-      }
-      steps{
-        script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s https://skimdb.npmjs.com/registry/${EXT_NPM} |jq -r '. | .["dist-tags"].latest' ''',
-            returnStdout: true).trim()
-          env.RELEASE_LINK = sh(
-            script: '''echo https://www.npmjs.com/package/${EXT_NPM} ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If this is a pip version change set the external release verison and link
-    stage("Set ENV pip_version"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'pip_version'
-        }
-      }
-      steps{
-        script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s  https://pypi.python.org/pypi/${EXT_PIP}/json |jq -r '. | .info.version' ''',
-            returnStdout: true).trim()
-          env.RELEASE_LINK = sh(
-            script: '''echo https://pypi.python.org/pypi/${EXT_PIP} ''',
+          env.FILES_UPDATED = sh(
+            script: '''cat /tmp/${COMMIT_SHA}-${BUILD_NUMBER}''',
             returnStdout: true).trim()
         }
       }
     }
-    // If this is a File blob set the ext version based on the remote files md5
-    stage("Set ENV external_blob"){
+    // Exit the build if the Templated files were just updated
+    stage('Template-exit') {
       when {
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
+        environment name: 'FILES_UPDATED', value: 'true'
         expression {
-          env.EXT_RELEASE_TYPE == 'external_blob'
+          env.CONTAINER_NAME != null
         }
       }
-      steps{
+      steps {
         script{
-          env.EXT_RELEASE = sh(
-            script: '''#! /bin/bash
-                       # Make sure the remote file returns a 200 status or fail
-                       if [ $(curl -I -sL -w "%{http_code}" ${EXT_BLOB} -o /dev/null) == 200 ]; then
-                         curl -s -L ${EXT_BLOB} | md5sum | cut -c1-8
-                       else
-                         exit 1
-                       fi''',
-            returnStdout: true).trim()
-          env.RELEASE_LINK = sh(
-            script: '''echo "Remote_Blob_Change" ''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // If this is a custom json endpoint parse the return to get external tag
-    stage("Set ENV custom_json"){
-      when {
-        expression {
-          env.EXT_RELEASE_TYPE == 'custom_json'
-        }
-      }
-      steps{
-        script{
-          env.EXT_RELEASE = sh(
-            script: '''curl -s ${JSON_URL} | jq -r ". | ${JSON_PATH}" ''',
-            returnStdout: true).trim()
-          env.RELEASE_LINK = sh(
-            script: '''echo "${JSON_URL}" ''',
-            returnStdout: true).trim()
+          env.EXIT_STATUS = 'ABORTED'
         }
       }
     }
     /* ###############
        Build Container
        ############### */
-     // Build Docker container for push to LS Repo
-     stage('Build-Single') {
-       when {
-         expression {
-           env.MULTIARCH == 'false'
-         }
-       }
-       steps {
-           echo "Building most current release of ${EXT_REPO}"
-           sh "docker build --no-cache -t ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} \
-           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${EXT_RELEASE}-pkg-${PACKAGE_TAG}-ls${LS_TAG_NUMBER}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
-         }
-     }
-     // Build MultiArch Docker container for push to LS Repo
-     stage('Build-Multi') {
-       when {
-         expression {
-           env.MULTIARCH == 'true'
-         }
-       }
-       steps {
-           echo "Building most current release of ${EXT_REPO} x86_64"
-           sh "docker build --no-cache -f Dockerfile.amd64 -t ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} \
-           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${EXT_RELEASE}-pkg-${PACKAGE_TAG}-ls${LS_TAG_NUMBER}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
-           echo "Building most current release of ${EXT_REPO} Arm 32 Bit (Pis)"
-           sh "docker build --no-cache -f Dockerfile.armhf -t ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} \
-           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${EXT_RELEASE}-pkg-${PACKAGE_TAG}-ls${LS_TAG_NUMBER}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
-           echo "Building most current release of ${EXT_REPO} Arm 64 Bit"
-           sh "docker build --no-cache -f Dockerfile.aarch64 -t ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} \
-           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${EXT_RELEASE}-pkg-${PACKAGE_TAG}-ls${LS_TAG_NUMBER}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
-         }
-     }
+    // Build Docker container for push to LS Repo
+    stage('Build-Single') {
+      when {
+        environment name: 'MULTIARCH', value: 'false'
+        environment name: 'EXIT_STATUS', value: ''
+      }
+      steps {
+        sh "docker build --no-cache --pull -t ${IMAGE}:${META_TAG} \
+        --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${META_TAG}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
+      }
+    }
+    // Build MultiArch Docker containers for push to LS Repo
+    stage('Build-Multi') {
+      when {
+        environment name: 'MULTIARCH', value: 'true'
+        environment name: 'EXIT_STATUS', value: ''
+      }
+      parallel {
+        stage('Build X86') {
+          steps {
+            sh "docker build --no-cache --pull -t ${IMAGE}:amd64-${META_TAG} \
+            --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${META_TAG}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
+          }
+        }
+        stage('Build ARMHF') {
+          agent {
+            label 'ARMHF'
+          }
+          steps {
+            withCredentials([
+              [
+                $class: 'UsernamePasswordMultiBinding',
+                credentialsId: '3f9ba4d5-100d-45b0-a3c4-633fd6061207',
+                usernameVariable: 'DOCKERUSER',
+                passwordVariable: 'DOCKERPASS'
+              ]
+            ]) {
+              echo 'Logging into DockerHub'
+              sh '''#! /bin/bash
+                 echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+                 '''
+              sh "docker build --no-cache --pull -f Dockerfile.armhf -t ${IMAGE}:arm32v7-${META_TAG} \
+                           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${META_TAG}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
+              sh "docker tag ${IMAGE}:arm32v7-${META_TAG} lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER}"
+              sh "docker push lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER}"
+              sh '''docker rmi \
+                    ${IMAGE}:arm32v7-${META_TAG} \
+                    lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER} || :'''
+            }
+          }
+        }
+        stage('Build ARM64') {
+          agent {
+            label 'ARM64'
+          }
+          steps {
+            withCredentials([
+              [
+                $class: 'UsernamePasswordMultiBinding',
+                credentialsId: '3f9ba4d5-100d-45b0-a3c4-633fd6061207',
+                usernameVariable: 'DOCKERUSER',
+                passwordVariable: 'DOCKERPASS'
+              ]
+            ]) {
+              echo 'Logging into DockerHub'
+              sh '''#! /bin/bash
+                 echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+                 '''
+              sh "docker build --no-cache --pull -f Dockerfile.aarch64 -t ${IMAGE}:arm64v8-${META_TAG} \
+                           --build-arg ${BUILD_VERSION_ARG}=${EXT_RELEASE} --build-arg VERSION=\"${META_TAG}\" --build-arg BUILD_DATE=${GITHUB_DATE} ."
+              sh "docker tag ${IMAGE}:arm64v8-${META_TAG} lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER}"
+              sh "docker push lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER}"
+              sh '''docker rmi \
+                    ${IMAGE}:arm64v8-${META_TAG} \
+                    lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER} || :'''
+            }
+          }
+        }
+      }
+    }
+    // Take the image we just built and dump package versions for comparison
+    stage('Update-packages') {
+      when {
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
+        environment name: 'EXIT_STATUS', value: ''
+      }
+      steps {
+        sh '''#! /bin/bash
+              set -e
+              TEMPDIR=$(mktemp -d)
+              if [ "${MULTIARCH}" == "true" ]; then
+                LOCAL_CONTAINER=${IMAGE}:amd64-${META_TAG}
+              else
+                LOCAL_CONTAINER=${IMAGE}:${META_TAG}
+              fi
+              if [ "${DIST_IMAGE}" == "alpine" ]; then
+                docker run --rm --entrypoint '/bin/sh' -v ${TEMPDIR}:/tmp ${LOCAL_CONTAINER} -c '\
+                  apk info -v > /tmp/package_versions.txt && \
+                  sort -o /tmp/package_versions.txt  /tmp/package_versions.txt && \
+                  chmod 777 /tmp/package_versions.txt'
+              elif [ "${DIST_IMAGE}" == "ubuntu" ]; then
+                docker run --rm --entrypoint '/bin/sh' -v ${TEMPDIR}:/tmp ${LOCAL_CONTAINER} -c '\
+                  apt list -qq --installed | sed "s#/.*now ##g" | cut -d" " -f1 > /tmp/package_versions.txt && \
+                  sort -o /tmp/package_versions.txt  /tmp/package_versions.txt && \
+                  chmod 777 /tmp/package_versions.txt'
+              fi
+              NEW_PACKAGE_TAG=$(md5sum ${TEMPDIR}/package_versions.txt | cut -c1-8 )
+              echo "Package tag sha from current packages in buit container is ${NEW_PACKAGE_TAG} comparing to old ${PACKAGE_TAG} from github"
+              if [ "${NEW_PACKAGE_TAG}" != "${PACKAGE_TAG}" ]; then
+                git clone https://github.com/${LS_USER}/${LS_REPO}.git ${TEMPDIR}/${LS_REPO}
+                git --git-dir ${TEMPDIR}/${LS_REPO}/.git checkout -f master
+                cp ${TEMPDIR}/package_versions.txt ${TEMPDIR}/${LS_REPO}/
+                cd ${TEMPDIR}/${LS_REPO}/
+                wait
+                git add package_versions.txt
+                git commit -m 'Bot Updating Package Versions'
+                git push https://LinuxServer-CI:${GITHUB_TOKEN}@github.com/${LS_USER}/${LS_REPO}.git --all
+                echo "true" > /tmp/packages-${COMMIT_SHA}-${BUILD_NUMBER}
+                echo "Package tag updated, stopping build process"
+              else
+                echo "false" > /tmp/packages-${COMMIT_SHA}-${BUILD_NUMBER}
+                echo "Package tag is same as previous continue with build process"
+              fi
+              rm -Rf ${TEMPDIR}'''
+        script{
+          env.PACKAGE_UPDATED = sh(
+            script: '''cat /tmp/packages-${COMMIT_SHA}-${BUILD_NUMBER}''',
+            returnStdout: true).trim()
+        }
+      }
+    }
+    // Exit the build if the package file was just updated
+    stage('PACKAGE-exit') {
+      when {
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
+        environment name: 'PACKAGE_UPDATED', value: 'true'
+        environment name: 'EXIT_STATUS', value: ''
+      }
+      steps {
+        script{
+          env.EXIT_STATUS = 'ABORTED'
+        }
+      }
+    }
+    // Exit the build if this is just a package check and there are no changes to push
+    stage('PACKAGECHECK-exit') {
+      when {
+        branch "master"
+        environment name: 'CHANGE_ID', value: ''
+        environment name: 'PACKAGE_UPDATED', value: 'false'
+        environment name: 'EXIT_STATUS', value: ''
+        expression {
+          params.PACKAGE_CHECK == 'true'
+        }
+      }
+      steps {
+        script{
+          env.EXIT_STATUS = 'ABORTED'
+        }
+      }
+    }
     /* #######
        Testing
        ####### */
     // Run Container tests
     stage('Test') {
+      when {
+        environment name: 'CI', value: 'true'
+        environment name: 'EXIT_STATUS', value: ''
+      }
       steps {
-       echo 'CI Tests for future use'
+        withCredentials([
+          string(credentialsId: 'spaces-key', variable: 'DO_KEY'),
+          string(credentialsId: 'spaces-secret', variable: 'DO_SECRET')
+        ]) {
+          script{
+            env.CI_URL = 'https://lsio-ci.ams3.digitaloceanspaces.com/' + env.IMAGE + '/' + env.META_TAG + '/index.html'
+          }
+          sh '''#! /bin/bash
+                set -e
+                docker pull lsiodev/ci:latest
+                if [ "${MULTIARCH}" == "true" ]; then
+                  docker pull lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER}
+                  docker pull lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER}
+                  docker tag lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER} ${IMAGE}:arm32v7-${META_TAG}
+                  docker tag lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER} ${IMAGE}:arm64v8-${META_TAG}
+                fi
+                docker run --rm \
+                --shm-size=1gb \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -e IMAGE=\"${IMAGE}\" \
+                -e DELAY_START=\"${CI_DELAY}\" \
+                -e TAGS=\"${CI_TAGS}\" \
+                -e META_TAG=\"${META_TAG}\" \
+                -e PORT=\"${CI_PORT}\" \
+                -e SSL=\"${CI_SSL}\" \
+                -e BASE=\"${DIST_IMAGE}\" \
+                -e SECRET_KEY=\"${DO_SECRET}\" \
+                -e ACCESS_KEY=\"${DO_KEY}\" \
+                -e DOCKER_ENV=\"${CI_DOCKERENV}\" \
+                -e WEB_SCREENSHOT=\"${CI_WEB}\" \
+                -e WEB_AUTH=\"${CI_AUTH}\" \
+                -e WEB_PATH=\"${CI_WEBPATH}\" \
+                -e DO_REGION="ams3" \
+                -e DO_BUCKET="lsio-ci" \
+                -t lsiodev/ci:latest \
+                python /ci/ci.py'''
+        }
       }
     }
     /* ##################
-       Live Release Logic
+         Release Logic
        ################## */
-    // If this is a public release push this to the live repo triggered by an external repo update or LS repo update on master
-    stage('Docker-Push-Release-Single') {
+    // If this is an amd64 only image only push a single image
+    stage('Docker-Push-Single') {
       when {
-        branch "master"
-        expression {
-          env.LS_RELEASE != env.EXT_RELEASE + '-pkg-' + env.PACKAGE_TAG + '-ls' + env.LS_TAG_NUMBER
-        }
-        expression{
-          env.MULTIARCH == 'false'
-        }
+        environment name: 'MULTIARCH', value: 'false'
+        environment name: 'EXIT_STATUS', value: ''
       }
       steps {
         withCredentials([
           [
             $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
+            credentialsId: '3f9ba4d5-100d-45b0-a3c4-633fd6061207',
             usernameVariable: 'DOCKERUSER',
             passwordVariable: 'DOCKERPASS'
           ]
@@ -434,388 +507,139 @@ pipeline {
           sh '''#! /bin/bash
              echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
              '''
-          echo 'First push the latest tag'
-          sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:latest"
-          sh "docker push ${DOCKERHUB_IMAGE}:latest"
-          echo 'Pushing by release tag'
-          sh "docker push ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
+          sh "docker tag ${IMAGE}:${META_TAG} ${IMAGE}:latest"
+          sh "docker push ${IMAGE}:latest"
+          sh "docker push ${IMAGE}:${META_TAG}"
+          sh '''docker rmi \
+                ${IMAGE}:${META_TAG} \
+                ${IMAGE}:latest || :'''
+                
         }
       }
     }
-    // If this is a public release push this to the live repo triggered by an external repo update or LS repo update on master
-    stage('Docker-Push-Release-Multi') {
+    // If this is a multi arch release push all images and define the manifest
+    stage('Docker-Push-Multi') {
       when {
-        branch "master"
-        expression {
-          env.LS_RELEASE != env.EXT_RELEASE + '-pkg-' + env.PACKAGE_TAG + '-ls' + env.LS_TAG_NUMBER
-        }
-        expression{
-          env.MULTIARCH == 'true'
-        }
+        environment name: 'MULTIARCH', value: 'true'
+        environment name: 'EXIT_STATUS', value: ''
       }
       steps {
         withCredentials([
           [
             $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
+            credentialsId: '3f9ba4d5-100d-45b0-a3c4-633fd6061207',
             usernameVariable: 'DOCKERUSER',
             passwordVariable: 'DOCKERPASS'
           ]
         ]) {
-          echo 'Logging into DockerHub'
           sh '''#! /bin/bash
              echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
              '''
-          echo 'First Tag the releases to latest also'
-          sh "docker tag ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm64v8-latest"
-          echo 'Push all image variants in case someone does not want to use manifests'
-          sh "docker push ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
-          sh "docker push ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
-          sh "docker push ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
-          sh "docker push ${DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker push ${DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker push ${DOCKERHUB_IMAGE}:arm64v8-latest"
-          echo 'Generate Manifests based on tagging'
-          sh "docker manifest create ${DOCKERHUB_IMAGE}:latest ${DOCKERHUB_IMAGE}:amd64-latest ${DOCKERHUB_IMAGE}:arm32v6-latest ${DOCKERHUB_IMAGE}:arm64v8-latest"
-          sh "docker manifest annotate ${DOCKERHUB_IMAGE}:latest ${DOCKERHUB_IMAGE}:arm32v6-latest --os linux --arch arm"
-          sh "docker manifest annotate ${DOCKERHUB_IMAGE}:latest ${DOCKERHUB_IMAGE}:arm64v8-latest --os linux --arch arm64 --variant armv8"
-          sh "docker manifest create ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
-          sh "docker manifest annotate ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} --os linux --arch arm"
-          sh "docker manifest annotate ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} --os linux --arch arm64 --variant armv8"
-          echo 'Pushing by manifest tags'
-          sh "docker manifest push --purge ${DOCKERHUB_IMAGE}:latest"
-          sh "docker manifest push --purge ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER}"
+          sh '''#! /bin/bash
+                if [ "${CI}" == "false" ]; then
+                  docker pull lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER}
+                  docker pull lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER}
+                  docker tag lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER} ${IMAGE}:arm32v7-${META_TAG}
+                  docker tag lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER} ${IMAGE}:arm64v8-${META_TAG}
+                fi'''
+          sh "docker tag ${IMAGE}:amd64-${META_TAG} ${IMAGE}:amd64-latest"
+          sh "docker tag ${IMAGE}:arm32v7-${META_TAG} ${IMAGE}:arm32v7-latest"
+          sh "docker tag ${IMAGE}:arm64v8-${META_TAG} ${IMAGE}:arm64v8-latest"
+          sh "docker push ${IMAGE}:amd64-${META_TAG}"
+          sh "docker push ${IMAGE}:arm32v7-${META_TAG}"
+          sh "docker push ${IMAGE}:arm64v8-${META_TAG}"
+          sh "docker push ${IMAGE}:amd64-latest"
+          sh "docker push ${IMAGE}:arm32v7-latest"
+          sh "docker push ${IMAGE}:arm64v8-latest"
+          sh "docker manifest push --purge ${IMAGE}:latest || :"
+          sh "docker manifest create ${IMAGE}:latest ${IMAGE}:amd64-latest ${IMAGE}:arm32v7-latest ${IMAGE}:arm64v8-latest"
+          sh "docker manifest annotate ${IMAGE}:latest ${IMAGE}:arm32v7-latest --os linux --arch arm"
+          sh "docker manifest annotate ${IMAGE}:latest ${IMAGE}:arm64v8-latest --os linux --arch arm64 --variant v8"
+          sh "docker manifest push --purge ${IMAGE}:${META_TAG} || :"
+          sh "docker manifest create ${IMAGE}:${META_TAG} ${IMAGE}:amd64-${META_TAG} ${IMAGE}:arm32v7-${META_TAG} ${IMAGE}:arm64v8-${META_TAG}"
+          sh "docker manifest annotate ${IMAGE}:${META_TAG} ${IMAGE}:arm32v7-${META_TAG} --os linux --arch arm"
+          sh "docker manifest annotate ${IMAGE}:${META_TAG} ${IMAGE}:arm64v8-${META_TAG} --os linux --arch arm64 --variant v8"
+          sh "docker manifest push --purge ${IMAGE}:latest"
+          sh "docker manifest push --purge ${IMAGE}:${META_TAG}"
+          sh '''docker rmi \
+                ${IMAGE}:amd64-${META_TAG} \
+                ${IMAGE}:amd64-latest \
+                ${IMAGE}:arm32v7-${META_TAG} \
+                ${IMAGE}:arm32v7-latest \
+                ${IMAGE}:arm64v8-${META_TAG} \
+                ${IMAGE}:arm64v8-latest \
+                lsiodev/buildcache:arm32v7-${COMMIT_SHA}-${BUILD_NUMBER} \
+                lsiodev/buildcache:arm64v8-${COMMIT_SHA}-${BUILD_NUMBER} || :'''
         }
       }
     }
-    // If this is a public release tag it in the LS Github and push a changelog from external repo and our internal one
+    // If this is a public release tag it in the LS Github
     stage('Github-Tag-Push-Release') {
       when {
         branch "master"
         expression {
-          env.LS_RELEASE != env.EXT_RELEASE + '-pkg-' + env.PACKAGE_TAG + '-ls' + env.LS_TAG_NUMBER
+          env.LS_RELEASE != env.EXT_RELEASE_CLEAN + '-ls' + env.LS_TAG_NUMBER
         }
         environment name: 'CHANGE_ID', value: ''
+        environment name: 'EXIT_STATUS', value: ''
       }
       steps {
-        echo "Pushing New tag for current commit ${EXT_RELEASE}-pkg-${PACKAGE_TAG}-ls${LS_TAG_NUMBER}"
+        echo "Pushing New tag for current commit ${EXT_RELEASE_CLEAN}-ls${LS_TAG_NUMBER}"
         sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/git/tags \
-        -d '{"tag":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
+        -d '{"tag":"'${EXT_RELEASE_CLEAN}'-ls'${LS_TAG_NUMBER}'",\
              "object": "'${COMMIT_SHA}'",\
-             "message": "Tagging Release '${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}' to master",\
+             "message": "Tagging Release '${EXT_RELEASE_CLEAN}'-ls'${LS_TAG_NUMBER}' to master",\
              "type": "commit",\
              "tagger": {"name": "LinuxServer Jenkins","email": "jenkins@linuxserver.io","date": "'${GITHUB_DATE}'"}}' '''
         echo "Pushing New release for Tag"
         sh '''#! /bin/bash
-              if [ ${EXT_RELEASE_TYPE} == 'github_stable' ] || [ ${EXT_RELEASE_TYPE} == 'github_devel' ]; then
-                # Grabbing the current release body from external repo
-                curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/releases/latest | jq '. |.body' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**'${EXT_REPO}' Changes:**\\n\\n' > start
-                       # Grabbing the current release body from external repo
-              elif [ ${EXT_RELEASE_TYPE} == 'github_commit' ]; then
-                curl -s https://api.github.com/repos/${EXT_USER}/${EXT_REPO}/commits/${EXT_GIT_BRANCH} | jq '. | .commit.message' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**'${EXT_REPO}' Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'github_tag' ]; then
-                curl -s ${EXT_COMMIT_URL} | jq '. | .commit.message' | sed 's:^.\\(.*\\).$:\\1:' > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**'${EXT_REPO}' Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'os' ]; then
-                # Using base package version for release notes
-                echo "Updating base packages to ${PACKAGE_TAG}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**OS Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'deb_repo' ] || [ ${EXT_RELEASE_TYPE} == 'alpine_repo' ]; then
-                # Using base package version for release notes
-                echo "Updating external repo packages to ${EXT_RELEASE}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**Repo Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'npm_version' ]; then
-                # Using base package version for release notes
-                echo "Updating NPM version of ${EXT_NPM} to ${EXT_RELEASE}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**NPM Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'pip_version' ]; then
-                # Using base package version for release notes
-                echo "Updating PIP version of ${EXT_PIP} to ${EXT_RELEASE}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**PIP Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'external_blob' ]; then
-                # Using base package version for release notes
-                echo "External Release file changed at ${EXT_BLOB}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**Remote Changes:**\\n\\n' > start
-              elif [ ${EXT_RELEASE_TYPE} == 'custom_json' ]; then
-                # Referencing the JSON endpoint for release notes
-                echo "Data change at JSON endpoint ${JSON_URL}" > releasebody.json
-                # Creating the start of the json payload
-                echo '{"tag_name":"'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "target_commitish": "master",\
-                       "name": "'${EXT_RELEASE}'-pkg-'${PACKAGE_TAG}'-ls'${LS_TAG_NUMBER}'",\
-                       "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**Remote Changes:**\\n\\n' > start
-              fi
-              # Add the end of the payload to the file
+              echo "Updating base packages to ${PACKAGE_TAG}" > releasebody.json
+              echo '{"tag_name":"'${EXT_RELEASE_CLEAN}'-ls'${LS_TAG_NUMBER}'",\
+                     "target_commitish": "master",\
+                     "name": "'${EXT_RELEASE_CLEAN}'-ls'${LS_TAG_NUMBER}'",\
+                     "body": "**LinuxServer Changes:**\\n\\n'${LS_RELEASE_NOTES}'\\n**OS Changes:**\\n\\n' > start
               printf '","draft": false,"prerelease": false}' >> releasebody.json
-              # Combine the start and ending string This is needed do to incompatibility with JSON and Bash escape strings
               paste -d'\\0' start releasebody.json > releasebody.json.done
-              # Send payload to github
               curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/releases -d @releasebody.json.done'''
       }
     }
-    // Use helper container to push the current README in master to the DockerHub Repo
+    // Use helper container to sync the current README on master to the dockerhub endpoint
     stage('Sync-README') {
       when {
-        branch "master"
-        expression {
-          env.LS_RELEASE != env.EXT_RELEASE + '-pkg-' + env.PACKAGE_TAG + '-ls' + env.LS_TAG_NUMBER
-        }
+        environment name: 'CHANGE_ID', value: ''
+        environment name: 'EXIT_STATUS', value: ''
       }
       steps {
         withCredentials([
           [
             $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
+            credentialsId: '3f9ba4d5-100d-45b0-a3c4-633fd6061207',
             usernameVariable: 'DOCKERUSER',
             passwordVariable: 'DOCKERPASS'
           ]
         ]) {
-          echo 'Run Docker README Sync'
           sh '''#! /bin/bash
                 docker pull lsiodev/readme-sync
                 docker run --rm=true \
                   -e DOCKERHUB_USERNAME=$DOCKERUSER \
                   -e DOCKERHUB_PASSWORD=$DOCKERPASS \
                   -e GIT_REPOSITORY=${LS_USER}/${LS_REPO} \
-                  -e DOCKER_REPOSITORY=${DOCKERHUB_IMAGE} \
+                  -e DOCKER_REPOSITORY=${IMAGE} \
                   -e GIT_BRANCH=master \
-                  lsiodev/readme-sync bash -c 'node sync'
-             '''
+                  lsiodev/readme-sync bash -c 'node sync' '''
         }
       }
     }
-    /* #################
-       Dev Release Logic
-       ################# */
-    // Push to the Dev user dockerhub endpoint when this is a non master branch
-    stage('Docker-Push-Dev-Single') {
+    // If this is a Pull request send the CI link as a comment on it
+    stage('Pull Request Comment') {
       when {
-        not {
-         branch "master"
-        }
-        environment name: 'CHANGE_ID', value: ''
-        expression{
-          env.MULTIARCH == 'false'
-        }
+        not {environment name: 'CHANGE_ID', value: ''}
+        environment name: 'CI', value: 'true'
+        environment name: 'EXIT_STATUS', value: ''
       }
       steps {
-        withCredentials([
-          [
-            $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
-            usernameVariable: 'DOCKERUSER',
-            passwordVariable: 'DOCKERPASS'
-          ]
-        ]) {
-          echo 'Logging into DockerHub'
-          sh '''#! /bin/bash
-             echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
-             '''
-          echo 'Tag images to the built one'
-          sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          echo 'Pushing both tags'
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:latest"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-        }
-        script{
-          env.DOCKERHUB_LINK = sh(
-            script: '''echo https://hub.docker.com/r/${DEV_DOCKERHUB_IMAGE}/tags/''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    // Push to the Dev user dockerhub endpoint when this is a non master branch
-    stage('Docker-Push-Dev-Multi') {
-      when {
-        not {
-         branch "master"
-        }
-        environment name: 'CHANGE_ID', value: ''
-        expression{
-          env.MULTIARCH == 'true'
-        }
-      }
-      steps {
-        withCredentials([
-          [
-            $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
-            usernameVariable: 'DOCKERUSER',
-            passwordVariable: 'DOCKERPASS'
-          ]
-        ]) {
-          echo 'Logging into DockerHub'
-          sh '''#! /bin/bash
-             echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
-             '''
-          echo 'First Tag the releases to latest also'
-          sh "docker tag ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:arm64v8-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${DEV_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          echo 'Push all image variants'
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker push ${DEV_DOCKERHUB_IMAGE}:arm64v8-latest"
-          echo 'Generate Manifests based on tagging'
-          sh "docker manifest create ${DEV_DOCKERHUB_IMAGE}:latest ${DEV_DOCKERHUB_IMAGE}:amd64-latest ${DEV_DOCKERHUB_IMAGE}:arm32v6-latest ${DEV_DOCKERHUB_IMAGE}:arm64v8-latest"
-          sh "docker manifest annotate ${DEV_DOCKERHUB_IMAGE}:latest ${DEV_DOCKERHUB_IMAGE}:arm32v6-latest --os linux --arch arm"
-          sh "docker manifest annotate ${DEV_DOCKERHUB_IMAGE}:latest ${DEV_DOCKERHUB_IMAGE}:arm64v8-latest --os linux --arch arm64 --variant armv8"
-          sh "docker manifest create ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} ${DEV_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} ${DEV_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} ${DEV_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-          sh "docker manifest annotate ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} ${DEV_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} --os linux --arch arm"
-          sh "docker manifest annotate ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} ${DEV_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA} --os linux --arch arm64 --variant armv8"
-          echo 'Pushing by manifest tags'
-          sh "docker manifest push --purge ${DEV_DOCKERHUB_IMAGE}:latest"
-          sh "docker manifest push --purge ${DEV_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-dev-${COMMIT_SHA}"
-        }
-        script{
-          env.DOCKERHUB_LINK = sh(
-            script: '''echo https://hub.docker.com/r/${DEV_DOCKERHUB_IMAGE}/tags/''',
-            returnStdout: true).trim()
-        }
-      }
-    }
-    /* ################
-       PR Release Logic
-       ################ */
-    // Push to PR user dockerhub endpoint when this is a pull request
-    stage('Docker-Push-PR-Single') {
-     when {
-       not {
-         environment name: 'CHANGE_ID', value: ''
-       }
-       expression{
-         env.MULTIARCH == 'false'
-       }
-     }
-     steps {
-       withCredentials([
-         [
-           $class: 'UsernamePasswordMultiBinding',
-           credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
-           usernameVariable: 'DOCKERUSER',
-           passwordVariable: 'DOCKERPASS'
-         ]
-       ]) {
-         echo 'Logging into DockerHub'
-         sh '''#! /bin/bash
-            echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
-            '''
-         echo 'Tag images to the built one'
-         sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:latest"
-         sh "docker tag ${DOCKERHUB_IMAGE}:${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-         echo 'Pushing both tags'
-         sh "docker push ${PR_DOCKERHUB_IMAGE}:latest"
-         sh "docker push ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-       }
-       script{
-         env.CODE_URL = sh(
-           script: '''echo https://github.com/${LS_USER}/${LS_REPO}/pull/${PULL_REQUEST}''',
-           returnStdout: true).trim()
-         env.DOCKERHUB_LINK = sh(
-           script: '''echo https://hub.docker.com/r/${PR_DOCKERHUB_IMAGE}/tags/''',
-           returnStdout: true).trim()
-       }
-     }
-    }
-    // Push to PR user dockerhub endpoint when this is a pull request
-    stage('Docker-Push-PR-Multi') {
-      when {
-        not {
-          environment name: 'CHANGE_ID', value: ''
-        }
-        expression{
-          env.MULTIARCH == 'true'
-        }
-      }
-      steps {
-        withCredentials([
-          [
-            $class: 'UsernamePasswordMultiBinding',
-            credentialsId: 'c1701109-4bdc-4a9c-b3ea-480bec9a2ca6',
-            usernameVariable: 'DOCKERUSER',
-            passwordVariable: 'DOCKERPASS'
-          ]
-        ]) {
-          echo 'Logging into DockerHub'
-          sh '''#! /bin/bash
-             echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
-             '''
-          echo 'First Tag the releases to latest also'
-          sh "docker tag ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:arm64v8-latest"
-          sh "docker tag ${DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker tag ${DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-ls${LS_TAG_NUMBER} ${PR_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          echo 'Push all image variants'
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:amd64-latest"
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:arm32v6-latest"
-          sh "docker push ${PR_DOCKERHUB_IMAGE}:arm64v8-latest"
-          echo 'Generate Manifests based on tagging'
-          sh "docker manifest create ${PR_DOCKERHUB_IMAGE}:latest ${PR_DOCKERHUB_IMAGE}:amd64-latest ${PR_DOCKERHUB_IMAGE}:arm32v6-latest ${PR_DOCKERHUB_IMAGE}:arm64v8-latest"
-          sh "docker manifest annotate ${PR_DOCKERHUB_IMAGE}:latest ${PR_DOCKERHUB_IMAGE}:arm32v6-latest --os linux --arch arm"
-          sh "docker manifest annotate ${PR_DOCKERHUB_IMAGE}:latest ${PR_DOCKERHUB_IMAGE}:arm64v8-latest --os linux --arch arm64 --variant armv8"
-          sh "docker manifest create ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} ${PR_DOCKERHUB_IMAGE}:amd64-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} ${PR_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} ${PR_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-          sh "docker manifest annotate ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} ${PR_DOCKERHUB_IMAGE}:arm32v6-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} --os linux --arch arm"
-          sh "docker manifest annotate ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} ${PR_DOCKERHUB_IMAGE}:arm64v8-${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST} --os linux --arch arm64 --variant armv8"
-          echo 'Pushing by manifest tags'
-          sh "docker manifest push --purge ${PR_DOCKERHUB_IMAGE}:latest"
-          sh "docker manifest push --purge ${PR_DOCKERHUB_IMAGE}:${EXT_RELEASE}-pkg-${PACKAGE_TAG}-pr-${PULL_REQUEST}"
-        }
-        script{
-          env.CODE_URL = sh(
-            script: '''echo https://github.com/${LS_USER}/${LS_REPO}/pull/${PULL_REQUEST}''',
-            returnStdout: true).trim()
-          env.DOCKERHUB_LINK = sh(
-            script: '''echo https://hub.docker.com/r/${PR_DOCKERHUB_IMAGE}/tags/''',
-            returnStdout: true).trim()
-        }
+        sh '''curl -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/${LS_USER}/${LS_REPO}/issues/${PULL_REQUEST}/comments \
+        -d '{"body": "I am a bot, here are the test results for this PR: \\n'${CI_URL}' \\n'${SHELLCHECK_URL}'"}' '''
       }
     }
   }
@@ -823,17 +647,22 @@ pipeline {
      Send status to Discord
      ###################### */
   post {
-    success {
-      echo "Build good send details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,\
-             "description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  Success\\n**Job:** '${RUN_DISPLAY_URL}'\\n**Change:** '${CODE_URL}'\\n**External Release:**: '${RELEASE_LINK}'\\n**DockerHub:** '${DOCKERHUB_LINK}'\\n"}],\
-             "username": "Jenkins"}' ${BUILDS_DISCORD} '''
-    }
-    failure {
-      echo "Build Bad sending details to discord"
-      sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 16711680,\
-             "description": "**Build:**  '${BUILD_NUMBER}'\\n**Status:**  failure\\n**Job:** '${RUN_DISPLAY_URL}'\\n**Change:** '${CODE_URL}'\\n**External Release:**: '${RELEASE_LINK}'\\n**DockerHub:** '${DOCKERHUB_LINK}'\\n"}],\
-             "username": "Jenkins"}' ${BUILDS_DISCORD} '''
+    always {
+      script{
+        if (env.EXIT_STATUS == "ABORTED"){
+          sh 'echo "build aborted"'
+        }
+        else if (currentBuild.currentResult == "SUCCESS"){
+          sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 1681177,\
+                 "description": "**Build:**  '${BUILD_NUMBER}'\\n**CI Results:**  '${CI_URL}'\\n**ShellCheck Results:**  '${SHELLCHECK_URL}'\\n**Status:**  Success\\n**Job:** '${RUN_DISPLAY_URL}'\\n**Change:** '${CODE_URL}'\\n**External Release:**: '${RELEASE_LINK}'\\n**DockerHub:** '${DOCKERHUB_LINK}'\\n"}],\
+                 "username": "Jenkins"}' ${BUILDS_DISCORD} '''
+        }
+        else {
+          sh ''' curl -X POST --data '{"avatar_url": "https://wiki.jenkins-ci.org/download/attachments/2916393/headshot.png","embeds": [{"color": 16711680,\
+                 "description": "**Build:**  '${BUILD_NUMBER}'\\n**CI Results:**  '${CI_URL}'\\n**ShellCheck Results:**  '${SHELLCHECK_URL}'\\n**Status:**  failure\\n**Job:** '${RUN_DISPLAY_URL}'\\n**Change:** '${CODE_URL}'\\n**External Release:**: '${RELEASE_LINK}'\\n**DockerHub:** '${DOCKERHUB_LINK}'\\n"}],\
+                 "username": "Jenkins"}' ${BUILDS_DISCORD} '''
+        }
+      }
     }
   }
 }
