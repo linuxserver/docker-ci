@@ -236,7 +236,6 @@ def container_test(tag):
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920x1080')
-            chrome_options.add_argument('--delay=60')
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
             if proto == "http://":
