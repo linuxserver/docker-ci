@@ -15,6 +15,8 @@ from selenium.common.exceptions import ErrorInResponseException,TimeoutException
 from jinja2 import Template
 client = docker.from_env()
 session = boto3.session.Session()
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 # Global Vars
 global report_status
@@ -314,6 +316,7 @@ def report_upload():
         core_fail('Upload Error ' + str(error))
     # Loop for all others
     for filename in os.listdir(outdir):
+        time.sleep(0.5)
         # Set content types for files
         if filename.lower().endswith('.svg'):
             CT = 'image/svg+xml'
