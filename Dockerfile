@@ -24,8 +24,8 @@ RUN \
 	python-pip \
 	python-setuptools && \
  echo "**** install chrome driver ****" && \
- CHROME_RELEASE=$(curl -sL https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
- curl -o \
+ CHROME_RELEASE=$(curl -sLk https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
+ curl -sk -o \
  /tmp/chrome.zip -L \
 	"https://chromedriver.storage.googleapis.com/${CHROME_RELEASE}/chromedriver_linux64.zip" && \
  cd /tmp && \
