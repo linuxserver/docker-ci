@@ -1,4 +1,4 @@
-# ![logo](https://www.linuxserver.io/static/logo-transparent-bg.87795b96.png)
+# ![logo](https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/linuxserver_medium.png)
 # Test Results {{ image }}:{{ meta_tag }}
 
 ## Cumulative: {{ report_status }}
