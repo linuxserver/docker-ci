@@ -1,4 +1,3 @@
-# ![logo](https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/linuxserver_medium.png)
 # Test Results {{ image }}:{{ meta_tag }}
 
 ## Cumulative: {{ report_status }}
@@ -10,12 +9,11 @@
 {% for container in report_containers %}
 <section markdown="1">
 ## {{ image }}:{{ container["tag"] }}
-### Build Version: {{ container["build_version"] }}
-
-{% if screenshot == 'true' %}### Screenshot
-
+{% if screenshot == 'true' %}
 [![{{ container["tag"] }}]({{ container["tag"] }}.png =600x*)]({{ container["tag"] }}.png)
 {% endif %}
+### Build Version: {{ container["build_version"] }}
+
 ### Logs
 
 <details><summary>Expand</summary>
