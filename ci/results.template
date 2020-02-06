@@ -6,7 +6,9 @@
 | Test | Result |
 | ----------------------- | --- |{% for test in report_tests %}
 | {{ test[0] }} | {{ test[1] }} |{% endfor %}
+<main>
 {% for container in report_containers %}
+<section markdown="1">
 ## {{ image }}:{{ container["tag"] }}
 ### Build Version: {{ container["build_version"] }}
 
@@ -36,5 +38,6 @@
 
 </p>
 </details>
-
+</section>
 {% endfor %}
+</main>
