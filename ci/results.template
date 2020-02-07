@@ -5,6 +5,7 @@
 | Test | Result |
 | ----------------------- | --- |{% for test in report_tests %}
 | {{ test[0] }} | {{ test[1] }} |{% endfor %}
+
 <main>
 {% for container in report_containers %}
 <section markdown="1">
