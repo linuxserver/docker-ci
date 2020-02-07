@@ -80,6 +80,7 @@
       align-items: center;
     }
 
+    /* No image */
     section h2 + h3 {
       border-bottom: 1px solid #dcdcdc;
       padding-bottom: 20px;
@@ -88,15 +89,19 @@
       font-size: 12px;
       word-break:break-all;
     }
-
+    /* Has an image */
+    section h2 + p + h3 {
+      border-bottom: 1px solid #dcdcdc;
+      padding: 20px 30px;
+      background: #f5f5f5;
+      margin: 0;
+      font-size: 12px;
+      word-break:break-all;
+    }
     section h2 + p {
       margin: 0;
     }
-    section h2 + p + h3 {
-      margin: 0;
-      padding: 30px;
-      background: #f5f5f5;
-    }
+
     section p:empty {
       display: none;
     }
