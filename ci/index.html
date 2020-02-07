@@ -8,7 +8,7 @@
   <meta name="description" content="CI Results">
   <meta name="author" content="linuxserver.io">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css?family=Lato:300,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
   <style>
     body,html {
       padding: 0;
@@ -68,35 +68,47 @@
       flex: 1 1 0;
     }
     section > * {
-      padding: 0 20px;
+      padding: 0 30px;
     }
     section h2 {
-      font-size: 18px;
+      font-size: 17px;
       background: #f5f5f5;
-      padding: 5px 20px;
+      padding: 5px 30px;
       margin: 0;
-      height: 90px;
+      height: 70px;
       display: flex;
       align-items: center;
     }
+
+    section h2 + h3 {
+      border-bottom: 1px solid #dcdcdc;
+      padding-bottom: 20px;
+      background: #f5f5f5;
+      margin: 0;
+      font-size: 12px;
+      word-break:break-all;
+    }
+
     section h2 + p {
       margin: 0;
     }
     section h2 + p + h3 {
       margin: 0;
-      padding: 20px;
+      padding: 30px;
       background: #f5f5f5;
     }
-
+    section p:empty {
+      display: none;
+    }
     section h3 {
       font-size: 16px;
-      padding: 0 20px;
+      padding: 0 30px;
     }
     section img {
-      width: calc(100% + 40px);
+      width: calc(100% + 60px);
       height: auto;
-      margin-left: -20px;
-      margin-right: -20px;
+      margin-left: -30px;
+      margin-right: -30px;
       padding: 0;
       display: block;
     }
@@ -109,6 +121,7 @@
       justify-content: center;
       align-items: flex-start;
       flex-wrap: wrap;
+      margin-top: 25px;
     }
 
     @media only screen and (min-width: 500px) {
