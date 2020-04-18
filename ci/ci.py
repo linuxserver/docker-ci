@@ -231,6 +231,14 @@ def container_test(tag):
         ip = container.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
         endpoint = proto + webauth + '@' + ip + ':' + port + webpath
         print('Taking screenshot of ' + tag + ' at ' + endpoint)
+        testercontainer = client.containers.run('lsiodev/tester:latest',
+            shm_size='1G',
+            detach=True,
+            environment={'URL': endpoint})
+        time.sleep(30)
+        testercontainer.reload()
+        testerip = testercontainer.attrs["NetworkSettings"]["Networks"]["bridge"]["IPAddress"]
+        testerendpoint = "http://" + testerip + ":3000"
         try:
             # Selenium webdriver options
             chrome_options = webdriver.ChromeOptions()
@@ -240,13 +248,12 @@ def container_test(tag):
             chrome_options.add_argument('--window-size=1920x1080')
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
-            if proto == "http://":
-                session = requests.Session()
-                retries = Retry(total=4, backoff_factor=2, status_forcelist=[ 502, 503, 504 ])
-                session.mount(proto, HTTPAdapter(max_retries=retries))
-                session.get(endpoint)
-            driver.get(endpoint)
-            time.sleep(10)
+            session = requests.Session()
+            retries = Retry(total=4, backoff_factor=2, status_forcelist=[ 502, 503, 504 ])
+            session.mount(proto, HTTPAdapter(max_retries=retries))
+            session.get(testerendpoint)
+            driver.get(testerendpoint)
+            time.sleep(15)
             driver.get_screenshot_as_file(outdir + tag + '.png')
             report_tests.append(['Screenshot ' + tag,'PASS'])
             # Quit selenium webdriver
@@ -260,6 +267,7 @@ def container_test(tag):
         except WebDriverException as error:
             report_tests.append(['Screenshot ' + tag,'FAIL UNKNOWN'])
     # If all info is present end test
+    testercontainer.remove(force='true')
     (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,packages)
     return (report_tests,report_containers,report_status)
 
