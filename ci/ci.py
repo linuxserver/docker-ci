@@ -266,8 +266,8 @@ def container_test(tag):
             report_tests.append(['Screenshot ' + tag,'FAIL TIMEOUT'])
         except WebDriverException as error:
             report_tests.append(['Screenshot ' + tag,'FAIL UNKNOWN'])
+        testercontainer.remove(force='true')
     # If all info is present end test
-    testercontainer.remove(force='true')
     (report_tests,report_containers,report_status) = endtest(container,report_tests,report_containers,report_status,tag,build_version,packages)
     return (report_tests,report_containers,report_status)
 
