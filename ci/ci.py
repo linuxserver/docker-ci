@@ -293,6 +293,8 @@ def badge_render():
     try:
         badge = anybadge.Badge('CI', report_status, thresholds={'PASS': 'green', 'FAIL': 'red'})
         badge.write_badge(outdir + 'badge.svg')
+        with open(outdir + 'ci-status.yml', 'w') as f:
+            f.write(report_status)
     except Exception as error:
         print(error)
 
@@ -332,6 +334,8 @@ def report_upload():
             CT = 'image/png'
         elif filename.lower().endswith('.md'):
             CT = 'text/markdown'
+        elif filename.lower().endswith('.yml'):
+            CT = 'text/yaml'
         try:
             spaces.upload_file(
                 outdir + filename,
