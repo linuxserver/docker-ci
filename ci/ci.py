@@ -294,7 +294,7 @@ def badge_render():
         badge = anybadge.Badge('CI', report_status, thresholds={'PASS': 'green', 'FAIL': 'red'})
         badge.write_badge(outdir + 'badge.svg')
         with open(outdir + 'ci-status.yml', 'w') as f:
-            f.write(report_status)
+            f.write('CI: "' + report_status + '"')
     except Exception as error:
         print(error)
 
