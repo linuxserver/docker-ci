@@ -84,13 +84,13 @@ try:
 except KeyError:
     dockerenv = {}
 try:
-    region = os.environ["DO_REGION"]
+    region = os.environ["S3_REGION"]
 except KeyError:
-    region = 'ams3'
+    region = 'us-east-1'
 try:
-    bucket = os.environ["DO_BUCKET"]
+    bucket = os.environ["S3_BUCKET"]
 except KeyError:
-    bucket = 'lsio-ci'
+    bucket = 'ci-tests.linuxserver.io'
 try:
     screenshot = os.environ["WEB_SCREENSHOT"]
 except KeyError:
@@ -115,12 +115,12 @@ def check_env():
         global tags
         global meta_tag
         global base
-        global spaces_key
-        global spaces_secret
+        global S3_key
+        global S3_secret
         image = os.environ["IMAGE"]
         base = os.environ["BASE"]
-        spaces_key = os.environ["ACCESS_KEY"]
-        spaces_secret = os.environ["SECRET_KEY"]
+        S3_key = os.environ["ACCESS_KEY"]
+        S3_secret = os.environ["SECRET_KEY"]
         meta_tag = os.environ["META_TAG"]
         tags_env = os.environ["TAGS"]
         tags = []
@@ -298,26 +298,25 @@ def badge_render():
     except Exception as error:
         print(error)
 
-# Upload report to DO Spaces
+# Upload report to S3
 def report_upload():
     print('Uploading Report')
     destination_dir = image + '/' + meta_tag + '/'
     latest_dir = image + '/latest/'
-    spaces = session.client(
+    s3 = session.client(
         's3',
         region_name=region,
-        endpoint_url='https://' + region + '.digitaloceanspaces.com',
-        aws_access_key_id=spaces_key,
-        aws_secret_access_key=spaces_secret)
+        aws_access_key_id=S3_key,
+        aws_secret_access_key=S3_secret)
     # Index file upload
     index_file = os.path.dirname(os.path.realpath(__file__)) + '/index.html'
     try:
-        spaces.upload_file(
+        s3.upload_file(
             index_file,
             bucket,
             destination_dir + 'index.html',
             ExtraArgs={'ContentType': "text/html", 'ACL': "public-read"})
-        spaces.upload_file(
+        s3.upload_file(
             index_file,
             bucket,
             latest_dir + 'index.html',
@@ -337,12 +336,12 @@ def report_upload():
         elif filename.lower().endswith('.yml'):
             CT = 'text/yaml'
         try:
-            spaces.upload_file(
+            s3.upload_file(
                 outdir + filename,
                 bucket,
                 destination_dir + filename,
                 ExtraArgs={'ContentType': CT,'ACL': "public-read",'CacheControl': 'no-cache'})
-            spaces.upload_file(
+            s3.upload_file(
                 outdir + filename,
                 bucket,
                 latest_dir + filename,
