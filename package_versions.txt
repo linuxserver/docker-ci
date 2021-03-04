@@ -18,8 +18,8 @@ debconf1.5.66ubuntu1
 debianutils4.8.4
 diffutils1:3.6-1
 dirmngr2.2.4-1ubuntu1.4
-docker-ce5:20.10.3~3-0~ubuntu-bionic
-docker-ce-cli5:20.10.3~3-0~ubuntu-bionic
+docker-ce5:20.10.5~3-0~ubuntu-bionic
+docker-ce-cli5:20.10.5~3-0~ubuntu-bionic
 dpkg1.19.0.5ubuntu2.3
 e2fsprogs1.44.1-1ubuntu1.3
 fdisk2.31.1-0.4ubuntu3.7
@@ -34,7 +34,7 @@ glib-networking-services2.56.0-1ubuntu0.1
 gnupg2.2.4-1ubuntu1.4
 gnupg-l10n2.2.4-1ubuntu1.4
 gnupg-utils2.2.4-1ubuntu1.4
-google-chrome-stable88.0.4324.182-1
+google-chrome-stable89.0.4389.72-1
 gpg2.2.4-1ubuntu1.4
 gpg-agent2.2.4-1ubuntu1.4
 gpgconf2.2.4-1ubuntu1.4
@@ -163,8 +163,8 @@ libpng16-161.6.34-1ubuntu0.18.04.2
 libprocps62:3.3.12-3ubuntu1.2
 libproxy1v50.4.15-1ubuntu0.2
 libpsl50.19.1-5build1
-libpython2.7-minimal2.7.17-1~18.04ubuntu1.2
-libpython2.7-stdlib2.7.17-1~18.04ubuntu1.2
+libpython2.7-minimal2.7.17-1~18.04ubuntu1.6
+libpython2.7-stdlib2.7.17-1~18.04ubuntu1.6
 libpython-stdlib2.7.15~rc1-1
 libreadline77.0-3
 librest-0.7-00.8.0-2
@@ -191,7 +191,7 @@ libsystemd0237-3ubuntu10.44
 libtasn1-64.13-2
 libthai00.1.27-2
 libthai-data0.1.27-2
-libtiff54.0.9-5ubuntu0.3
+libtiff54.0.9-5ubuntu0.4
 libtinfo56.1-1ubuntu1.18.04
 libudev1237-3ubuntu10.44
 libunistring20.9.9-0ubuntu2
@@ -219,6 +219,7 @@ libxkbcommon00.8.2-1~ubuntu18.04.1
 libxml22.9.4+dfsg1-6.1ubuntu1.3
 libxrandr22:1.5.1-1
 libxrender11:0.9.10-1
+libxshmfence11.3-1
 libxtables121.6.1-2ubuntu2
 libzstd11.3.3+dfsg-2ubuntu1.1
 locales2.27-3ubuntu1.4
@@ -237,8 +238,8 @@ pinentry-curses1.1.0-1
 procps2:3.3.12-3ubuntu1.2
 publicsuffix20180223.1310-1
 python2.7.15~rc1-1
-python2.72.7.17-1~18.04ubuntu1.2
-python2.7-minimal2.7.17-1~18.04ubuntu1.2
+python2.72.7.17-1~18.04ubuntu1.6
+python2.7-minimal2.7.17-1~18.04ubuntu1.6
 python-minimal2.7.15~rc1-1
 python-pip9.0.1-2.3~ubuntu1.18.04.4
 python-pip-whl9.0.1-2.3~ubuntu1.18.04.4
