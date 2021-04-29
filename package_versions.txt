@@ -34,7 +34,7 @@ glib-networking-services2.56.0-1ubuntu0.1
 gnupg2.2.4-1ubuntu1.4
 gnupg-l10n2.2.4-1ubuntu1.4
 gnupg-utils2.2.4-1ubuntu1.4
-google-chrome-stable90.0.4430.85-1
+google-chrome-stable90.0.4430.93-1
 gpg2.2.4-1ubuntu1.4
 gpg-agent2.2.4-1ubuntu1.4
 gpgconf2.2.4-1ubuntu1.4
