@@ -34,7 +34,7 @@ glib-networking-services2.56.0-1ubuntu0.1
 gnupg2.2.4-1ubuntu1.4
 gnupg-l10n2.2.4-1ubuntu1.4
 gnupg-utils2.2.4-1ubuntu1.4
-google-chrome-stable90.0.4430.212-1
+google-chrome-stable91.0.4472.77-1
 gpg2.2.4-1ubuntu1.4
 gpg-agent2.2.4-1ubuntu1.4
 gpgconf2.2.4-1ubuntu1.4
@@ -201,8 +201,8 @@ libwayland-cursor01.16.0-1ubuntu1.1~18.04.3
 libwayland-egl11.16.0-1ubuntu1.1~18.04.3
 libwayland-server01.16.0-1ubuntu1.1~18.04.3
 libwind0-heimdal7.5.0+dfsg-1
-libx11-62:1.6.4-3ubuntu0.3
-libx11-data2:1.6.4-3ubuntu0.3
+libx11-62:1.6.4-3ubuntu0.4
+libx11-data2:1.6.4-3ubuntu0.4
 libxau61:1.0.8-1ubuntu1
 libxcb11.13-2~ubuntu18.04
 libxcb-render01.13-2~ubuntu18.04
