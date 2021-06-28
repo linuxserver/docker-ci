@@ -206,6 +206,8 @@ def container_test(tag):
         command = 'apk info -v'
     elif base == 'debian' or base == 'ubuntu':
         command = 'apt list'
+    elif base == 'fedora':
+        command = 'rpm -qa'
     try:
         info = container.exec_run(command)
         packages = info[1].decode("utf-8")
