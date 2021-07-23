@@ -208,6 +208,8 @@ def container_test(tag):
         command = 'apt list'
     elif base == 'fedora':
         command = 'rpm -qa'
+    elif base == 'arch':
+        command = 'pacman -Q'
     try:
         info = container.exec_run(command)
         packages = info[1].decode("utf-8")
