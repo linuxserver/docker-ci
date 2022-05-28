@@ -170,7 +170,7 @@ def container_test(tag):
     while time.time() < t_end:
         try:
             logblob = container.logs().decode("utf-8")
-            if '[services.d] done.' in logblob:
+            if '[services.d] done.' in logblob or '[ls.io-init] done.' in logblob:
                 logsfound = True
                 break
             time.sleep(1)
