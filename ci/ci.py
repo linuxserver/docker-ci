@@ -287,6 +287,6 @@ class CI():
         #    self.report_tests.append(['Screenshot ' + tag,'FAIL SERVER ERROR'])
         except TimeoutException:
             self.report_tests.append(['Screenshot ' + tag,'FAIL TIMEOUT'])
-        except WebDriverException:
-            self.report_tests.append(['Screenshot ' + tag,'FAIL UNKNOWN'])
+        except WebDriverException as error:
+            self.report_tests.append(['Screenshot ' + tag,f'FAIL UNKNOWN: {error}'])
         testercontainer.remove(force='true')
