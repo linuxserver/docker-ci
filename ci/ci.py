@@ -96,7 +96,7 @@ class CI():
             })
             return (self.report_tests, self.report_containers, self.report_status)
         # Start the container
-        self.logger.info(f'Starting {tag}')
+        self.logger.info(f'Starting test of: {tag}')
         container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
