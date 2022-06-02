@@ -158,14 +158,27 @@
         <h1>Linux<span>Server</span>.io</h1>
       </header>
       <div id="results"></div>
+    <section style="max-width: 80vw !important;">
+    <h3>Debug logs</h3>
+    <details>
+      <summary>Expand</summary>
+      <pre id="debug_logs"></pre>
+    </details>
+    </section>
     </div>
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js" type="text/javascript" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.8.6/showdown.min.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.8.6/showdown.min.js" integrity="sha512-IWAOP5QX4d1WA8ZSKXJtMWdAW8fOifwB0LyZFKaq2WcvsWF/Xmg8aQwxMOUpCjSaYY/V+NASlReVD6uCSDDvHg==" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
-      $.get('report.md').done(function (data) {
+      fetch('report.md')
+      .then(response => response.text())
+      .then(report => {
         var converter = new showdown.Converter({parseImgDimensions: true,tables: true,ghCodeBlocks: true});
-        $('#results').append(converter.makeHtml(data))
-      });
+        document.getElementById("results").innerHTML = converter.makeHtml(report)
+      })
+      fetch("debug.log")
+      .then(response => response.text())
+      .then(logs => {
+        document.getElementById("debug_logs").innerText = logs
+      })
     </script>
 </body>
 </html>

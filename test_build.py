@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
-
-from multiprocessing.pool import Pool
-import sys
-
 from ci.ci import CI
 
-ci = CI()
-print(vars(ci))
-# Run through all the tags
-#pool=Pool(processes=3)
-#r = pool.map_async(ci.container_test, ci.tags)
-#r.wait()
-for tag in ci.tags:
-    ci.container_test(tag)
-ci.report_render()
-ci.badge_render()
-ci.report_upload()
-# Exit based on test results
-if ci.report_status == 'PASS':
-    print('Tests Passed exiting 0')
-    print(ci.report_tests)
-    sys.exit(0)
-elif ci.report_status == 'FAIL':
-    print('Tests Failed exiting 1')
-    sys.exit(1)
+def run_test(ci:CI):
+    logger = ci.logger
+    for tag in ci.tags: # Run through all the tags
+        ci.container_test(tag)
+    ci.report_render()
+    ci.badge_render()
+    ci.report_upload()
+    # Exit based on test results
+    if ci.report_status == 'PASS':
+        logger.info('Tests Passed exiting')
+        logger.info(ci.report_tests)
+        ci.log_upload()
+        return
+    elif ci.report_status == 'FAIL':
+        logger.error('Tests Failed exiting')
+        ci.log_upload()
+        return
+
+if __name__ == '__main__':
+    ci = CI()
+    logger = ci.logger
+    try:
+        run_test(ci)
+    except Exception:
+        logger.exception("I Can't Believe You've Done This")
