@@ -3,6 +3,7 @@ from ci.ci import CI
 
 
 def run_test(ci: CI):
+    """Run tests on container tags and build and upload reports"""
     logger = ci.logger
     for tag in ci.tags:  # Run through all the tags
         ci.container_test(tag)
@@ -14,7 +15,7 @@ def run_test(ci: CI):
         logger.info(ci.report_tests)
         ci.log_upload()
         return
-    elif ci.report_status == 'FAIL':
+    if ci.report_status == 'FAIL':
         logger.error('Tests Failed exiting')
         ci.log_upload()
         return
@@ -25,5 +26,5 @@ if __name__ == '__main__':
     logger = ci.logger
     try:
         run_test(ci)
-    except Exception:
-        logger.exception("I Can't Believe You've Done This")
+    except Exception as err:
+        logger.exception(f"{err}\nI Can't Believe You've Done This")
