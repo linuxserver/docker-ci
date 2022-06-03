@@ -29,10 +29,9 @@ class CI():
         self.report_tests = []
         self.report_containers = []
         self.report_status = 'PASS'
-        self.dockerenv = {}
-        self.error_message = ''
 
         # Set the optional parameters
+        self.dockerenv = self.convert_env(os.environ.get("DOCKER_ENV", ""))
         self.webauth = os.environ.get('WEB_AUTH', 'user:password')
         self.webpath = os.environ.get('WEB_PATH', '')
         self.region = os.environ.get('S3_REGION', 'us-east-1')
@@ -47,19 +46,20 @@ class CI():
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
 
-    def convert_env(self, envs):
+    @staticmethod
+    def convert_env(envs:str = None):
         '''Convert env input to dictionary'''
-        try:
+        env_dict = {}
+        if envs:
             if '|' in envs:
                 for varpair in envs.split('|'):
                     var = varpair.split('=')
-                    self.dockerenv[var[0]] = var[1]
+                    env_dict[var[0]] = var[1]
             else:
                 var = envs.split('=')
-                self.dockerenv[var[0]] = var[1]
-        except Exception as error:
-            self.error_message = error
-            raise Exception(self.error_message) from error
+                env_dict[var[0]] = var[1]
+        return env_dict
+
 
     def check_env(self):
         '''Make sure all needed env variables are set'''
@@ -77,8 +77,7 @@ class CI():
             else:
                 self.tags.append(self.tags_env)
         except KeyError as error:
-            self.error_message = f'Key {error} is not set in ENV!'
-            raise Exception(self.error_message) from error
+            raise Exception(f'Key {error} is not set in ENV!') from error
 
     def container_test(self, tag):
         '''Main container test logic'''
@@ -222,9 +221,8 @@ class CI():
                 f'{latest_dir}/index.html',
                 ExtraArgs={'ContentType': 'text/html', 'ACL': 'public-read'})
         except Exception as error:
-            self.error_message = f'Upload Error: {error}'
             self.logger.exception(f'Upload Error: {error}')
-            raise Exception(self.error_message) from error
+            raise Exception(f'Upload Error: {error}') from error
         # Loop for all others
         for filename in os.listdir(self.outdir):
             time.sleep(0.5)
@@ -251,9 +249,8 @@ class CI():
                     f'{latest_dir}/{filename}',
                     ExtraArgs={'ContentType': ctype, 'ACL': 'public-read', 'CacheControl': 'no-cache'})
             except Exception as error:
-                self.error_message = f'Upload Error: {error}'
                 self.logger.exception(f'Upload Error: {error}')
-                raise Exception(self.error_message) from error
+                raise Exception(f'Upload Error: {error}') from error
 
     def log_upload(self):
         '''Upload debug log to S3'''
@@ -278,9 +275,8 @@ class CI():
                 f'{latest_dir}/debug.log',
                 ExtraArgs={'ContentType': 'text/plain', 'ACL': 'public-read'})
         except Exception as error:
-            self.error_message = f'Upload Error: {error}'
             self.logger.exception(f'Upload Error: {error}')
-            raise Exception(self.error_message) from error
+            raise Exception(f'Upload Error: {error}') from error
 
     def take_screenshot(self, container, tag):
         '''Take a screenshot and save it to self.outdir'''
