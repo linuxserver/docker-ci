@@ -12,14 +12,14 @@ import docker
 import anybadge
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from jinja2 import Template
+from jinja2 import Template, Environment, FileSystemLoader
 
 
 class CI():
     '''What's up doc'''
 
     def __init__(self):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger("LSIO CI")
 
         self.client = docker.from_env()
         self.session = boto3.Session()
@@ -172,11 +172,12 @@ class CI():
         return (self.report_tests, self.report_containers, self.report_status)
 
     def report_render(self):
-        '''Render the markdown file for upload'''
+        '''Render the index file for upload'''
         self.logger.info('Rendering Report')
-        with open(f'{os.path.dirname(os.path.realpath(__file__))}/results.template', encoding='utf-8') as file_:
-            template = Template(file_.read())
-        markdown = template.render(
+        env = Environment( loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
+        template = env.get_template('template.html')
+        with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
+            file_.write(template.render(
             report_tests=self.report_tests,
             report_containers=self.report_containers,
             report_status=self.report_status,
@@ -184,9 +185,8 @@ class CI():
             image=self.image,
             bucket=self.bucket,
             region=self.region,
-            screenshot=self.screenshot)
-        with open(f'{self.outdir}/report.md', 'w', encoding='utf-8') as file:
-            file.write(markdown)
+            screenshot=self.screenshot
+            ))
 
     def badge_render(self):
         '''Render the badge file for upload'''
