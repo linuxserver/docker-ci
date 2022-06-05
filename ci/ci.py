@@ -14,9 +14,6 @@ from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from jinja2 import Template
 
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(module)s : %(funcName)s : %(message)s',
-                    level=logging.DEBUG, handlers=[logging.StreamHandler(), logging.FileHandler("debug.log", mode='w')])
-
 
 class CI():
     '''What's up doc'''
@@ -91,11 +88,13 @@ class CI():
                 'tag': tag,
                 'logs': logblob,
                 'sysinfo': packages,
-                'build_version': build_version
+                'build_version': build_version,
+                'tag_tests': self.report_tests
             })
+            self.report_tests = []
             return (self.report_tests, self.report_containers, self.report_status)
         # Start the container
-        self.logger.info(f'Starting test of: {tag}')
+        self.logger.info('Starting test of: %s', tag)
         container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
@@ -110,9 +109,8 @@ class CI():
                     break
                 time.sleep(1)
             except Exception:
-                self.logger.exception(f'Startup failed for {tag}')
-                self.report_tests.append(
-                    [f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
+                self.logger.exception('Startup failed for %s', tag)
+                self.report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return (self.report_tests, self.report_containers, self.report_status)
@@ -120,26 +118,29 @@ class CI():
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
             self.report_tests.append([f'Get Build Version {tag}', 'PASS'])
+            self.logger.info('Get Build Version %s: PASS', tag)
         except Exception:
             build_version = 'ERROR'
             self.report_tests.append([f'Get Build Version {tag}', 'FAIL'])
+            self.logger.info('Get Build Version %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
             return (self.report_tests, self.report_containers, self.report_status)
 
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound is True:
-            self.logger.info(f'Startup completed for {tag}')
+            self.logger.info('Startup completed for %s', tag)
             self.report_tests.append([f'Startup {tag}', 'PASS'])
+            self.logger.info('Startup %s: PASS', tag)
         elif logsfound is False:
-            self.logger.warning(f'Startup failed for {tag}')
-            self.report_tests.append(
-                [f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
+            self.logger.warning('Startup failed for %s', tag)
+            self.report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
+            self.logger.error('Startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
             return (self.report_tests, self.report_containers, self.report_status)
         # Dump package information
-        self.logger.info(f'Dumping package info for {tag}')
+        self.logger.info('Dumping package info for %s',tag)
         if self.base == 'alpine':
             command = 'apk info -v'
         elif self.base in ('debian', 'ubuntu'):
@@ -152,11 +153,12 @@ class CI():
             info = container.exec_run(command)
             packages = info[1].decode('utf-8')
             self.report_tests.append([f'Dump Versions {tag}', 'PASS'])
-            self.logger.info(f'Got Package info for {tag}')
+            self.logger.info('Dump Versions %s: PASS', tag)
         except Exception as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
             self.report_tests.append([f'Dump Versions {tag}', 'FAIL'])
+            self.logger.error('Dump Versions %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
             return (self.report_tests, self.report_containers, self.report_status)
@@ -188,6 +190,7 @@ class CI():
 
     def badge_render(self):
         '''Render the badge file for upload'''
+        self.logger.info("Creating badge")
         try:
             badge = anybadge.Badge('CI', self.report_status, thresholds={
                                    'PASS': 'green', 'FAIL': 'red'})
@@ -221,7 +224,7 @@ class CI():
                 f'{latest_dir}/index.html',
                 ExtraArgs={'ContentType': 'text/html', 'ACL': 'public-read'})
         except Exception as error:
-            self.logger.exception(f'Upload Error: {error}')
+            self.logger.exception('Upload Error: %s',error)
             raise Exception(f'Upload Error: {error}') from error
         # Loop for all others
         for filename in os.listdir(self.outdir):
@@ -249,8 +252,9 @@ class CI():
                     f'{latest_dir}/{filename}',
                     ExtraArgs={'ContentType': ctype, 'ACL': 'public-read', 'CacheControl': 'no-cache'})
             except Exception as error:
-                self.logger.exception(f'Upload Error: {error}')
+                self.logger.exception('Upload Error: %s',error)
                 raise Exception(f'Upload Error: {error}') from error
+        self.logger.info("Report available on https://ci-tests.linuxserver.io/%s/index.html",destination_dir)
 
     def log_upload(self):
         '''Upload debug log to S3'''
@@ -275,7 +279,7 @@ class CI():
                 f'{latest_dir}/debug.log',
                 ExtraArgs={'ContentType': 'text/plain', 'ACL': 'public-read'})
         except Exception as error:
-            self.logger.exception(f'Upload Error: {error}')
+            self.logger.exception('Upload Error: %s',error)
             raise Exception(f'Upload Error: {error}') from error
 
     def take_screenshot(self, container, tag):
@@ -284,7 +288,7 @@ class CI():
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
-        self.logger.info(f'Taking screenshot of {tag} at {endpoint}')
+        self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
                                                      detach=True,
@@ -311,17 +315,18 @@ class CI():
             time.sleep(15)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
             self.report_tests.append([f'Screenshot {tag}', 'PASS'])
+            self.logger.info('Screenshot %s: PASS', tag)
             # Quit selenium webdriver
             driver.quit()
         except (requests.Timeout, requests.ConnectionError, KeyError):
             self.report_tests.append(
                 [f'Screenshot {tag}', 'FAIL CONNECTION ERROR'])
-            self.logger.exception(f'Screenshot {tag} FAIL CONNECTION ERROR')
+            self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException:
             self.report_tests.append([f'Screenshot {tag}', 'FAIL TIMEOUT'])
-            self.logger.exception(f'Screenshot {tag} FAIL TIMEOUT')
+            self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except WebDriverException as error:
             self.report_tests.append(
                 [f'Screenshot {tag}', f'FAIL UNKNOWN: {error}'])
-            self.logger.exception(f'Screenshot {tag} FAIL UNKNOWN: {error}')
+            self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         testercontainer.remove(force='true')
