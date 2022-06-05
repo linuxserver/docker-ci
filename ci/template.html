@@ -257,6 +257,13 @@
     .tag-image {
       text-align: center;
     }
+    .report-status-pass {
+      color:rgb(0, 152, 121)
+    }
+
+    .report-status-fail {
+      color: #f44336;;
+    }
   </style>
 
 </head>
@@ -267,8 +274,8 @@
       <h1>Linux<span>Server</span>.io</h1>
     </header>
     <div id="results">
-      <h1>Test Results {{ image }}:{{ meta_tag }}</h1>
-      <h2>Cumulative: {{ report_status }}</h2>
+      <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
+      <h2>Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
       <main>
         {% for container in report_containers %}
         <section>
