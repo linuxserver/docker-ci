@@ -243,6 +243,7 @@
 
     pre {
       padding: 10px;
+      background: #e8e8e8;
     }
 
     .build-version {
@@ -294,23 +295,15 @@
           <h3 class="build-version">Build Version: {{ container["build_version"] }}</h3>
           <h3>Logs</h3>
           <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre>
-              {{ container["logs"] }}
-            </pre>
-            </div>
+          <summary>Expand</summary>
+          <div class="summary-container"><pre><code>{{ container["logs"] }}</code>
+          </pre></div>
           </details>
-
           <h3>Package info</h3>
-
           <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre>
-          {{ container["sysinfo"] }}
-        </pre>
-            </div>
+          <summary>Expand</summary>
+          <div class="summary-container"><pre><code>{{ container["sysinfo"] }}</code>
+          </pre></div>
           </details>
           <br>
           <div class="table-container">
