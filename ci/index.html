@@ -9,6 +9,7 @@
   <meta name="author" content="linuxserver.io">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
+  <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js" integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc" crossorigin="anonymous"></script>
   <style>
     body,html {
       padding: 0;
@@ -57,7 +58,11 @@
       word-break: break-all;
     }
     #results table {
-      margin: 0 10px;
+      margin: auto;
+      width: 100%;
+    }
+    .result-cell {
+      display: inline-flex;
     }
     section {
       display: flex;
@@ -136,7 +141,6 @@
       justify-content: center;
       align-items: flex-start;
       flex-wrap: wrap;
-      margin-top: 25px;
       max-width: 100%;
     }
 
@@ -151,6 +155,51 @@
       }
     }
 
+    .styled-table {
+      border-collapse: collapse;
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: sans-serif;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+      
+  }
+  
+  .styled-table thead tr {
+      background-color: #738694;
+      color: #ffffff;
+      text-align: left;
+  }
+  
+  .styled-table th,
+  .styled-table td {
+      padding: 12px 15px;
+  }
+  
+  .styled-table tbody tr {
+      border-bottom: 1px solid #dddddd;
+  }
+  
+  .styled-table tbody tr:nth-of-type(even) {
+      background-color: #f3f3f3;
+  }
+  
+  .styled-table tbody tr:last-of-type {
+      border-bottom: 2px solid #738694;
+  }
+  
+  .styled-table tbody tr.active-row {
+      font-weight: bold;
+      color: #738694;
+  }
+
+    .fa-check-circle {
+      color:rgb(0, 152, 121);
+      margin-left: 5px;
+    }
+    .fa-exclamation-circle {
+      color: #f44336;
+      margin-left: 5px;
+    }
   </style>
 
 </head>

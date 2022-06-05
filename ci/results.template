@@ -1,11 +1,6 @@
 # Test Results {{ image }}:{{ meta_tag }}
 
 ## Cumulative: {{ report_status }}
-
-| Test | Result |
-| ----------------------- | --- |{% for test in report_tests %}
-| {{ test[0] }} | {{ test[1] }} |{% endfor %}
-
 <main>
 {% for container in report_containers %}
 <section markdown="1">
@@ -19,7 +14,6 @@
 
 <details><summary>Expand</summary>
 <p>
-
 ```
 {{ container["logs"] }}
 ```
@@ -37,6 +31,29 @@
 
 </p>
 </details>
+<br>
+<div class="table-container">
+<table class="styled-table">
+<thead>
+<tr class="active-row">
+<th style="text-align:left">Test</th>
+<th style="text-align:left">Result</th>
+</tr>
+</thead>
+<tbody>
+{% for test in container["tag_tests"] %}
+    <tr>
+        <td>{{ test[0] }}</td>
+        {% if test[1] == 'PASS' %}
+            <td class="result-cell">{{ test[1] }} <i class="fas fa-check-circle"></i></td>
+        {% else %}
+            <td class="result-cell">{{ test[1] }} <i class="fas fa-exclamation-circle"></i></td>
+        {% endif %}
+    </tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
 </section>
 {% endfor %}
 </main>
