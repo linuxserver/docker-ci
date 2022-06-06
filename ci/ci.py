@@ -115,18 +115,18 @@ class CI():
                 time.sleep(1)
             except Exception:
                 self.logger.exception('Container startup failed for %s', tag)
-                self.tag_report_tests.append(['Container startup', 'FAIL INIT NOT FINISHED'])
+                self.tag_report_tests.append(['Container startup', 'FAIL', 'INIT NOT FINISHED'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return (self.tag_report_tests, self.report_containers, self.report_status)
         # Grab build version
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
-            self.tag_report_tests.append([f'Get build version', 'PASS'])
+            self.tag_report_tests.append([f'Get build version', 'PASS', '-'])
             self.logger.info('Get build version %s: PASS', tag)
-        except Exception:
+        except Exception as error:
             build_version = 'ERROR'
-            self.tag_report_tests.append(['Get build version', 'FAIL'])
+            self.tag_report_tests.append(['Get build version', 'FAIL', error])
             self.logger.exception('Get build version %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -135,11 +135,11 @@ class CI():
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound is True:
             self.logger.info('Container startup completed for %s', tag)
-            self.tag_report_tests.append(['Container startup', 'PASS'])
+            self.tag_report_tests.append(['Container startup', 'PASS', '-'])
             self.logger.info('Container startup %s: PASS', tag)
         elif logsfound is False:
             self.logger.warning('Container startup failed for %s', tag)
-            self.tag_report_tests.append(['Container startup', 'FAIL INIT NOT FINISHED'])
+            self.tag_report_tests.append(['Container startup', 'FAIL','INIT NOT FINISHED'])
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -157,12 +157,12 @@ class CI():
         try:
             info = container.exec_run(command)
             packages = info[1].decode('utf-8')
-            self.tag_report_tests.append(['Dump package info', 'PASS'])
+            self.tag_report_tests.append(['Dump package info', 'PASS', '-'])
             self.logger.info('Dump package info %s: PASS', tag)
         except Exception as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
-            self.tag_report_tests.append(['Dump package info', 'FAIL'])
+            self.tag_report_tests.append(['Dump package info', 'FAIL', error])
             self.logger.error('Dump package info %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
@@ -288,7 +288,7 @@ class CI():
                 ExtraArgs={'ContentType': 'text/plain', 'ACL': 'public-read'})
         except Exception as error:
             self.logger.exception('Upload Error: %s',error)
-            raise Exception(f'Upload Error: {error}') from error
+        return
 
     def take_screenshot(self, container, tag):
         '''Take a screenshot and save it to self.outdir'''
@@ -296,7 +296,7 @@ class CI():
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
-        self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
+        self.logger.info("Starting tester container")
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
                                                      detach=True,
@@ -321,22 +321,23 @@ class CI():
             session.mount(proto, HTTPAdapter(max_retries=retries))
             session.get(testerendpoint)
             driver.get(testerendpoint)
-            self.logger.info('Sleeping for 15 seconds before creating a screenshot.')
-            time.sleep(15)
+            self.logger.info('Sleeping for %s seconds before creating a screenshot.', self.screenshot_delay)
+            time.sleep(int(self.screenshot_delay))
+            self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
-            self.tag_report_tests.append([f'Screenshot {tag}', 'PASS'])
+            self.tag_report_tests.append(['Get screenshot', 'PASS','-'])
             self.logger.info('Screenshot %s: PASS', tag)
             # Quit selenium webdriver
             driver.quit()
-        except (requests.Timeout, requests.ConnectionError, KeyError):
+        except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self.tag_report_tests.append(
-                [f'Screenshot {tag}', 'FAIL CONNECTION ERROR'])
+                ['Get screenshot', 'FAIL CONNECTION ERROR', error])
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
-        except TimeoutException:
-            self.tag_report_tests.append([f'Screenshot {tag}', 'FAIL TIMEOUT'])
+        except TimeoutException as error:
+            self.tag_report_tests.append(['Get screenshot', 'FAIL TIMEOUT', error])
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
-        except WebDriverException as error:
+        except (WebDriverException, Exception) as error:
             self.tag_report_tests.append(
-                [f'Screenshot {tag}', f'FAIL UNKNOWN: {error}'])
+                ['Get screenshot', 'FAIL UNKNOWN', error])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         testercontainer.remove(force='true')
