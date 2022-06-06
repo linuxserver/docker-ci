@@ -396,7 +396,7 @@
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ container["build_version"] }}</h3>
-          <h3>Logs</h3>
+          <h3>Container Logs</h3>
           <details>
           <summary>Expand</summary>
           <div class="summary-container"><pre><code>{{ container["logs"] }}</code>
@@ -436,7 +436,7 @@
       </main>
     </div>
     <section class="debug-section">
-      <h3>Debug logs</h3>
+      <h3>Python debug logs</h3>
       <details>
         <summary>Expand</summary>
         <pre id="debug_logs"></pre>
