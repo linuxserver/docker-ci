@@ -113,9 +113,9 @@ class CI():
                     logsfound = True
                     break
                 time.sleep(1)
-            except Exception:
+            except Exception as error:
                 self.logger.exception('Container startup failed for %s', tag)
-                self.tag_report_tests.append(['Container startup', 'FAIL', 'INIT NOT FINISHED'])
+                self.tag_report_tests.append(['Container startup', 'FAIL', f'INIT NOT FINISHED: {error}'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return (self.tag_report_tests, self.report_containers, self.report_status)
@@ -331,13 +331,13 @@ class CI():
             driver.quit()
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self.tag_report_tests.append(
-                ['Get screenshot', 'FAIL CONNECTION ERROR', error])
+                ['Get screenshot', 'FAIL', f'CONNECTION ERROR: {error}'])
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException as error:
-            self.tag_report_tests.append(['Get screenshot', 'FAIL TIMEOUT', error])
+            self.tag_report_tests.append(['Get screenshot', 'FAIL', f'TIMEOUT: {error}'])
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except (WebDriverException, Exception) as error:
             self.tag_report_tests.append(
-                ['Get screenshot', 'FAIL UNKNOWN', error])
+                ['Get screenshot', 'FAIL', f'UNKNOWN: {error}'])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         testercontainer.remove(force='true')
