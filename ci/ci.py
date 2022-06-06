@@ -20,10 +20,11 @@ class CI():
 
     def __init__(self):
         self.logger = logging.getLogger("LSIO CI")
+        logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
         self.client = docker.from_env()
         self.session = boto3.Session()
-        self.report_tests = []
+        self.tag_report_tests = []
         self.report_containers = []
         self.report_status = 'PASS'
 
@@ -31,12 +32,13 @@ class CI():
         self.dockerenv = self.convert_env(os.environ.get("DOCKER_ENV", ""))
         self.webauth = os.environ.get('WEB_AUTH', 'user:password')
         self.webpath = os.environ.get('WEB_PATH', '')
-        self.region = os.environ.get('S3_REGION', 'us-east-1')
-        self.bucket = os.environ.get('S3_BUCKET', 'ci-tests.linuxserver.io')
         self.screenshot = os.environ.get('WEB_SCREENSHOT', 'false')
+        self.screenshot_delay = os.environ.get('WEB_SCREENSHOT_DELAY', '30')
         self.port = os.environ.get('PORT', '80')
         self.ssl = os.environ.get('SSL', 'false')
-        self.testdelay = os.environ.get('DELAY_START', '5')
+        self.region = os.environ.get('S3_REGION', 'us-east-1')
+        self.bucket = os.environ.get('S3_BUCKET', 'ci-tests.linuxserver.io')
+        self.test_container_delay = os.environ.get('DELAY_START', '5')
 
         self.check_env()
 
@@ -74,7 +76,10 @@ class CI():
             else:
                 self.tags.append(self.tags_env)
         except KeyError as error:
+            self.logger.exception("Key %s is not set in ENV!", error)
+            self.log_upload()
             raise Exception(f'Key {error} is not set in ENV!') from error
+
 
     def container_test(self, tag):
         '''Main container test logic'''
@@ -89,10 +94,10 @@ class CI():
                 'logs': logblob,
                 'sysinfo': packages,
                 'build_version': build_version,
-                'tag_tests': self.report_tests
+                'tag_tests': self.tag_report_tests
             })
-            self.report_tests = []
-            return (self.report_tests, self.report_containers, self.report_status)
+            self.tag_report_tests = []  # Reset the tests results on the specific tag. 
+            return (self.tag_report_tests, self.report_containers, self.report_status)
         # Start the container
         self.logger.info('Starting test of: %s', tag)
         container = self.client.containers.run(f'{self.image}:{tag}',
@@ -110,35 +115,35 @@ class CI():
                 time.sleep(1)
             except Exception:
                 self.logger.exception('Startup failed for %s', tag)
-                self.report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
+                self.tag_report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
-                return (self.report_tests, self.report_containers, self.report_status)
+                return (self.tag_report_tests, self.report_containers, self.report_status)
         # Grab build version
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
-            self.report_tests.append([f'Get Build Version {tag}', 'PASS'])
-            self.logger.info('Get Build Version %s: PASS', tag)
+            self.tag_report_tests.append([f'Get build version {tag}', 'PASS'])
+            self.logger.info('Get build version %s: PASS', tag)
         except Exception:
             build_version = 'ERROR'
-            self.report_tests.append([f'Get Build Version {tag}', 'FAIL'])
-            self.logger.info('Get Build Version %s: FAIL', tag)
+            self.tag_report_tests.append([f'Get build version {tag}', 'FAIL'])
+            self.logger.exception('Get build version %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
-            return (self.report_tests, self.report_containers, self.report_status)
+            return (self.tag_report_tests, self.report_containers, self.report_status)
 
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound is True:
-            self.logger.info('Startup completed for %s', tag)
-            self.report_tests.append([f'Startup {tag}', 'PASS'])
-            self.logger.info('Startup %s: PASS', tag)
+            self.logger.info('Container startup completed for %s', tag)
+            self.tag_report_tests.append([f'Container startup {tag}', 'PASS'])
+            self.logger.info('Container startup %s: PASS', tag)
         elif logsfound is False:
-            self.logger.warning('Startup failed for %s', tag)
-            self.report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
-            self.logger.error('Startup %s: FAIL - INIT NOT FINISHED', tag)
+            self.logger.warning('Container startup failed for %s', tag)
+            self.tag_report_tests.append([f'Container startup {tag}', 'FAIL INIT NOT FINISHED'])
+            self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
-            return (self.report_tests, self.report_containers, self.report_status)
+            return (self.tag_report_tests, self.report_containers, self.report_status)
         # Dump package information
         self.logger.info('Dumping package info for %s',tag)
         if self.base == 'alpine':
@@ -152,24 +157,25 @@ class CI():
         try:
             info = container.exec_run(command)
             packages = info[1].decode('utf-8')
-            self.report_tests.append([f'Dump Versions {tag}', 'PASS'])
-            self.logger.info('Dump Versions %s: PASS', tag)
+            self.tag_report_tests.append([f'Dump package info {tag}', 'PASS'])
+            self.logger.info('Dump package info %s: PASS', tag)
         except Exception as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
-            self.report_tests.append([f'Dump Versions {tag}', 'FAIL'])
-            self.logger.error('Dump Versions %s: FAIL', tag)
+            self.tag_report_tests.append([f'Dump package info {tag}', 'FAIL'])
+            self.logger.error('Dump package info %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
-            return (self.report_tests, self.report_containers, self.report_status)
+            return (self.tag_report_tests, self.report_containers, self.report_status)
         # Sleep for the user specified amount of time
-        time.sleep(int(self.testdelay))
+        self.logger.info('Sleeping for %s seconds', self.test_container_delay)
+        time.sleep(int(self.test_container_delay))
         # Screenshot web interface and check connectivity
         if self.screenshot == 'true':
             self.take_screenshot(container, tag)
         # If all info is present end test
         _endtest(self, container, tag, build_version, packages)
-        return (self.report_tests, self.report_containers, self.report_status)
+        return (self.tag_report_tests, self.report_containers, self.report_status)
 
     def report_render(self):
         '''Render the index file for upload'''
@@ -178,7 +184,7 @@ class CI():
         template = env.get_template('template.html')
         with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
             file_.write(template.render(
-            report_tests=self.report_tests,
+            report_tests=self.tag_report_tests,
             report_containers=self.report_containers,
             report_status=self.report_status,
             meta_tag=self.meta_tag,
@@ -225,6 +231,7 @@ class CI():
                 ExtraArgs={'ContentType': 'text/html', 'ACL': 'public-read'})
         except Exception as error:
             self.logger.exception('Upload Error: %s',error)
+            self.log_upload()
             raise Exception(f'Upload Error: {error}') from error
         # Loop for all others
         for filename in os.listdir(self.outdir):
@@ -253,6 +260,7 @@ class CI():
                     ExtraArgs={'ContentType': ctype, 'ACL': 'public-read', 'CacheControl': 'no-cache'})
             except Exception as error:
                 self.logger.exception('Upload Error: %s',error)
+                self.log_upload()
                 raise Exception(f'Upload Error: {error}') from error
         self.logger.info("Report available on https://ci-tests.linuxserver.io/%s/index.html",destination_dir)
 
@@ -284,7 +292,7 @@ class CI():
 
     def take_screenshot(self, container, tag):
         '''Take a screenshot and save it to self.outdir'''
-        proto = 'https' if self.ssl == 'true' else 'http'
+        proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
@@ -293,7 +301,8 @@ class CI():
                                                      shm_size='1G',
                                                      detach=True,
                                                      environment={'URL': endpoint})
-        time.sleep(30)
+        self.logger.info('Sleeping for %s seconds before starting Chromedriver', self.screenshot_delay)
+        time.sleep(int(self.screenshot_delay))
         testercontainer.reload()
         testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         testerendpoint = 'http://' + testerip + ':3000'
@@ -307,26 +316,27 @@ class CI():
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
             session = requests.Session()
-            retries = Retry(total=4, backoff_factor=2,
+            retries = Retry(total=10, backoff_factor=2,
                             status_forcelist=[502, 503, 504])
             session.mount(proto, HTTPAdapter(max_retries=retries))
             session.get(testerendpoint)
             driver.get(testerendpoint)
+            self.logger.info('Sleeping for 15 seconds before creating a screenshot.')
             time.sleep(15)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
-            self.report_tests.append([f'Screenshot {tag}', 'PASS'])
+            self.tag_report_tests.append([f'Screenshot {tag}', 'PASS'])
             self.logger.info('Screenshot %s: PASS', tag)
             # Quit selenium webdriver
             driver.quit()
         except (requests.Timeout, requests.ConnectionError, KeyError):
-            self.report_tests.append(
+            self.tag_report_tests.append(
                 [f'Screenshot {tag}', 'FAIL CONNECTION ERROR'])
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException:
-            self.report_tests.append([f'Screenshot {tag}', 'FAIL TIMEOUT'])
+            self.tag_report_tests.append([f'Screenshot {tag}', 'FAIL TIMEOUT'])
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except WebDriverException as error:
-            self.report_tests.append(
+            self.tag_report_tests.append(
                 [f'Screenshot {tag}', f'FAIL UNKNOWN: {error}'])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         testercontainer.remove(force='true')
