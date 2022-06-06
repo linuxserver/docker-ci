@@ -114,19 +114,19 @@ class CI():
                     break
                 time.sleep(1)
             except Exception:
-                self.logger.exception('Startup failed for %s', tag)
-                self.tag_report_tests.append([f'Startup {tag}', 'FAIL INIT NOT FINISHED'])
+                self.logger.exception('Container startup failed for %s', tag)
+                self.tag_report_tests.append(['Container startup', 'FAIL INIT NOT FINISHED'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return (self.tag_report_tests, self.report_containers, self.report_status)
         # Grab build version
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
-            self.tag_report_tests.append([f'Get build version {tag}', 'PASS'])
+            self.tag_report_tests.append([f'Get build version', 'PASS'])
             self.logger.info('Get build version %s: PASS', tag)
         except Exception:
             build_version = 'ERROR'
-            self.tag_report_tests.append([f'Get build version {tag}', 'FAIL'])
+            self.tag_report_tests.append(['Get build version', 'FAIL'])
             self.logger.exception('Get build version %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -135,11 +135,11 @@ class CI():
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound is True:
             self.logger.info('Container startup completed for %s', tag)
-            self.tag_report_tests.append([f'Container startup {tag}', 'PASS'])
+            self.tag_report_tests.append(['Container startup', 'PASS'])
             self.logger.info('Container startup %s: PASS', tag)
         elif logsfound is False:
             self.logger.warning('Container startup failed for %s', tag)
-            self.tag_report_tests.append([f'Container startup {tag}', 'FAIL INIT NOT FINISHED'])
+            self.tag_report_tests.append(['Container startup', 'FAIL INIT NOT FINISHED'])
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -157,12 +157,12 @@ class CI():
         try:
             info = container.exec_run(command)
             packages = info[1].decode('utf-8')
-            self.tag_report_tests.append([f'Dump package info {tag}', 'PASS'])
+            self.tag_report_tests.append(['Dump package info', 'PASS'])
             self.logger.info('Dump package info %s: PASS', tag)
         except Exception as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
-            self.tag_report_tests.append([f'Dump package info {tag}', 'FAIL'])
+            self.tag_report_tests.append(['Dump package info', 'FAIL'])
             self.logger.error('Dump package info %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
