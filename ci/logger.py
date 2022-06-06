@@ -9,14 +9,14 @@ import platform
 
 logger = logging.getLogger()
 
-class FileHandlerFormatter(logging.Formatter):
+class CustomLogFormatter(logging.Formatter):
     """Formatter that removes creds from logs."""
     ACCESS_KEY = os.environ.get("ACCESS_KEY","super_secret_key")
     SECRET_KEY = os.environ.get("SECRET_KEY","super_secret_key")
 
     def formatException(self, exc_info):
         """Format an exception so that it prints on a single line."""
-        result = super(FileHandlerFormatter, self).formatException(exc_info)
+        result = super(CustomLogFormatter, self).formatException(exc_info)
         return repr(result)  # or format into one line however you want to
 
     def format_credential_key(self, s):
@@ -26,22 +26,13 @@ class FileHandlerFormatter(logging.Formatter):
         return re.sub(self.SECRET_KEY, '(removed)', s)
 
     def format(self, record):
-        s = super(FileHandlerFormatter, self).format(record)
+        s = super(CustomLogFormatter, self).format(record)
         if record.exc_text:
             s = s.replace('\n', '') + '|'
         s = self.format_credential_key(s)
         s = self.format_secret_key(s)
 
         return s
-
-
-class NoExceptionFormatter(logging.Formatter):
-    def format(self, record):
-        record.exc_text = ''  # ensure formatException gets called
-        return super(NoExceptionFormatter, self).format(record)
-
-    def formatException(self, record):
-        return ''
 
 
 def configure_logging(log_level:str):
@@ -52,15 +43,14 @@ def configure_logging(log_level:str):
 
     # Console logging
     ch = logging.StreamHandler()
-    cf = (log_level.upper() == "DEBUG" and logging.Formatter or NoExceptionFormatter)(
-        '%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    cf = CustomLogFormatter('%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     ch.setFormatter(cf)
     ch.setLevel(log_level)
     logger.addHandler(ch)
 
     # File logging
     fh = TimedRotatingFileHandler(os.path.join(os.getcwd(),'debug.log'), when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
-    f = FileHandlerFormatter('%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    f = CustomLogFormatter('%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     fh.setFormatter(f)
     fh.setLevel(log_level)
     logger.addHandler(fh)
