@@ -290,19 +290,20 @@ class CI():
     def take_screenshot(self, container, tag):
         '''Take a screenshot and save it to self.outdir'''
         proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
+        # Sleep for the user specified amount of time
+        self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
+        time.sleep(int(self.test_container_delay))
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
-        # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds', self.test_container_delay)
-        time.sleep(int(self.test_container_delay))
         self.logger.info("Starting tester container")
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
                                                      detach=True,
                                                      environment={'URL': endpoint})
-        self.logger.info('Sleeping for %s seconds before starting Chromedriver', self.screenshot_delay)
-        time.sleep(int(self.screenshot_delay))
+        # Sleep for the user specified amount of time
+        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs', self.screenshot_delay, testercontainer.image)
+        time.sleep(int(self.test_container_delay))
         testercontainer.reload()
         testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         testerendpoint = 'http://' + testerip + ':3000'
