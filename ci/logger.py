@@ -53,7 +53,7 @@ def configure_logging(log_level:str):
     # Console logging
     ch = logging.StreamHandler()
     cf = (log_level.upper() == "DEBUG" and logging.Formatter or NoExceptionFormatter)(
-        '%(asctime)-15s - %(name)-32s - %(levelname)s - (%(module)s.%(funcName)s|line:%(lineno)d) - %(message)s')
+        '%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     ch.setFormatter(cf)
     ch.setLevel(log_level)
     logger.addHandler(ch)
