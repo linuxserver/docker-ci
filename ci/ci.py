@@ -167,9 +167,6 @@ class CI():
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
             return (self.tag_report_tests, self.report_containers, self.report_status)
-        # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds', self.test_container_delay)
-        time.sleep(int(self.test_container_delay))
         # Screenshot web interface and check connectivity
         if self.screenshot == 'true':
             self.take_screenshot(container, tag)
@@ -296,6 +293,9 @@ class CI():
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
+        # Sleep for the user specified amount of time
+        self.logger.info('Sleeping for %s seconds', self.test_container_delay)
+        time.sleep(int(self.test_container_delay))
         self.logger.info("Starting tester container")
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
