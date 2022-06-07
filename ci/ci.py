@@ -299,18 +299,18 @@ class CI():
         '''Take a screenshot and save it to self.outdir'''
         proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
+        self.logger.info('Sleeping for %s seconds before reloading container: %s:%s and refreshing container attrs', self.test_container_delay, container.image, tag)
         time.sleep(int(self.test_container_delay))
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
-        self.logger.info("Starting tester container")
+        self.logger.info("Starting tester container for tag: %s", tag)
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
                                                      detach=True,
                                                      environment={'URL': endpoint})
         # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs', self.test_container_delay, testercontainer.image)
+        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs on %s run', self.test_container_delay, testercontainer.image, tag)
         time.sleep(int(self.test_container_delay))
         testercontainer.reload()
         testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
@@ -331,7 +331,7 @@ class CI():
             session.mount(proto, HTTPAdapter(max_retries=retries))
             session.get(testerendpoint)
             driver.get(testerendpoint)
-            self.logger.info('Sleeping for %s seconds before creating a screenshot.', self.screenshot_delay)
+            self.logger.info('Sleeping for %s seconds before creating a screenshot on %s', self.screenshot_delay, tag)
             time.sleep(int(self.screenshot_delay))
             self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
