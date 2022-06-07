@@ -302,7 +302,7 @@ class CI():
                                                      detach=True,
                                                      environment={'URL': endpoint})
         # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs', self.screenshot_delay, testercontainer.image)
+        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs', self.test_container_delay, testercontainer.image)
         time.sleep(int(self.test_container_delay))
         testercontainer.reload()
         testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
