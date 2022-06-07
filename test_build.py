@@ -6,8 +6,9 @@ from ci.logger import configure_logging
 
 def run_test():
     """Run tests on container tags then build and upload reports"""
-    for tag in ci.tags:  # Run through all the tags
-        ci.container_test(tag)
+    #for tag in ci.tags:  # Run through all the tags
+    #    ci.container_test(tag)
+    ci.run(ci.tags)
     ci.report_render()
     ci.badge_render()
     ci.report_upload()
@@ -30,4 +31,4 @@ if __name__ == '__main__':
     try:
         run_test()
     except Exception as err:
-        logger.error("%s\nI Can't Believe You've Done This",err)
+        logger.exception("%s\nI Can't Believe You've Done This",err)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from multiprocessing.pool import ThreadPool
 import os
 import time
 import logging
@@ -24,7 +25,7 @@ class CI():
 
         self.client = docker.from_env()
         self.session = boto3.Session()
-        self.tag_report_tests = []
+        self.tag_report_tests = {}
         self.report_containers = []
         self.report_status = 'PASS'
 
@@ -44,6 +45,15 @@ class CI():
 
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
+
+
+    def run(self,tag):
+        """Run the container tests in multi threaded"""
+        thread_pool = ThreadPool(processes=3)
+        results = thread_pool.map(self.container_test,tag)
+        thread_pool.close()
+        return results
+
 
     @staticmethod
     def convert_env(envs:str = None):
@@ -83,7 +93,6 @@ class CI():
 
     def container_test(self, tag):
         '''Main container test logic'''
-
         def _endtest(self: CI, container, tag, build_version, packages):
             '''End the test with as much info as we have'''
             logblob = container.logs().decode('utf-8')
@@ -94,12 +103,12 @@ class CI():
                 'logs': logblob,
                 'sysinfo': packages,
                 'build_version': build_version,
-                'tag_tests': self.tag_report_tests
+                'tag_tests': self.tag_report_tests[tag]
             })
-            self.tag_report_tests = []  # Reset the tests results on the specific tag. 
             return (self.tag_report_tests, self.report_containers, self.report_status)
         # Start the container
         self.logger.info('Starting test of: %s', tag)
+        self.tag_report_tests[tag] = []
         container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
@@ -115,18 +124,18 @@ class CI():
                 time.sleep(1)
             except Exception as error:
                 self.logger.exception('Container startup failed for %s', tag)
-                self.tag_report_tests.append(['Container startup', 'FAIL', f'INIT NOT FINISHED: {error}'])
+                self.tag_report_tests[tag].append(['Container startup', 'FAIL', f'INIT NOT FINISHED: {error}'])
                 self.report_status = 'FAIL'
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return (self.tag_report_tests, self.report_containers, self.report_status)
         # Grab build version
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
-            self.tag_report_tests.append([f'Get build version', 'PASS', '-'])
+            self.tag_report_tests[tag].append(['Get build version', 'PASS', '-'])
             self.logger.info('Get build version %s: PASS', tag)
         except Exception as error:
             build_version = 'ERROR'
-            self.tag_report_tests.append(['Get build version', 'FAIL', error])
+            self.tag_report_tests[tag].append(['Get build version', 'FAIL', error])
             self.logger.exception('Get build version %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -135,11 +144,11 @@ class CI():
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound is True:
             self.logger.info('Container startup completed for %s', tag)
-            self.tag_report_tests.append(['Container startup', 'PASS', '-'])
+            self.tag_report_tests[tag].append(['Container startup', 'PASS', '-'])
             self.logger.info('Container startup %s: PASS', tag)
         elif logsfound is False:
             self.logger.warning('Container startup failed for %s', tag)
-            self.tag_report_tests.append(['Container startup', 'FAIL','INIT NOT FINISHED'])
+            self.tag_report_tests[tag].append(['Container startup', 'FAIL','INIT NOT FINISHED'])
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, 'ERROR')
@@ -157,12 +166,12 @@ class CI():
         try:
             info = container.exec_run(command)
             packages = info[1].decode('utf-8')
-            self.tag_report_tests.append(['Dump package info', 'PASS', '-'])
+            self.tag_report_tests[tag].append(['Dump package info', 'PASS', '-'])
             self.logger.info('Dump package info %s: PASS', tag)
         except Exception as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
-            self.tag_report_tests.append(['Dump package info', 'FAIL', error])
+            self.tag_report_tests[tag].append(['Dump package info', 'FAIL', error])
             self.logger.error('Dump package info %s: FAIL', tag)
             self.report_status = 'FAIL'
             _endtest(self, container, tag, build_version, packages)
@@ -181,7 +190,6 @@ class CI():
         template = env.get_template('template.html')
         with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
             file_.write(template.render(
-            report_tests=self.tag_report_tests,
             report_containers=self.report_containers,
             report_status=self.report_status,
             meta_tag=self.meta_tag,
@@ -314,6 +322,7 @@ class CI():
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920x1080')
+            chrome_options.add_argument('--disable-dev-shm-usage')
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
             session = requests.Session()
@@ -326,19 +335,19 @@ class CI():
             time.sleep(int(self.screenshot_delay))
             self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
-            self.tag_report_tests.append(['Get screenshot', 'PASS','-'])
+            self.tag_report_tests[tag].append(['Get screenshot', 'PASS','-'])
             self.logger.info('Screenshot %s: PASS', tag)
             # Quit selenium webdriver
             driver.quit()
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
-            self.tag_report_tests.append(
+            self.tag_report_tests[tag].append(
                 ['Get screenshot', 'FAIL', f'CONNECTION ERROR: {error}'])
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException as error:
-            self.tag_report_tests.append(['Get screenshot', 'FAIL', f'TIMEOUT: {error}'])
+            self.tag_report_tests[tag].append(['Get screenshot', 'FAIL', f'TIMEOUT: {error}'])
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except (WebDriverException, Exception) as error:
-            self.tag_report_tests.append(
+            self.tag_report_tests[tag].append(
                 ['Get screenshot', 'FAIL', f'UNKNOWN: {error}'])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         testercontainer.remove(force='true')
