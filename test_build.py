@@ -6,8 +6,6 @@ from ci.logger import configure_logging
 
 def run_test():
     """Run tests on container tags then build and upload reports"""
-    #for tag in ci.tags:  # Run through all the tags
-    #    ci.container_test(tag)
     ci.run(ci.tags)
     ci.report_render()
     ci.badge_render()
