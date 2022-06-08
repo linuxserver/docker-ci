@@ -13,7 +13,7 @@ import docker
 import anybadge
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from jinja2 import Template, Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader
 
 
 class CI():
@@ -47,11 +47,12 @@ class CI():
         os.makedirs(self.outdir, exist_ok=True)
 
 
-    def run(self,tag):
-        """Run the container tests in multi threaded"""
+    def run(self,tags: list):
+        """Run the container tests multithreaded"""
         thread_pool = ThreadPool(processes=3)
-        results = thread_pool.map(self.container_test,tag)
+        results = thread_pool.map(self.container_test,tags)
         thread_pool.close()
+        thread_pool.join()
         return results
 
 
@@ -299,22 +300,12 @@ class CI():
         '''Take a screenshot and save it to self.outdir'''
         proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds before reloading container: %s:%s and refreshing container attrs', self.test_container_delay, container.image, tag)
+        self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
         time.sleep(int(self.test_container_delay))
         container.reload()
         ip = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
         endpoint = f'{proto}://{self.webauth}@{ip}:{self.port}{self.webpath}'
-        self.logger.info("Starting tester container for tag: %s", tag)
-        testercontainer = self.client.containers.run('lsiodev/tester:latest',
-                                                     shm_size='1G',
-                                                     detach=True,
-                                                     environment={'URL': endpoint})
-        # Sleep for the user specified amount of time
-        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs on %s run', self.test_container_delay, testercontainer.image, tag)
-        time.sleep(int(self.test_container_delay))
-        testercontainer.reload()
-        testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
-        testerendpoint = 'http://' + testerip + ':3000'
+        # testercontainer = self.test_container(proto,endpoint,tag)  # See note in function docstring
         try:
             # Selenium webdriver options
             chrome_options = webdriver.ChromeOptions()
@@ -322,15 +313,10 @@ class CI():
             chrome_options.add_argument('--headless')
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--window-size=1920x1080')
-            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-dev-shm-usage')  # https://developers.google.com/web/tools/puppeteer/troubleshooting#tips
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(60)
-            session = requests.Session()
-            retries = Retry(total=10, backoff_factor=2,
-                            status_forcelist=[502, 503, 504])
-            session.mount(proto, HTTPAdapter(max_retries=retries))
-            session.get(testerendpoint)
-            driver.get(testerendpoint)
+            driver.get(endpoint)
             self.logger.info('Sleeping for %s seconds before creating a screenshot on %s', self.screenshot_delay, tag)
             time.sleep(int(self.screenshot_delay))
             self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
@@ -350,4 +336,24 @@ class CI():
             self.tag_report_tests[tag].append(
                 ['Get screenshot', 'FAIL', f'UNKNOWN: {error}'])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
-        testercontainer.remove(force='true')
+        # testercontainer.remove(force='true')
+
+    def test_container(self,proto,endpoint,tag):
+        """Spin up an RDP test container to load the container web ui and create a screenshot."""
+        # NOTE - Possibly redundant as screenshotting works with --headless Chrome!
+        self.logger.info("Starting tester container for tag: %s", tag)
+        testercontainer = self.client.containers.run('lsiodev/tester:latest',
+                                                     shm_size='1G',
+                                                     detach=True,
+                                                     environment={'URL': endpoint})
+        #Sleep for the user specified amount of time
+        self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs on %s run', self.test_container_delay, testercontainer.image, tag)
+        time.sleep(int(self.test_container_delay))
+        testercontainer.reload()
+        testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
+        testerendpoint = 'http://' + testerip + ':3000'
+        session = requests.Session()
+        retries = Retry(total=10, backoff_factor=2,status_forcelist=[502, 503, 504])
+        session.mount(proto, HTTPAdapter(max_retries=retries))
+        session.get(testerendpoint)
+        return testercontainer
