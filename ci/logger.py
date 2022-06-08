@@ -43,14 +43,14 @@ def configure_logging(log_level:str):
 
     # Console logging
     ch = logging.StreamHandler()
-    cf = CustomLogFormatter('%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    cf = CustomLogFormatter('%(asctime)-15s | (%(threadName)-9s) %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     ch.setFormatter(cf)
     ch.setLevel(log_level)
     logger.addHandler(ch)
 
     # File logging
     fh = TimedRotatingFileHandler(os.path.join(os.getcwd(),'debug.log'), when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
-    f = CustomLogFormatter('%(asctime)-15s | %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    f = CustomLogFormatter('%(asctime)-15s | (%(threadName)-9s) %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     fh.setFormatter(f)
     fh.setLevel(log_level)
     logger.addHandler(fh)
