@@ -11,13 +11,11 @@ def run_test():
     ci.badge_render()
     ci.report_upload()
     if ci.report_status == 'PASS':  # Exit based on test results
-        logger.info('Tests Passed exiting')
+        logger.info('Tests PASSED')
         ci.log_upload()
         return
-    if ci.report_status == 'FAIL':
-        logger.error('Tests Failed exiting')
-        ci.log_upload()
-        return
+    logger.error('Tests FAILED')
+    ci.log_upload()
 
 
 if __name__ == '__main__':

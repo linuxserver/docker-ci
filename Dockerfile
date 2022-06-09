@@ -11,6 +11,8 @@ RUN \
  apt-get update && \
  apt-get install -y --no-install-recommends \
 	gnupg \
+	xvfb \
+	xserver-xephyr \
 	unzip && \
  curl -s \
         https://download.docker.com/linux/debian/gpg | \
@@ -46,6 +48,7 @@ RUN \
 	docker \
 	boto3 \
 	anybadge \
+	pyvirtualdisplay \
 	jinja2 && \
  echo "**** cleanup ****" && \
  apt-get autoclean && \
