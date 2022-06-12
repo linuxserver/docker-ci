@@ -105,6 +105,7 @@ class CI(SetEnvs):
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
         display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
+        display.start()
         thread_pool.close()
         thread_pool.join()
         display.stop()
