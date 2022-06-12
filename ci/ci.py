@@ -38,7 +38,7 @@ class SetEnvs():
 
 
     def convert_env(self, envs:str = None):
-        """Convert DOCKER_ENV to dictionary"""
+        """Convert env DOCKER_ENV to dictionary"""
         env_dict = {}
         if envs:
             self.logger.info("Converting envs")
@@ -57,7 +57,7 @@ class SetEnvs():
 
 
     def check_env(self):
-        """Make sure all needed env variables are set"""
+        """Make sure all needed ENVs are set"""
         try:
             self.image = os.environ['IMAGE']
             self.base = os.environ['BASE']
@@ -77,9 +77,13 @@ class SetEnvs():
 
 
 class CI(SetEnvs):
-    """What's up doc"""
+    """CI object to use for testing image tags.
+
+    Args:
+        SetEnvs (Object): Helper class that initializes and checks that all the necessary enviroment variables exists. Object is initialized upon init of CI.
+    """
     def __init__(self) -> None:
-        super().__init__()
+        super().__init__()  # Init the SetEnvs object.
         self.logger = logging.getLogger("LSIO CI")
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
@@ -92,21 +96,41 @@ class CI(SetEnvs):
         os.makedirs(self.outdir, exist_ok=True)
 
     def run(self,tags: list):
-        """Run the container tests multithreaded"""
+        """Will iterate over all the tags running container_test() on each tag multithreaded.
+
+        Args:
+            tags (list): All the tags we will test on the image.
+
+        """
         thread_pool = ThreadPool(processes=10)
-        results = thread_pool.map(self.container_test,tags)
-        display = Display(size=(1920, 1080))
-        display.start()
+        thread_pool.map(self.container_test,tags)
+        display = Display(size=(1920, 1080)): # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
         thread_pool.close()
         thread_pool.join()
         display.stop()
-        return results
         
 
-    def container_test(self, tag):
-        """Main container test logic"""
-        def _endtest(self: CI, container, tag, build_version, packages):
-            """End the test with as much info as we have"""
+    def container_test(self, tag: str):
+        """Main container test logic.
+        
+        Args:
+            `tag` (str): The container tag
+
+        1. Spins up the container tag
+            Checks the container logs for either `[services.d] done.` or `[ls.io-init] done.`
+        2. Export the build version from the Container object.
+        3. Export the package info from the Container object.
+        4. Take a screenshot for the report.
+        """
+        def _endtest(self: CI, container, tag:str , build_version:str , packages:str):
+            """End the test with as much info as we have and append to the report.
+
+            Args:
+                container (Container): Container object
+                tag (str): The container tag
+                build_version (str): The Container build version
+                packages (str): Package dump from the container
+            """
             logblob = container.logs().decode('utf-8')
             container.remove(force='true')
             # Add the info to the report
@@ -226,7 +250,12 @@ class CI(SetEnvs):
 
 
     def report_upload(self):
-        """Upload report to S3"""
+        """Upload report to S3
+
+        Raises:
+            Exception: S3UploadFailedError
+            Exception: ValueError
+        """
         self.logger.info('Uploading Report')
         destination_dir = f'{self.image}/{self.meta_tag}'
         latest_dir = f'{self.image}/latest'
@@ -285,7 +314,12 @@ class CI(SetEnvs):
 
 
     def log_upload(self):
-        """Upload debug log to S3"""
+        """Upload debug.log to S3
+        
+        Raises:
+            Exception: S3UploadFailedError
+            Exception: ValueError
+        """
         self.logger.info('Uploading logs')
         destination_dir = f'{self.image}/{self.meta_tag}'
         latest_dir = f'{self.image}/latest'
@@ -310,8 +344,15 @@ class CI(SetEnvs):
             self.logger.exception('Upload Error: %s',error)
 
 
-    def take_screenshot(self, container, tag):
-        """Take a screenshot and save it to self.outdir"""
+    def take_screenshot(self, container, tag:str):
+        """Take a screenshot and save it to self.outdir
+        
+        Spins up an lsiodev/tester container and takes a screenshot using Seleium.
+
+        Args:
+            container (Container): Container object
+            tag (str): The container tag we are testing.
+        """
         proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         # Sleep for the user specified amount of time
         self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
@@ -343,8 +384,17 @@ class CI(SetEnvs):
         testercontainer.remove(force='true')
 
 
-    def start_tester(self,proto,endpoint,tag):
-        """Spin up an RDP test container to load the container web ui."""
+    def start_tester(self, proto:str, endpoint:str, tag:str):
+        """Spin up an RDP test container to load the container web ui.
+
+        Args:
+            proto (str): The protocol to use for the endpoint.
+            endpoint (str): The container endpoint to use with the tester container.
+            tag (str): The container tag
+
+        Returns:
+            Container/str: Returns the tester Container object and the tester endpoint
+        """
         self.logger.info("Starting tester container for tag: %s", tag)
         testercontainer = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
@@ -364,7 +414,11 @@ class CI(SetEnvs):
 
     
     def setup_driver(self):
-        """Return a single ChromiumDriver object the class can use"""
+        """Return a single ChromiumDriver object the class can use
+
+        Returns:
+            Webdriver: Returns a Chromedriver object
+        """
         self.logger.info("Init Chromedriver")
         # Selenium webdriver options
         chrome_options = webdriver.ChromeOptions()
