@@ -104,15 +104,15 @@ class CI(SetEnvs):
         """
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
-        display = Display(size=(1920, 1080)): # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
+        display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
         thread_pool.close()
         thread_pool.join()
         display.stop()
-        
+
 
     def container_test(self, tag: str):
         """Main container test logic.
-        
+
         Args:
             `tag` (str): The container tag
 
@@ -315,7 +315,7 @@ class CI(SetEnvs):
 
     def log_upload(self):
         """Upload debug.log to S3
-        
+
         Raises:
             Exception: S3UploadFailedError
             Exception: ValueError
@@ -346,7 +346,7 @@ class CI(SetEnvs):
 
     def take_screenshot(self, container, tag:str):
         """Take a screenshot and save it to self.outdir
-        
+
         Spins up an lsiodev/tester container and takes a screenshot using Seleium.
 
         Args:
@@ -412,7 +412,7 @@ class CI(SetEnvs):
         session.get(testerendpoint)
         return testercontainer, testerendpoint
 
-    
+
     def setup_driver(self):
         """Return a single ChromiumDriver object the class can use
 
