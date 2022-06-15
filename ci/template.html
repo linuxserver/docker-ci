@@ -92,10 +92,17 @@
         color: rgba(218, 59, 138);
       }
     }
+    .dotnet-note {
+      color: #96a2b4;
+  }
 
     @media (prefers-color-scheme: light) {
       body {
         background: #e8e8e8;
+        color: #738694;
+      }
+
+      .dotnet-note {
         color: #738694;
       }
 
@@ -315,6 +322,10 @@
       }
     }
 
+    .table-container {
+      padding-top: 1rem;
+    }
+
     .styled-table {
       border-collapse: collapse;
       margin: 25px 0;
@@ -390,8 +401,12 @@
 
     .dotnet-notice {
       display: inline-flex;
-      padding: 0;
     }
+
+    .dotnet-note {
+      padding-left: .5rem;
+      font-weight: normal;
+  }
 
     div.dotnet-notice > p {
       margin-bottom: 0;
@@ -401,10 +416,7 @@
       padding-right:5px;
       padding-bottom:0;
       color: darkorange;
-    }
-
-    .table-container {
-      padding-top: 1rem;
+      font-weight: bold;
     }
   </style>
 
@@ -448,8 +460,7 @@
           </details>
           {% if 'arm32' in container["tag"] and container["dotnet"] == true %}
           <div class="dotnet-notice">
-            <h3 class="dotnet-heading">Warning:</h3>
-            <p>.NET application. Service might not start on ARM32 with QEMU</p>
+            <p class="dotnet-heading">Warning:<span class="dotnet-note">.NET application. Service might not start on ARM32 with QEMU</span></p>
           </div>
           {% endif %}
           <div class="table-container">
