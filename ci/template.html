@@ -387,6 +387,25 @@
       color: #f44336;
       ;
     }
+
+    .dotnet-notice {
+      display: inline-flex;
+      padding: 0;
+    }
+
+    div.dotnet-notice > p {
+      margin-bottom: 0;
+    }
+
+    .dotnet-heading {
+      padding-right:5px;
+      padding-bottom:0;
+      color: darkorange;
+    }
+
+    .table-container {
+      padding-top: 1rem;
+    }
   </style>
 
 </head>
@@ -427,7 +446,12 @@
           <div class="summary-container"><pre><code>{{ container["sysinfo"] }}</code>
           </pre></div>
           </details>
-          <br>
+          {% if 'arm32' in container["tag"] and container["dotnet"] == true %}
+          <div class="dotnet-notice">
+            <h3 class="dotnet-heading">Warning:</h3>
+            <p>.NET application. Service might not start on ARM32 with QEMU</p>
+          </div>
+          {% endif %}
           <div class="table-container">
             <table class="styled-table">
               <thead>

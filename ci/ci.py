@@ -18,6 +18,7 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from jinja2 import Environment, FileSystemLoader
 from pyvirtualdisplay import Display
 
+
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
     def __init__(self) -> None:
@@ -139,6 +140,7 @@ class CI(SetEnvs):
                 'tag': tag,
                 'logs': logblob,
                 'sysinfo': packages,
+                'dotnet': bool("icu-libs" in packages),
                 'build_version': build_version,
                 'tag_tests': self.tag_report_tests[tag]
             })
@@ -220,6 +222,7 @@ class CI(SetEnvs):
         _endtest(self, container, tag, build_version, packages)
         return
 
+
     def report_render(self):
         """Render the index file for upload"""
         self.logger.info('Rendering Report')
@@ -246,7 +249,7 @@ class CI(SetEnvs):
             badge.write_badge(f'{self.outdir}/badge.svg')
             with open(f'{self.outdir}/ci-status.yml', 'w', encoding='utf-8') as file:
                 file.write(f'CI: "{self.report_status}"')
-        except Exception as error:
+        except (ValueError,RuntimeError,FileNotFoundError,OSError) as error:
             self.logger.exception(error)
 
 
