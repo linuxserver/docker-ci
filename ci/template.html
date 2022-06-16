@@ -124,6 +124,7 @@
 
       section {
         background: #efefef;
+        border: solid 1px rgb(0 0 0 / 15%);
       }
 
       .section-header {
@@ -321,9 +322,22 @@
         font-size: 25px;
       }
     }
-
+    @media only screen and (max-width: 500px) {
+    /*Mobile*/
+      section h3,
+      section details,
+      .dotnet-notice,
+      .table-container {
+          padding: 0 5px;
+      }
+      
+      .table-container {
+          padding-top: 10px;
+      }
+    }
     .table-container {
       padding-top: 1rem;
+      overflow: auto;
     }
 
     .styled-table {
