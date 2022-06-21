@@ -7,9 +7,11 @@ import logging
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+import mimetypes
 
 import boto3
 from boto3.exceptions import S3UploadFailedError
+from botocore.exceptions import ClientError
 import docker
 from docker.errors import APIError
 import anybadge
@@ -89,18 +91,22 @@ class CI(SetEnvs):
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
         self.client = docker.from_env()
-        self.session = boto3.Session()
         self.tag_report_tests = {}
         self.report_containers = []
         self.report_status = 'PASS'
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
+        self.s3_client = boto3.Session().client(
+            's3',
+            region_name=self.region,
+            aws_access_key_id=self.s3_key,
+            aws_secret_access_key=self.s3_secret)
 
     def run(self,tags: list):
         """Will iterate over all the tags running container_test() on each tag multithreaded.
 
         Args:
-            tags (list): All the tags we will test on the image.
+            `tags` (list): All the tags we will test on the image.
 
         """
         thread_pool = ThreadPool(processes=10)
@@ -128,10 +134,10 @@ class CI(SetEnvs):
             """End the test with as much info as we have and append to the report.
 
             Args:
-                container (Container): Container object
-                tag (str): The container tag
-                build_version (str): The Container build version
-                packages (str): Package dump from the container
+                `container` (Container): Container object
+                `tag` (str): The container tag
+                `build_version` (str): The Container build version
+                `packages` (str): Package dump from the container
             """
             logblob = container.logs().decode('utf-8')
             container.remove(force='true')
@@ -194,16 +200,15 @@ class CI(SetEnvs):
             return
         # Dump package information
         self.logger.info('Dumping package info for %s',tag)
-        if self.base == 'alpine':
-            command = 'apk info -v'
-        elif self.base in ('debian', 'ubuntu'):
-            command = 'apt list'
-        elif self.base == 'fedora':
-            command = 'rpm -qa'
-        elif self.base == 'arch':
-            command = 'pacman -Q'
+        dump_commands = {
+            'alpine': 'apk info -v',
+            'debian': 'apt list',
+            'ubuntu': 'apt list',
+            'fedora': 'rpm -qa',
+            'arch': 'pacman -Q'
+            }
         try:
-            info = container.exec_run(command)
+            info = container.exec_run(dump_commands[self.base])
             packages = info[1].decode('utf-8')
             self.tag_report_tests[tag].append(['Dump package info', 'PASS', '-'])
             self.logger.info('Dump package info %s: PASS', tag)
@@ -254,67 +259,51 @@ class CI(SetEnvs):
 
 
     def report_upload(self):
-        """Upload report to S3
+        """Upload report files to S3
 
         Raises:
             Exception: S3UploadFailedError
             Exception: ValueError
+            Exception: ClientError
         """
-        self.logger.info('Uploading Report')
-        destination_dir = f'{self.image}/{self.meta_tag}'
-        latest_dir = f'{self.image}/latest'
-        s3_instance = self.session.client(
-            's3',
-            region_name=self.region,
-            aws_access_key_id=self.s3_key,
-            aws_secret_access_key=self.s3_secret)
+        self.logger.info('Uploading report files')
         # Index file upload
         index_file = f'{os.path.dirname(os.path.realpath(__file__))}/index.html'
+        ctype = {'ContentType': 'text/html', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content type
         try:
-            s3_instance.upload_file(
-                index_file,
-                self.bucket,
-                f'{destination_dir}/index.html',
-                ExtraArgs={'ContentType': 'text/html', 'ACL': 'public-read'})
-            s3_instance.upload_file(
-                index_file,
-                self.bucket,
-                f'{latest_dir}/index.html',
-                ExtraArgs={'ContentType': 'text/html', 'ACL': 'public-read'})
-        except (S3UploadFailedError, ValueError) as error:
+            self.upload_file(index_file, "index.html", ctype)
+        except (S3UploadFailedError, ValueError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
             self.log_upload()
             raise Exception(f'Upload Error: {error}') from error
+
         # Loop for all others
         for filename in os.listdir(self.outdir):
             time.sleep(0.5)
-            # Set content types for files
-            if filename.lower().endswith('.svg'):
-                ctype = 'image/svg+xml'
-            elif filename.lower().endswith('.png'):
-                ctype = 'image/png'
-            elif filename.lower().endswith('.md'):
-                ctype = 'text/markdown'
-            elif filename.lower().endswith('.yml'):
-                ctype = 'text/yaml'
-            else:
-                ctype = 'text/plain'
+            ctype = mimetypes.guess_type(filename.lower(), strict=False)
+            ctype = {'ContentType': ctype[0] if ctype[0] else 'text/plain', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content types for files
             try:
-                s3_instance.upload_file(
-                    f'{self.outdir}/{filename}',
-                    self.bucket,
-                    f'{destination_dir}/{filename}',
-                    ExtraArgs={'ContentType': ctype, 'ACL': 'public-read', 'CacheControl': 'no-cache'})
-                s3_instance.upload_file(
-                    f'{self.outdir}/{filename}',
-                    self.bucket,
-                    f'{latest_dir}/{filename}',
-                    ExtraArgs={'ContentType': ctype, 'ACL': 'public-read', 'CacheControl': 'no-cache'})
-            except (S3UploadFailedError, ValueError) as error:
+                self.upload_file(f'{self.outdir}/{filename}', filename, ctype)
+            except (S3UploadFailedError, ValueError, ClientError) as error:
                 self.logger.exception('Upload Error: %s',error)
                 self.log_upload()
                 raise Exception(f'Upload Error: {error}') from error
-        self.logger.info("Report available on https://ci-tests.linuxserver.io/%s/index.html",destination_dir)
+        self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
+
+
+    def upload_file(self, file_path:str, object_name:str, content_type:dict):
+        """Upload a file to an S3 bucket
+
+        Args:
+            `file_path` (str): File to upload
+            `bucket` (str): Bucket to upload to
+            `object_name` (str): S3 object name.
+        """
+        self.logger.info('Uploading %s to %s bucket',file_path, self.bucket)
+        destination_dir = f'{self.image}/{self.meta_tag}'
+        latest_dir = f'{self.image}/latest'
+        self.s3_client.upload_file(file_path, self.bucket, f'{destination_dir}/{object_name}', ExtraArgs=content_type)
+        self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
 
     def log_upload(self):
@@ -322,29 +311,12 @@ class CI(SetEnvs):
 
         Raises:
             Exception: S3UploadFailedError
-            Exception: ValueError
+            Exception: ClientError
         """
         self.logger.info('Uploading logs')
-        destination_dir = f'{self.image}/{self.meta_tag}'
-        latest_dir = f'{self.image}/latest'
-        s3_instance = self.session.client(
-            's3',
-            region_name=self.region,
-            aws_access_key_id=self.s3_key,
-            aws_secret_access_key=self.s3_secret)
-        # Log file upload
         try:
-            s3_instance.upload_file(
-                '/debug.log',
-                self.bucket,
-                f'{destination_dir}/debug.log',
-                ExtraArgs={'ContentType': 'text/plain', 'ACL': 'public-read'})
-            s3_instance.upload_file(
-                '/debug.log',
-                self.bucket,
-                f'{latest_dir}/debug.log',
-                ExtraArgs={'ContentType': 'text/plain', 'ACL': 'public-read'})
-        except (S3UploadFailedError, ValueError) as error:
+            self.upload_file("/debug.log", 'debug.log', {'ContentType': 'text/plain', 'ACL': 'public-read'})
+        except (S3UploadFailedError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
 
 
@@ -354,8 +326,8 @@ class CI(SetEnvs):
         Spins up an lsiodev/tester container and takes a screenshot using Seleium.
 
         Args:
-            container (Container): Container object
-            tag (str): The container tag we are testing.
+            `container` (Container): Container object
+            `tag` (str): The container tag we are testing.
         """
         proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         # Sleep for the user specified amount of time
@@ -392,9 +364,9 @@ class CI(SetEnvs):
         """Spin up an RDP test container to load the container web ui.
 
         Args:
-            proto (str): The protocol to use for the endpoint.
-            endpoint (str): The container endpoint to use with the tester container.
-            tag (str): The container tag
+            `proto` (str): The protocol to use for the endpoint.
+            `endpoint` (str): The container endpoint to use with the tester container.
+            `tag` (str): The container tag
 
         Returns:
             Container/str: Returns the tester Container object and the tester endpoint
