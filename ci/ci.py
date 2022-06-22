@@ -4,10 +4,10 @@ from multiprocessing.pool import ThreadPool
 import os
 import time
 import logging
+import mimetypes
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import mimetypes
 
 import boto3
 from boto3.exceptions import S3UploadFailedError
