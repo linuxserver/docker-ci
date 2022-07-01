@@ -2,6 +2,7 @@
 
 from multiprocessing.pool import ThreadPool
 import os
+import shutil
 import time
 import logging
 import mimetypes
@@ -269,6 +270,7 @@ class CI(SetEnvs):
         self.logger.info('Uploading report files')
         # Index file upload
         index_file = f'{os.path.dirname(os.path.realpath(__file__))}/index.html'
+        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/404.png', f'{self.outdir}/404.png')
         ctype = {'ContentType': 'text/html', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content type
         try:
             self.upload_file(index_file, "index.html", ctype)
@@ -277,7 +279,7 @@ class CI(SetEnvs):
             self.log_upload()
             raise Exception(f'Upload Error: {error}') from error
 
-        # Loop for all others
+        # Loop through files in outdir and upload
         for filename in os.listdir(self.outdir):
             time.sleep(0.5)
             ctype = mimetypes.guess_type(filename.lower(), strict=False)

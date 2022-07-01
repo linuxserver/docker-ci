@@ -452,11 +452,11 @@
           </div>
           {% if screenshot == 'true' %}
           <a href="{{ container['tag'] }}.png">
-            <img src="{{ container['tag'] }}.png" alt="{{ container['tag'] }}" width="600" height="auto">
+            <img src="{{ container['tag'] }}.png" alt="{{ container['tag'] }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'">
           </a>
           {% else %}
           <div class="tag-image">
-            <span>No Image</span><i class="fas fa-file-image"></i>
+            <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ container["build_version"] }}</h3>
