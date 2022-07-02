@@ -15,6 +15,7 @@ from boto3.exceptions import S3UploadFailedError
 from botocore.exceptions import ClientError
 import docker
 from docker.errors import APIError
+from docker.models.containers import Container
 import anybadge
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
@@ -41,7 +42,7 @@ class SetEnvs():
         self.check_env()
 
 
-    def convert_env(self, envs:str = None):
+    def convert_env(self, envs:str = None) -> dict:
         """Convert env DOCKER_ENV to dictionary"""
         env_dict = {}
         if envs:
@@ -60,7 +61,7 @@ class SetEnvs():
         return env_dict
 
 
-    def check_env(self):
+    def check_env(self) -> None:
         """Make sure all needed ENVs are set"""
         try:
             self.image = os.environ['IMAGE']
@@ -69,12 +70,6 @@ class SetEnvs():
             self.s3_secret = os.environ['SECRET_KEY']
             self.meta_tag = os.environ['META_TAG']
             self.tags_env = os.environ['TAGS']
-            self.tags = []
-            if '|' in self.tags_env:
-                for tag in self.tags_env.split('|'):
-                    self.tags.append(tag)
-            else:
-                self.tags.append(self.tags_env)
         except KeyError as error:
             self.logger.exception("Key %s is not set in ENV!", error)
             raise Exception(f'Key {error} is not set in ENV!') from error
@@ -92,7 +87,8 @@ class CI(SetEnvs):
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
         self.client = docker.from_env()
-        self.tag_report_tests = {}
+        self.tags = list(self.tags_env.split('|'))
+        self.tag_report_tests = {tag:[] for tag in self.tags} # Adds all the tags as keys with an empty list as value to the dict
         self.report_containers = []
         self.report_status = 'PASS'
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
@@ -103,7 +99,7 @@ class CI(SetEnvs):
             aws_access_key_id=self.s3_key,
             aws_secret_access_key=self.s3_secret)
 
-    def run(self,tags: list):
+    def run(self,tags: list) -> None:
         """Will iterate over all the tags running container_test() on each tag multithreaded.
 
         Args:
@@ -119,7 +115,7 @@ class CI(SetEnvs):
         display.stop()
 
 
-    def container_test(self, tag: str):
+    def container_test(self, tag: str) -> None:
         """Main container test logic.
 
         Args:
@@ -154,8 +150,7 @@ class CI(SetEnvs):
 
         # Start the container
         self.logger.info('Starting test of: %s', tag)
-        self.tag_report_tests[tag] = [] # Adds the tag key with an empty list as value to the dict
-        container = self.client.containers.run(f'{self.image}:{tag}',
+        container: Container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
         # Watch the logs for no more than 5 minutes
@@ -229,7 +224,7 @@ class CI(SetEnvs):
         return
 
 
-    def report_render(self):
+    def report_render(self) -> None:
         """Render the index file for upload"""
         self.logger.info('Rendering Report')
         env = Environment( loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
@@ -246,7 +241,7 @@ class CI(SetEnvs):
             ))
 
 
-    def badge_render(self):
+    def badge_render(self) -> None:
         """Render the badge file for upload"""
         self.logger.info("Creating badge")
         try:
@@ -259,7 +254,7 @@ class CI(SetEnvs):
             self.logger.exception(error)
 
 
-    def report_upload(self):
+    def report_upload(self) -> None:
         """Upload report files to S3
 
         Raises:
@@ -270,7 +265,7 @@ class CI(SetEnvs):
         self.logger.info('Uploading report files')
         # Index file upload
         index_file = f'{os.path.dirname(os.path.realpath(__file__))}/index.html'
-        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/404.png', f'{self.outdir}/404.png')
+        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/404.jpg', f'{self.outdir}/404.jpg')
         ctype = {'ContentType': 'text/html', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content type
         try:
             self.upload_file(index_file, "index.html", ctype)
@@ -293,7 +288,7 @@ class CI(SetEnvs):
         self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
 
 
-    def upload_file(self, file_path:str, object_name:str, content_type:dict):
+    def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
         """Upload a file to an S3 bucket
 
         Args:
@@ -307,8 +302,7 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f'{destination_dir}/{object_name}', ExtraArgs=content_type)
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
-
-    def log_upload(self):
+    def log_upload(self) -> None:
         """Upload debug.log to S3
 
         Raises:
@@ -317,12 +311,12 @@ class CI(SetEnvs):
         """
         self.logger.info('Uploading logs')
         try:
-            self.upload_file("/debug.log", 'debug.log', {'ContentType': 'text/plain', 'ACL': 'public-read'})
+            self.upload_file("/debug.log", 'debug.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
         except (S3UploadFailedError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
 
 
-    def take_screenshot(self, container, tag:str):
+    def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir
 
         Spins up an lsiodev/tester container and takes a screenshot using Seleium.
@@ -359,10 +353,11 @@ class CI(SetEnvs):
             self.tag_report_tests[tag].append(
                 ['Get screenshot', 'FAIL', f'UNKNOWN: {error}'])
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
-        testercontainer.remove(force='true')
+        finally:
+            testercontainer.remove(force='true')
 
 
-    def start_tester(self, proto:str, endpoint:str, tag:str):
+    def start_tester(self, proto:str, endpoint:str, tag:str) -> tuple[Container,str]:
         """Spin up an RDP test container to load the container web ui.
 
         Args:
@@ -374,7 +369,7 @@ class CI(SetEnvs):
             Container/str: Returns the tester Container object and the tester endpoint
         """
         self.logger.info("Starting tester container for tag: %s", tag)
-        testercontainer = self.client.containers.run('lsiodev/tester:latest',
+        testercontainer: Container = self.client.containers.run('lsiodev/tester:latest',
                                                      shm_size='1G',
                                                      detach=True,
                                                      environment={'URL': endpoint})
@@ -391,7 +386,7 @@ class CI(SetEnvs):
         return testercontainer, testerendpoint
 
 
-    def setup_driver(self):
+    def setup_driver(self) -> webdriver.Chrome:
         """Return a single ChromiumDriver object the class can use
 
         Returns:
