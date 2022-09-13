@@ -29,6 +29,7 @@ class SetEnvs():
         self.logger = logging.getLogger("SetEnvs")
 
         # Set the optional parameters
+        self.s6_verbosity = os.environ.get('S6_VERBOSITY','2')
         self.dockerenv = self.convert_env(os.environ.get("DOCKER_ENV", ""))
         self.webauth = os.environ.get('WEB_AUTH', 'user:password')
         self.webpath = os.environ.get('WEB_PATH', '')
@@ -55,6 +56,7 @@ class SetEnvs():
                 else:
                     var = envs.split('=')
                     env_dict[var[0]] = var[1]
+                env_dict["S6_VERBOSITY"] = self.s6_verbosity
             except Exception as error:
                 self.logger.exception(error)
                 raise Exception(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
