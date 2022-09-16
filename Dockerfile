@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-ubuntu:bionic
+FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
 
 # set version label
 ARG BUILD_DATE
@@ -11,6 +11,8 @@ RUN \
  apt-get update && \
  apt-get install -y --no-install-recommends \
 	gnupg \
+	xvfb \
+	xserver-xephyr \
 	unzip && \
  curl -s \
         https://download.docker.com/linux/debian/gpg | \
@@ -26,8 +28,9 @@ RUN \
  apt-get install -y --no-install-recommends \
         docker-ce \
 	google-chrome-stable \
-	python-pip \
-	python-setuptools && \
+	python3 \
+	python3-pip \
+	python3-setuptools && \
  echo "**** install chrome driver ****" && \
  CHROME_RELEASE=$(curl -sLk https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
  curl -sk -o \
@@ -39,12 +42,13 @@ RUN \
  chown root:root /usr/bin/chromedriver && \
  chmod +x /usr/bin/chromedriver && \
  echo "**** Install python deps ****" && \
- pip install --no-cache-dir \
+ pip3 install --no-cache-dir \
 	requests \
 	selenium \
 	docker \
 	boto3 \
 	anybadge \
+	pyvirtualdisplay \
 	jinja2 && \
  echo "**** cleanup ****" && \
  apt-get autoclean && \
@@ -55,5 +59,6 @@ RUN \
 
 # copy local files
 COPY ci /ci
+COPY test_build.py test_build.py
 
 ENTRYPOINT [ "" ]

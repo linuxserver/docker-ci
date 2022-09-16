@@ -1,0 +1,525 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>CI Results</title>
+  <meta name="description" content="CI Results">
+  <meta name="author" content="linuxserver.io">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
+  <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"
+    integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc"
+    crossorigin="anonymous"></script>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(to right, rgba(34, 34, 34, 1), rgba(34, 34, 34, 1));
+        color: #96a2b4;
+      }
+
+      h1 {
+        color: #dce2ec;
+      }
+
+      h1 span {
+        color: rgba(218, 59, 138);
+      }
+
+      a {
+        color: rgba(218, 59, 138);
+      }
+
+      a:hover {
+        color: rgb(188, 52, 120);
+      }
+
+      section {
+        background: rgba(44, 44, 44);
+        border: solid 1px rgb(255 255 255 / 10%);
+      }
+
+      .section-header {
+        background: rgba(44, 44, 44);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1)
+      }
+
+      .section-header-h2 {
+        color: #96a2b4;
+      }
+
+      section h3 {
+        color: rgba(218, 59, 138);
+      }
+
+      .styled-table {
+        border: solid 1px rgb(255 255 255 / 10%);
+      }
+
+      .styled-table thead tr {
+        background-color: #1f1f1f;
+      }
+
+      .styled-table tbody tr {
+        border-bottom: 1px solid rgba(221, 221, 221, 0.1);
+      }
+
+      .styled-table tbody tr:nth-of-type(even) {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .summary-container {
+        background: #1f1f1f;
+      }
+
+      summary:hover {
+        color: #dce2ec;
+      }
+
+      pre {
+        background: #1f1f1f;
+      }
+
+      .build-version {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.25);
+      }
+
+      strong {
+        color: rgba(218, 59, 138);
+      }
+    }
+    .dotnet-note {
+      color: #96a2b4;
+  }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background: #e8e8e8;
+        color: #738694;
+      }
+
+      .dotnet-note {
+        color: #738694;
+      }
+
+      h1 {
+        color: #738694;
+      }
+
+      h1 span {
+        color: #9bb0bf;
+      }
+
+      a {
+        color: #738694;
+      }
+
+      a:hover {
+        color: #9bb0bf;
+      }
+
+      section {
+        background: #efefef;
+        border: solid 1px rgb(0 0 0 / 15%);
+      }
+
+      .section-header {
+        background: #738694;
+      }
+
+      .section-header-h2 {
+        color: #FFFFFF;
+      }
+
+      .styled-table thead tr {
+        background-color: #738694;
+      }
+
+      .styled-table tbody tr {
+        border-bottom: 1px solid #dddddd;
+      }
+
+      .styled-table tbody tr:nth-of-type(even) {
+        background-color: #f3f3f3;
+      }
+
+      .summary-container {
+        background: #e8e8e8;
+      }
+
+      summary:hover {
+        color: #4b5d6a;
+      }
+
+      pre {
+        background: #e8e8e8;
+      }
+
+      .build-version {
+        border-bottom: 1px solid #dcdcdc;
+        background: #f5f5f5;
+      }
+    }
+
+    body,
+    html {
+      padding: 0;
+      margin: 0;
+    }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+    }
+
+    body * {
+      box-sizing: border-box;
+    }
+
+    #logohttpsrawgithubusercontentcomlinuxserverdockertemplatesmasterlinuxserverioimglinuxserver_mediumpng {
+      display: none;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+    }
+
+    #results {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 30px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      font-weight: 400;
+    }
+
+    #results h1 {
+      font-size: 18px;
+      margin: 0 10px 25px;
+      word-break: break-all;
+    }
+
+    #results table {
+      margin: auto;
+      width: 100%;
+    }
+
+    th {
+      text-align: left
+    }
+
+    .result-cell {
+      display: inline-flex;
+    }
+
+    section {
+      display: flex;
+      width: 100%;
+      flex-direction: column;
+      margin: 10px;
+      min-width: 320px;
+      max-width: 600px;
+      padding: 0 0 30px 0;
+      flex: 1 1 0;
+      border-radius: 10px;
+    }
+
+    section>* {
+      padding: 0 30px;
+    }
+
+    .section-header {
+      border-radius: 10px 10px 0 0;
+    }
+
+    .section-header-h2 {
+      font-size: 17px;
+      padding: 15px 30px;
+      margin: 0;
+      text-align: center;
+      flex-wrap: wrap;
+    }
+
+    em {
+      color: #32a7c1;
+    }
+
+    /* No image */
+    section h2+h3 {
+      border-bottom: 1px solid #dcdcdc;
+      padding-bottom: 20px;
+      background: #f5f5f5;
+      margin: 0;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    /* Has an image */
+    section h2+p+h3 {
+      border-bottom: 1px solid #dcdcdc;
+      padding: 20px 30px;
+      background: #f5f5f5;
+      margin: 0;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    section h2+p {
+      margin: 0;
+    }
+
+    section p:empty {
+      display: none;
+    }
+
+    section h3 {
+      font-size: 16px;
+      padding: 0 30px;
+    }
+
+    section img {
+      width: calc(100% + 60px);
+      height: auto;
+      margin-left: -30px;
+      margin-right: -30px;
+      padding: 0;
+      display: block;
+    }
+
+    .debug-section {
+      max-width: 100%;
+    }
+
+    main {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+
+    @media only screen and (min-width: 500px) {
+      h1 {
+        font-size: 50px;
+        letter-spacing: 5px;
+
+      }
+
+      #results h1 {
+        font-size: 25px;
+      }
+    }
+    @media only screen and (max-width: 500px) {
+    /*Mobile*/
+      section h3,
+      section details,
+      .dotnet-notice,
+      .table-container {
+          padding: 0 5px;
+      }
+      
+      .table-container {
+          padding-top: 10px;
+      }
+    }
+    .table-container {
+      padding-top: 1rem;
+      overflow: auto;
+    }
+
+    .styled-table {
+      border-collapse: collapse;
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: sans-serif;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .styled-table thead tr {
+      color: #ffffff;
+      text-align: left;
+    }
+
+    .styled-table th,
+    .styled-table td {
+      padding: 12px 15px;
+    }
+
+
+    .styled-table tbody tr.active-row {
+      font-weight: bold;
+      color: #738694;
+    }
+
+    .fa-check-circle {
+      color: rgb(0, 152, 121);
+      margin-left: 5px;
+    }
+
+    .fa-exclamation-circle {
+      color: #f44336;
+      margin-left: 5px;
+    }
+
+    .summary-container {
+      min-height: 100px;
+      height: 300px;
+      overflow: auto;
+      resize: vertical;
+    }
+
+    summary {
+      cursor: pointer;
+    }
+
+    #debug_logs {
+      overflow: auto;
+    }
+
+    pre {
+      padding: 10px;
+    }
+
+    .build-version {
+      padding: 20px 30px;
+      margin: 0;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    .tag-image {
+      text-align: center;
+    }
+
+    .report-status-pass {
+      color: rgb(0, 152, 121)
+    }
+
+    .report-status-fail {
+      color: #f44336;
+      ;
+    }
+
+    .dotnet-notice {
+      display: inline-flex;
+    }
+
+    .dotnet-note {
+      padding-left: .5rem;
+      font-weight: normal;
+  }
+
+    div.dotnet-notice > p {
+      margin-bottom: 0;
+    }
+
+    .dotnet-heading {
+      padding-right:5px;
+      padding-bottom:0;
+      color: darkorange;
+      font-weight: bold;
+    }
+  </style>
+
+</head>
+
+<body>
+  <div id="app">
+    <header>
+      <h1>Linux<span>Server</span>.io</h1>
+    </header>
+    <div id="results">
+      <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
+      <h2>Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
+      <main>
+        {% for container in report_containers %}
+        <section>
+          <div class="section-header">
+            <h2 class="section-header-h2"> {{ image }}:{{ container["tag"] }} </h2>
+          </div>
+          {% if screenshot == 'true' %}
+          <a href="{{ container['tag'] }}.png">
+            <img src="{{ container['tag'] }}.png" alt="{{ container['tag'] }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'">
+          </a>
+          {% else %}
+          <div class="tag-image">
+            <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
+          </div>
+          {% endif %}
+          <h3 class="build-version">Build Version: {{ container["build_version"] }}</h3>
+          <h3>Container Logs</h3>
+          <details>
+          <summary>Expand</summary>
+          <div class="summary-container"><pre><code>{{ container["logs"] }}</code>
+          </pre></div>
+          </details>
+          <h3>Package info</h3>
+          <details>
+          <summary>Expand</summary>
+          <div class="summary-container"><pre><code>{{ container["sysinfo"] }}</code>
+          </pre></div>
+          </details>
+          {% if 'arm32' in container["tag"] and container["dotnet"] == true %}
+          <div class="dotnet-notice">
+            <p class="dotnet-heading">Warning:<span class="dotnet-note">.NET application. Service might not start on ARM32 with QEMU</span></p>
+          </div>
+          {% endif %}
+          <div class="table-container">
+            <table class="styled-table">
+              <thead>
+                <tr class="active-row">
+                  <th>Test</th>
+                  <th>Result</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for test in container["tag_tests"] %}
+                <tr>
+                  <td>{{ test[0] }}</td>
+                  {% if test[1] == 'PASS' %}
+                  <td class="result-cell">{{ test[1] }} <i class="fas fa-check-circle"></i></td>
+                  {% else %}
+                  <td class="result-cell">{{ test[1] }} <i class="fas fa-exclamation-circle"></i></td>
+                  {% endif %}
+                  <td>{{ test[2] }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        {% endfor %}
+      </main>
+    </div>
+    <section class="debug-section">
+      <h3><a href="debug.log">Python debug logs</a></h3>
+      <details>
+        <summary>Expand</summary>
+        <pre id="debug_logs"></pre>
+      </details>
+    </section>
+  </div>
+  <script type="text/javascript" charset="utf-8">
+    fetch("debug.log")
+      .then(response => response.text())
+      .then(logs => {
+        document.getElementById("debug_logs").innerText = logs
+      })
+  </script>
+</body>
+
+</html>

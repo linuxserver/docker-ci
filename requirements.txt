@@ -1,0 +1,7 @@
+boto3
+docker
+anybadge
+selenium
+jinja2
+requests
+pyvirtualdisplay

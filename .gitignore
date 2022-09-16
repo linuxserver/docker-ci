@@ -1,1 +1,4 @@
 .jenkins-external
+venv
+__pycache__
+.vscode
