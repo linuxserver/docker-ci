@@ -45,8 +45,7 @@ sudo docker run --rm -i \
 -e S3_REGION=<optional, custom S3 Region> \
 -e S3_BUCKET=<optional, custom S3 Bucket> \
 -e WEB_SCREENSHOT=<optional, set to false if not a web app> \
--e WEB_SCREENSHOT_DELAY=<optional, time in seconds to delay before taking screenshot>
--e DELAY_START=<optional, time in seconds to delay before reloading tester and -e IMAGE container> \
+-e DELAY_START=<optional, time in seconds to delay before taking screenshot> \
 -e PORT=<optional, port web application listens on internal docker port> \
 -e SSL=<optional , use ssl for the screenshot true/false> \
 -t lsiodev/ci:latest \
