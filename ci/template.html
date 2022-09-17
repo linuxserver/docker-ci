@@ -385,7 +385,7 @@
       cursor: pointer;
     }
 
-    #debug_logs {
+    #logs {
       overflow: auto;
     }
 
@@ -506,18 +506,18 @@
       </main>
     </div>
     <section class="debug-section">
-      <h3><a href="debug.log">Python debug logs</a></h3>
+      <h3><a href="ci.log">Python logs</a></h3>
       <details>
         <summary>Expand</summary>
-        <pre id="debug_logs"></pre>
+        <pre id="logs"></pre>
       </details>
     </section>
   </div>
   <script type="text/javascript" charset="utf-8">
-    fetch("debug.log")
+    fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-        document.getElementById("debug_logs").innerText = logs
+        document.getElementById("logs").innerText = logs
       })
   </script>
 </body>

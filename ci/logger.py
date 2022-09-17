@@ -43,22 +43,19 @@ def configure_logging(log_level:str):
 
     # Console logging
     ch = logging.StreamHandler()
-    cf = CustomLogFormatter('%(asctime)-15s | (%(threadName)-9s) %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    cf = CustomLogFormatter('%(asctime)-15s | %(threadName)-17s | %(name)-10s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     ch.setFormatter(cf)
     ch.setLevel(log_level)
     logger.addHandler(ch)
 
     # File logging
-    fh = TimedRotatingFileHandler(os.path.join(os.getcwd(),'debug.log'), when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
-    f = CustomLogFormatter('%(asctime)-15s | (%(threadName)-9s) %(name)-43s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
+    fh = TimedRotatingFileHandler(os.path.join(os.getcwd(),'ci.log'), when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
+    f = CustomLogFormatter('%(asctime)-15s | %(threadName)-17s | %(name)-10s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     fh.setFormatter(f)
     fh.setLevel(log_level)
     logger.addHandler(fh)
-    
 
+    logging.info('Operating system: %s', platform.platform())
+    logging.info('Python version: %s', platform.python_version())
     if log_level.upper() == "DEBUG":
-        logging.getLogger("spam").setLevel(logging.DEBUG) # Change external loggers to debug if necessary
-        logging.debug('Operating system: %s', platform.platform())
-        logging.debug('Python version: %s', platform.python_version())
-    else:
-        logging.getLogger("ham").setLevel(logging.CRITICAL) # Set external loggers to a level if necessary
+        logging.getLogger("botocore").setLevel(logging.WARNING) # Mute boto3 logging output

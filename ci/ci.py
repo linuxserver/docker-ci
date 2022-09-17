@@ -305,7 +305,7 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
     def log_upload(self) -> None:
-        """Upload debug.log to S3
+        """Upload ci.log to S3
 
         Raises:
             Exception: S3UploadFailedError
@@ -313,7 +313,7 @@ class CI(SetEnvs):
         """
         self.logger.info('Uploading logs')
         try:
-            self.upload_file("/debug.log", 'debug.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
+            self.upload_file("/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
         except (S3UploadFailedError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
 
