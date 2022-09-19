@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-from ci.ci import CI
+from ci.ci import CI, CIError
 from ci.logger import configure_logging
 
 def run_test():
@@ -16,15 +16,17 @@ def run_test():
         return
     logger.error('Tests FAILED')
     ci.log_upload()
+    raise CIError('CI Tests did not PASS!')
 
 
 if __name__ == '__main__':
-    log_level = os.environ.get("CI_LOG_LEVEL","DEBUG")
-    configure_logging(log_level)
-    import logging
-    logger = logging.getLogger(__name__)
-    ci = CI()
     try:
+        log_level = os.environ.get("CI_LOG_LEVEL","INFO")
+        configure_logging(log_level)
+        import logging
+        logger = logging.getLogger(__name__)
+        ci = CI()
         run_test()
     except Exception as err:
-        logger.exception("%s\nI Can't Believe You've Done This",err)
+        logger.exception(err)
+        raise CIError("I Can't Believe You've Done This!") from err

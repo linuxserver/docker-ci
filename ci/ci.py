@@ -59,7 +59,7 @@ class SetEnvs():
                 env_dict["S6_VERBOSITY"] = self.s6_verbosity
             except Exception as error:
                 self.logger.exception(error)
-                raise Exception(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
+                raise CIError(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
         return env_dict
 
 
@@ -74,7 +74,7 @@ class SetEnvs():
             self.tags_env = os.environ['TAGS']
         except KeyError as error:
             self.logger.exception("Key %s is not set in ENV!", error)
-            raise Exception(f'Key {error} is not set in ENV!') from error
+            raise CIError(f'Key {error} is not set in ENV!') from error
 
 
 class CI(SetEnvs):
@@ -190,7 +190,7 @@ class CI(SetEnvs):
             self.tag_report_tests[tag].append(['Container startup', 'PASS', '-'])
             self.logger.info('Container startup %s: PASS', tag)
         else:
-            self.logger.warning('Container startup failed for %s', tag)
+            self.logger.error('Container startup failed for %s', tag)
             self.tag_report_tests[tag].append(['Container startup', 'FAIL','INIT NOT FINISHED'])
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
             self.report_status = 'FAIL'
@@ -274,7 +274,7 @@ class CI(SetEnvs):
         except (S3UploadFailedError, ValueError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
             self.log_upload()
-            raise Exception(f'Upload Error: {error}') from error
+            raise CIError(f'Upload Error: {error}') from error
 
         # Loop through files in outdir and upload
         for filename in os.listdir(self.outdir):
@@ -286,7 +286,7 @@ class CI(SetEnvs):
             except (S3UploadFailedError, ValueError, ClientError) as error:
                 self.logger.exception('Upload Error: %s',error)
                 self.log_upload()
-                raise Exception(f'Upload Error: {error}') from error
+                raise CIError(f'Upload Error: {error}') from error
         self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
 
 
@@ -305,7 +305,7 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
     def log_upload(self) -> None:
-        """Upload debug.log to S3
+        """Upload ci.log to S3
 
         Raises:
             Exception: S3UploadFailedError
@@ -313,7 +313,7 @@ class CI(SetEnvs):
         """
         self.logger.info('Uploading logs')
         try:
-            self.upload_file("/debug.log", 'debug.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
+            self.upload_file("/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
         except (S3UploadFailedError, ClientError) as error:
             self.logger.exception('Upload Error: %s',error)
 
@@ -407,3 +407,6 @@ class CI(SetEnvs):
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
         return driver
+
+class CIError(Exception):
+    pass

@@ -243,6 +243,8 @@
 
     .section-header {
       border-radius: 10px 10px 0 0;
+      overflow-wrap: break-word;
+
     }
 
     .section-header-h2 {
@@ -306,7 +308,7 @@
     main {
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: stretch;
       flex-wrap: wrap;
       max-width: 100%;
     }
@@ -337,7 +339,6 @@
     }
     .table-container {
       padding-top: 1rem;
-      overflow: auto;
     }
 
     .styled-table {
@@ -385,7 +386,7 @@
       cursor: pointer;
     }
 
-    #debug_logs {
+    #logs {
       overflow: auto;
     }
 
@@ -474,7 +475,7 @@
           </details>
           {% if 'arm32' in container["tag"] and container["dotnet"] == true %}
           <div class="dotnet-notice">
-            <p class="dotnet-heading">Warning:<span class="dotnet-note">.NET application. Service might not start on ARM32 with QEMU</span></p>
+            <p class="dotnet-heading">Warning:<span class="dotnet-note">May be a .NET app. Service might not start on ARM32 with QEMU</span></p>
           </div>
           {% endif %}
           <div class="table-container">
@@ -506,18 +507,18 @@
       </main>
     </div>
     <section class="debug-section">
-      <h3><a href="debug.log">Python debug logs</a></h3>
+      <h3><a href="ci.log">Python logs</a></h3>
       <details>
         <summary>Expand</summary>
-        <pre id="debug_logs"></pre>
+        <pre id="logs"></pre>
       </details>
     </section>
   </div>
   <script type="text/javascript" charset="utf-8">
-    fetch("debug.log")
+    fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-        document.getElementById("debug_logs").innerText = logs
+        document.getElementById("logs").innerText = logs
       })
   </script>
 </body>
