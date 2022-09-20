@@ -9,6 +9,7 @@ def run_test():
     ci.run(ci.tags)
     ci.report_render()
     ci.badge_render()
+    ci.json_render()
     ci.report_upload()
     if ci.report_status == 'PASS':  # Exit based on test results
         logger.info('Tests PASSED')

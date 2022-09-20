@@ -7,6 +7,7 @@ import time
 import logging
 import mimetypes
 import requests
+import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -90,7 +91,7 @@ class CI(SetEnvs):
 
         self.client = docker.from_env()
         self.tags = list(self.tags_env.split('|'))
-        self.tag_report_tests = {tag:[] for tag in self.tags} # Adds all the tags as keys with an empty list as value to the dict
+        self.tag_report_tests = {tag: {'test':{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
         self.report_containers = []
         self.report_status = 'PASS'
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
@@ -142,12 +143,13 @@ class CI(SetEnvs):
             container.remove(force='true')
             # Add the info to the report
             self.report_containers.append({
-                'tag': tag,
+                 tag: {
                 'logs': logblob,
                 'sysinfo': packages,
                 'dotnet': bool("icu-libs" in packages),
                 'build_version': build_version,
-                'tag_tests': self.tag_report_tests[tag]
+                'tag_tests': self.tag_report_tests[tag]['test']
+                }
             })
 
         # Start the container
@@ -157,7 +159,7 @@ class CI(SetEnvs):
                                                environment=self.dockerenv)
         # Watch the logs for no more than 5 minutes
         logsfound = False
-        t_end = time.time() + 60 * 5
+        t_end = time.time() +10#+ 60 * 5
         while time.time() < t_end:
             try:
                 logblob = container.logs().decode('utf-8')
@@ -167,33 +169,43 @@ class CI(SetEnvs):
                 time.sleep(1)
             except APIError as error:
                 self.logger.exception('Container startup failed for %s', tag)
-                self.tag_report_tests[tag].append(['Container startup', 'FAIL', f'INIT NOT FINISHED: {error}'])
-                self.report_status = 'FAIL'
+                self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+                    'status':'FAIL',
+                    'message': f'INIT NOT FINISHED: {error}'
+                    }.items())))                               
+                self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
                 _endtest(self, container, tag, 'ERROR', 'ERROR')
                 return
         # Grab build version
         try:
             build_version = container.attrs['Config']['Labels']['build_version']
-            self.tag_report_tests[tag].append(['Get build version', 'PASS', '-'])
+            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
+                'status':'PASS',
+                'message':'-'}.items())))
             self.logger.info('Get build version %s: PASS', tag)
         except APIError as error:
             build_version = 'ERROR'
-            self.tag_report_tests[tag].append(['Get build version', 'FAIL', error])
+            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
+                'status':'FAIL',
+                'message':error}.items())))
             self.logger.exception('Get build version %s: FAIL', tag)
-            self.report_status = 'FAIL'
+            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
             _endtest(self, container, tag, build_version, 'ERROR')
             return
-
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound:
             self.logger.info('Container startup completed for %s', tag)
-            self.tag_report_tests[tag].append(['Container startup', 'PASS', '-'])
+            self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+                'status':'PASS',
+                'message':'-'}.items())))
             self.logger.info('Container startup %s: PASS', tag)
         else:
             self.logger.error('Container startup failed for %s', tag)
-            self.tag_report_tests[tag].append(['Container startup', 'FAIL','INIT NOT FINISHED'])
+            self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+                'status':'FAIL',
+                'message':'INIT NOT FINISHED'}.items())))
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
-            self.report_status = 'FAIL'
+            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
             _endtest(self, container, tag, build_version, 'ERROR')
             return
         # Dump package information
@@ -208,14 +220,18 @@ class CI(SetEnvs):
         try:
             info = container.exec_run(dump_commands[self.base])
             packages = info[1].decode('utf-8')
-            self.tag_report_tests[tag].append(['Dump package info', 'PASS', '-'])
+            self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
+                'status':'PASS',
+                'message':'-'}.items())))
             self.logger.info('Dump package info %s: PASS', tag)
         except (APIError, IndexError) as error:
             packages = 'ERROR'
             self.logger.exception(str(error))
-            self.tag_report_tests[tag].append(['Dump package info', 'FAIL', error])
+            self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
+                'Dump package info':'FAIL',
+                'message':error}.items())))
             self.logger.error('Dump package info %s: FAIL', tag)
-            self.report_status = 'FAIL'
+            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
             _endtest(self, container, tag, build_version, packages)
             return
         # Screenshot web interface and check connectivity
@@ -255,6 +271,20 @@ class CI(SetEnvs):
         except (ValueError,RuntimeError,FileNotFoundError,OSError) as error:
             self.logger.exception(error)
 
+    def json_render(self) -> None:
+        """Create a JSON file of the report data."""
+        self.logger.info("Creating report.json file")
+        json_data = json.dumps(self.report_containers)
+        json_data = json.loads(json_data)
+        #print(json_data)
+        for index, item in enumerate(json_data):
+            if "logs" in item.keys():
+                del json_data[index]["logs"]
+            if "sysinfo" in item.keys():
+                del json_data[index]["sysinfo"]
+        with open(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', mode="w", encoding='utf-8') as file:
+            json.dump(json_data, file, indent=2, sort_keys=True)
+        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', f'{self.outdir}/report.json')
 
     def report_upload(self) -> None:
         """Upload report files to S3
@@ -342,18 +372,25 @@ class CI(SetEnvs):
             time.sleep(int(self.screenshot_delay))
             self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
             driver.get_screenshot_as_file(f'{self.outdir}/{tag}.png')
-            self.tag_report_tests[tag].append(['Get screenshot', 'PASS','-'])
+            self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
+                'status':'PASS',
+                'message':'-'}.items())))
+            
             self.logger.info('Screenshot %s: PASS', tag)
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
-            self.tag_report_tests[tag].append(
-                ['Get screenshot', 'FAIL', f'CONNECTION ERROR: {error}'])
+            self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
+                'status':'FAIL',
+                'message': f'CONNECTION ERROR: {error}'}.items())))
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException as error:
-            self.tag_report_tests[tag].append(['Get screenshot', 'FAIL', f'TIMEOUT: {error}'])
+            self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
+                'status':'FAIL',
+                'message':f'TIMEOUT: {error}'}.items())))
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except (WebDriverException, Exception) as error:
-            self.tag_report_tests[tag].append(
-                ['Get screenshot', 'FAIL', f'UNKNOWN: {error}'])
+            self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
+                'status':'FAIL',
+                'message':f'UNKNOWN: {error}'}.items())))
             self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
         finally:
             testercontainer.remove(force='true')
