@@ -445,8 +445,7 @@
       <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
       <h2>Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
       <main>
-        {% for item in report_containers %}
-          {% for tag in item %}
+        {% for tag in report_containers %}
         <section>
           <div class="section-header">
             <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
@@ -460,20 +459,20 @@
             <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
           </div>
           {% endif %}
-          <h3 class="build-version">Build Version: {{ item[tag]["build_version"] }}</h3>
+          <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
           <h3>Container Logs</h3>
           <details>
           <summary>Expand</summary>
-          <div class="summary-container"><pre><code>{{ item[tag]["logs"] }}</code>
+          <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
           </pre></div>
           </details>
           <h3>Package info</h3>
           <details>
           <summary>Expand</summary>
-          <div class="summary-container"><pre><code>{{ item[tag]["sysinfo"] }}</code>
+          <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
           </pre></div>
           </details>
-          {% if 'arm32' in tag and item[tag]["dotnet"] == true %}
+          {% if 'arm32' in tag and report_containers[tag]["dotnet"] == true %}
           <div class="dotnet-notice">
             <p class="dotnet-heading">Warning:<span class="dotnet-note">May be a .NET app. Service might not start on ARM32 with QEMU</span></p>
           </div>
@@ -488,22 +487,21 @@
                 </tr>
               </thead>
               <tbody>
-                {% for test in item[tag]["tag_tests"] %}
+                {% for test in report_containers[tag]["test_results"] %}
                 <tr>
                   <td>{{ test }}</td>
-                  {% if item[tag]["tag_tests"][test]['status'] == 'PASS' %}
-                  <td class="result-cell">{{ item[tag]["tag_tests"][test]['status'] }} <i class="fas fa-check-circle"></i></td>
+                  {% if report_containers[tag]["test_results"][test]['status'] == 'PASS' %}
+                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-check-circle"></i></td>
                   {% else %}
-                  <td class="result-cell">{{ item[tag]["tag_tests"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></td>
+                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></td>
                   {% endif %}
-                  <td>{{ item[tag]["tag_tests"][test]["message"] }}</td>
+                  <td>{{ report_containers[tag]["test_results"][test]["message"] }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         </section>
-          {% endfor %}
         {% endfor %}
       </main>
     </div>
