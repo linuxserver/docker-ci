@@ -29,8 +29,8 @@ class SetEnvs():
     def __init__(self) -> None:
         self.logger = logging.getLogger("SetEnvs")
 
+        os.environ['S6_VERBOSITY'] = os.environ.get("CI_S6_VERBOSITY","2")
         # Set the optional parameters
-        self.s6_verbosity = os.environ.get('S6_VERBOSITY','2')
         self.dockerenv = self.convert_env(os.environ.get("DOCKER_ENV", ""))
         self.webauth = os.environ.get('WEB_AUTH', 'user:password')
         self.webpath = os.environ.get('WEB_PATH', '')
@@ -57,7 +57,7 @@ class SetEnvs():
                 else:
                     var = envs.split('=')
                     env_dict[var[0]] = var[1]
-                env_dict["S6_VERBOSITY"] = self.s6_verbosity
+                env_dict["S6_VERBOSITY"] = os.environ.get('CI_S6_VERBOSITY')
             except Exception as error:
                 self.logger.exception(error)
                 raise CIError(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
@@ -157,6 +157,8 @@ class CI(SetEnvs):
         container: Container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
+        container_config = container.attrs["Config"]["Env"]
+        self.logger.info("Container config of tag %s: %s",tag,container_config)
         # Watch the logs for no more than 5 minutes
         logsfound = False
         t_end = time.time() + 60 * 5
