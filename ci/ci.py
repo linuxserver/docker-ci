@@ -92,7 +92,7 @@ class CI(SetEnvs):
         self.client = docker.from_env()
         self.tags = list(self.tags_env.split('|'))
         self.tag_report_tests = {tag: {'test':{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
-        self.report_containers = []
+        self.report_containers: dict[str,dict] = {}
         self.report_status = 'PASS'
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
@@ -130,7 +130,7 @@ class CI(SetEnvs):
         3. Export the package info from the Container object.
         4. Take a screenshot for the report.
         """
-        def _endtest(self: CI, container, tag:str , build_version:str , packages:str):
+        def _endtest(self: CI, container:Container, tag:str, build_version:str, packages:str, test_success: bool):
             """End the test with as much info as we have and append to the report.
 
             Args:
@@ -138,19 +138,19 @@ class CI(SetEnvs):
                 `tag` (str): The container tag
                 `build_version` (str): The Container build version
                 `packages` (str): Package dump from the container
+                `test_success` (bool): If the testing of the container failed or not
             """
             logblob = container.logs().decode('utf-8')
             container.remove(force='true')
             # Add the info to the report
-            self.report_containers.append({
-                 tag: {
+            self.report_containers[tag] = {
                 'logs': logblob,
                 'sysinfo': packages,
                 'dotnet': bool("icu-libs" in packages),
                 'build_version': build_version,
-                'tag_tests': self.tag_report_tests[tag]['test']
+                'test_results': self.tag_report_tests[tag]['test'],
+                'test_success': test_success
                 }
-            })
 
         # Start the container
         self.logger.info('Starting test of: %s', tag)
@@ -159,7 +159,8 @@ class CI(SetEnvs):
                                                environment=self.dockerenv)
         # Watch the logs for no more than 5 minutes
         logsfound = False
-        t_end = time.time() +10#+ 60 * 5
+        t_end = time.time() + 60 * 5
+        self.logger.info("Checking logs for the 'done' message on tag: %s",tag)
         while time.time() < t_end:
             try:
                 logblob = container.logs().decode('utf-8')
@@ -173,11 +174,12 @@ class CI(SetEnvs):
                     'status':'FAIL',
                     'message': f'INIT NOT FINISHED: {error}'
                     }.items())))                               
-                self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
-                _endtest(self, container, tag, 'ERROR', 'ERROR')
+                self.report_status = 'FAIL'
+                _endtest(self, container, tag, 'ERROR', 'ERROR', False)
                 return
         # Grab build version
         try:
+            self.logger.info("Fetching build version on tag: %s",tag)
             build_version = container.attrs['Config']['Labels']['build_version']
             self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
                 'status':'PASS',
@@ -189,8 +191,8 @@ class CI(SetEnvs):
                 'status':'FAIL',
                 'message':error}.items())))
             self.logger.exception('Get build version %s: FAIL', tag)
-            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
-            _endtest(self, container, tag, build_version, 'ERROR')
+            self.report_status = 'FAIL'
+            _endtest(self, container, tag, build_version, 'ERROR', False)
             return
         # Check if the startup marker was found in the logs during the 2 minute spinup
         if logsfound:
@@ -205,11 +207,10 @@ class CI(SetEnvs):
                 'status':'FAIL',
                 'message':'INIT NOT FINISHED'}.items())))
             self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
-            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
-            _endtest(self, container, tag, build_version, 'ERROR')
+            self.report_status = 'FAIL'
+            _endtest(self, container, tag, build_version, 'ERROR', False)
             return
         # Dump package information
-        self.logger.info('Dumping package info for %s',tag)
         dump_commands = {
             'alpine': 'apk info -v',
             'debian': 'apt list',
@@ -218,6 +219,7 @@ class CI(SetEnvs):
             'arch': 'pacman -Q'
             }
         try:
+            self.logger.info('Dumping package info for %s',tag)
             info = container.exec_run(dump_commands[self.base])
             packages = info[1].decode('utf-8')
             self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
@@ -231,14 +233,14 @@ class CI(SetEnvs):
                 'Dump package info':'FAIL',
                 'message':error}.items())))
             self.logger.error('Dump package info %s: FAIL', tag)
-            self.report_status = 'FAIL' if 'arm' not in tag else 'PASS' # Soft fail on ARM because of QEMU 
-            _endtest(self, container, tag, build_version, packages)
+            self.report_status = 'FAIL' 
+            _endtest(self, container, tag, build_version, packages, False)
             return
         # Screenshot web interface and check connectivity
         if self.screenshot == 'true':
             self.take_screenshot(container, tag)
         # If all info is present end test
-        _endtest(self, container, tag, build_version, packages)
+        _endtest(self, container, tag, build_version, packages, True)
         return
 
 
@@ -274,17 +276,12 @@ class CI(SetEnvs):
     def json_render(self) -> None:
         """Create a JSON file of the report data."""
         self.logger.info("Creating report.json file")
-        json_data = json.dumps(self.report_containers)
-        json_data = json.loads(json_data)
-        #print(json_data)
-        for index, item in enumerate(json_data):
-            if "logs" in item.keys():
-                del json_data[index]["logs"]
-            if "sysinfo" in item.keys():
-                del json_data[index]["sysinfo"]
-        with open(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', mode="w", encoding='utf-8') as file:
-            json.dump(json_data, file, indent=2, sort_keys=True)
-        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', f'{self.outdir}/report.json')
+        try:
+            with open(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', mode="w", encoding='utf-8') as file:
+                json.dump(self.report_containers, file, indent=2, sort_keys=True)
+            shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', f'{self.outdir}/report.json')
+        except (OSError,FileNotFoundError,TypeError,Exception) as error:
+            self.logger.exception(error)
 
     def report_upload(self) -> None:
         """Upload report files to S3
@@ -375,7 +372,6 @@ class CI(SetEnvs):
             self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
                 'status':'PASS',
                 'message':'-'}.items())))
-            
             self.logger.info('Screenshot %s: PASS', tag)
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
