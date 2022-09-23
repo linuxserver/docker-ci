@@ -57,7 +57,7 @@ class SetEnvs():
                 else:
                     var = envs.split('=')
                     env_dict[var[0]] = var[1]
-                env_dict["S6_VERBOSITY"] = os.environ.get('CI_S6_VERBOSITY')
+                env_dict["S6_VERBOSITY"] = os.environ.get('S6_VERBOSITY')
             except Exception as error:
                 self.logger.exception(error)
                 raise CIError(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
