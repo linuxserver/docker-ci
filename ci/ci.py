@@ -251,6 +251,7 @@ class CI(SetEnvs):
         self.logger.info('Rendering Report')
         env = Environment( loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
         template = env.get_template('template.html')
+        self.report_containers = json.loads(json.dumps(self.report_containers,sort_keys=True))
         with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
             file_.write(template.render(
             report_containers=self.report_containers,
