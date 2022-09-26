@@ -7,8 +7,11 @@ from ci.logger import configure_logging
 def run_test():
     """Run tests on container tags then build and upload reports"""
     ci.run(ci.tags)
+    # Don't set the whole report as failed if any of the ARM tag fails. 
+    ci.report_status = 'FAIL' if [ci.report_containers[tag]['test_success'] == False for tag in ci.report_containers.keys() if tag.startswith("amd64")][0] else 'PASS'
     ci.report_render()
     ci.badge_render()
+    ci.json_render()
     ci.report_upload()
     if ci.report_status == 'PASS':  # Exit based on test results
         logger.info('Tests PASSED')

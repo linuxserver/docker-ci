@@ -231,7 +231,7 @@
       flex-direction: column;
       margin: 10px;
       min-width: 320px;
-      max-width: 600px;
+      max-width: 50vw;
       padding: 0 0 30px 0;
       flex: 1 1 0;
       border-radius: 10px;
@@ -244,7 +244,6 @@
     .section-header {
       border-radius: 10px 10px 0 0;
       overflow-wrap: break-word;
-
     }
 
     .section-header-h2 {
@@ -411,7 +410,6 @@
 
     .report-status-fail {
       color: #f44336;
-      ;
     }
 
     .dotnet-notice {
@@ -446,34 +444,34 @@
       <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
       <h2>Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
       <main>
-        {% for container in report_containers %}
+        {% for tag in report_containers %}
         <section>
           <div class="section-header">
-            <h2 class="section-header-h2"> {{ image }}:{{ container["tag"] }} </h2>
+            <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
           </div>
           {% if screenshot == 'true' %}
-          <a href="{{ container['tag'] }}.png">
-            <img src="{{ container['tag'] }}.png" alt="{{ container['tag'] }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'">
+          <a href="{{ tag }}.png">
+            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'">
           </a>
           {% else %}
           <div class="tag-image">
             <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
           </div>
           {% endif %}
-          <h3 class="build-version">Build Version: {{ container["build_version"] }}</h3>
+          <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
           <h3>Container Logs</h3>
           <details>
           <summary>Expand</summary>
-          <div class="summary-container"><pre><code>{{ container["logs"] }}</code>
+          <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
           </pre></div>
           </details>
           <h3>Package info</h3>
           <details>
           <summary>Expand</summary>
-          <div class="summary-container"><pre><code>{{ container["sysinfo"] }}</code>
+          <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
           </pre></div>
           </details>
-          {% if 'arm32' in container["tag"] and container["dotnet"] == true %}
+          {% if 'arm32' in tag and report_containers[tag]["dotnet"] == true %}
           <div class="dotnet-notice">
             <p class="dotnet-heading">Warning:<span class="dotnet-note">May be a .NET app. Service might not start on ARM32 with QEMU</span></p>
           </div>
@@ -488,15 +486,15 @@
                 </tr>
               </thead>
               <tbody>
-                {% for test in container["tag_tests"] %}
+                {% for test in report_containers[tag]["test_results"] %}
                 <tr>
-                  <td>{{ test[0] }}</td>
-                  {% if test[1] == 'PASS' %}
-                  <td class="result-cell">{{ test[1] }} <i class="fas fa-check-circle"></i></td>
+                  <td>{{ test }}</td>
+                  {% if report_containers[tag]["test_results"][test]['status'] == 'PASS' %}
+                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-check-circle"></i></td>
                   {% else %}
-                  <td class="result-cell">{{ test[1] }} <i class="fas fa-exclamation-circle"></i></td>
+                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></td>
                   {% endif %}
-                  <td>{{ test[2] }}</td>
+                  <td>{{ report_containers[tag]["test_results"][test]["message"] }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
