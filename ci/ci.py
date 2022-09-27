@@ -335,7 +335,7 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
     def log_upload(self) -> None:
-        """Upload ci.log to S3
+        """Upload the ci.log to S3
 
         Raises:
             Exception: S3UploadFailedError
@@ -351,7 +351,7 @@ class CI(SetEnvs):
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir
 
-        Spins up an lsiodev/tester container and takes a screenshot using Seleium.
+        Spins up an lsiodev/tester container and takes a screenshot using Selenium.
 
         Args:
             `container` (Container): Container object
