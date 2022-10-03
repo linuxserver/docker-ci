@@ -451,7 +451,7 @@
           </div>
           {% if screenshot == 'true' %}
           <a href="{{ tag }}.png">
-            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'">
+            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','404.jpg')">
           </a>
           {% else %}
           <div class="tag-image">

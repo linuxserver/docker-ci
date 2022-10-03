@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from multiprocessing.pool import ThreadPool
+from threading import current_thread
 import os
 import shutil
 import time
@@ -151,6 +152,10 @@ class CI(SetEnvs):
                 'test_results': self.tag_report_tests[tag]['test'],
                 'test_success': test_success
                 }
+
+        # Name the thread for easier debugging.
+        if "amd" in tag or "arm" in tag:
+            current_thread().name = f"{tag[:5].upper()}Thread"
 
         # Start the container
         self.logger.info('Starting test of: %s', tag)
@@ -335,7 +340,7 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
     def log_upload(self) -> None:
-        """Upload ci.log to S3
+        """Upload the ci.log to S3
 
         Raises:
             Exception: S3UploadFailedError
@@ -351,7 +356,7 @@ class CI(SetEnvs):
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir
 
-        Spins up an lsiodev/tester container and takes a screenshot using Seleium.
+        Spins up an lsiodev/tester container and takes a screenshot using Selenium.
 
         Args:
             `container` (Container): Container object
