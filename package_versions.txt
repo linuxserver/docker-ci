@@ -31,7 +31,7 @@ gcc-12-base12.1.0-2ubuntu1~22.04
 gnupg2.2.27-3ubuntu2.1
 gnupg-l10n2.2.27-3ubuntu2.1
 gnupg-utils2.2.27-3ubuntu2.1
-google-chrome-stable105.0.5195.125-1
+google-chrome-stable106.0.5249.91-1
 gpg2.2.27-3ubuntu2.1
 gpg-agent2.2.27-3ubuntu2.1
 gpgconf2.2.27-3ubuntu2.1
