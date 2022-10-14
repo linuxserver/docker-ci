@@ -356,7 +356,7 @@ class CI(SetEnvs):
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir
 
-        Spins up an lsiodev/tester container and takes a screenshot using Selenium.
+        Spins up an ghcr.io/linuxserver/tester container and takes a screenshot using Selenium.
 
         Args:
             `container` (Container): Container object
@@ -412,8 +412,9 @@ class CI(SetEnvs):
             Container/str: Returns the tester Container object and the tester endpoint
         """
         self.logger.info("Starting tester container for tag: %s", tag)
-        testercontainer: Container = self.client.containers.run('lsiodev/tester:latest',
+        testercontainer: Container = self.client.containers.run('ghcr.io/linuxserver/tester:latest',
                                                      shm_size='1G',
+                                                     security_opt=["seccomp=unconfined"],
                                                      detach=True,
                                                      environment={'URL': endpoint})
         #Sleep for the user specified amount of time
