@@ -1,7 +1,7 @@
 adduser3.118ubuntu5
 adwaita-icon-theme41.0-1ubuntu1
-apt2.4.7
-apt-utils2.4.7
+apt2.4.8
+apt-utils2.4.8
 base-files12ubuntu4.2
 base-passwd3.5.52build1
 bash5.1-6ubuntu1
@@ -19,8 +19,8 @@ debconf1.5.79ubuntu1
 debianutils5.5-1ubuntu2
 diffutils1:3.8-0ubuntu2
 dirmngr2.2.27-3ubuntu2.1
-docker-ce5:20.10.18~3-0~ubuntu-bionic
-docker-ce-cli5:20.10.18~3-0~ubuntu-bionic
+docker-ce5:20.10.20~3-0~ubuntu-bionic
+docker-ce-cli5:20.10.20~3-0~ubuntu-bionic
 dpkg1.21.1ubuntu2.1
 e2fsprogs1.46.5-2ubuntu1.1
 findutils4.8.0-1ubuntu3
@@ -31,7 +31,7 @@ gcc-12-base12.1.0-2ubuntu1~22.04
 gnupg2.2.27-3ubuntu2.1
 gnupg-l10n2.2.27-3ubuntu2.1
 gnupg-utils2.2.27-3ubuntu2.1
-google-chrome-stable106.0.5249.91-1
+google-chrome-stable106.0.5249.119-1
 gpg2.2.27-3ubuntu2.1
 gpg-agent2.2.27-3ubuntu2.1
 gpgconf2.2.27-3ubuntu2.1
@@ -47,9 +47,10 @@ hostname3.23ubuntu2
 humanity-icon-theme0.6.16
 init-system-helpers1.62
 iptables1.8.7-1ubuntu5
+jq1.6-2.1ubuntu3
 libacl12.3.1-1
 libapparmor13.0.4-2ubuntu2.1
-libapt-pkg6.02.4.7
+libapt-pkg6.02.4.8
 libargon2-10~20171227-0.3
 libasound21.2.6.1-1ubuntu1
 libasound2-data1.2.6.1-1ubuntu1
@@ -131,6 +132,7 @@ libip6tc21.8.7-1ubuntu5
 libjbig02.1-3.1build3
 libjpeg88c-2ubuntu10
 libjpeg-turbo82.1.2-0ubuntu1
+libjq11.6-2.1ubuntu3
 libjson-c50.15-3~ubuntu1.22.04.1
 libk5crypto31.19.2-2
 libkeyutils11.6.1-2ubuntu3
@@ -159,6 +161,7 @@ libnpth01.6-3build2
 libnsl21.3.0-2build2
 libnspr42:4.32-3build1
 libnss32:3.68.2-0ubuntu1.1
+libonig56.9.7.1-2build1
 libp11-kit00.24.0-6build1
 libpam0g1.4.0-11ubuntu2
 libpam-modules1.4.0-11ubuntu2
@@ -270,6 +273,8 @@ mount2.37.2-4ubuntu3
 ncurses-base6.3-2
 ncurses-bin6.3-2
 netbase6.3
+netcat1.218-4ubuntu1
+netcat-openbsd1.218-4ubuntu1
 openssl3.0.2-0ubuntu1.6
 passwd1:4.8.1-2ubuntu2
 perl-base5.34.0-3ubuntu1
@@ -298,7 +303,7 @@ tzdata2022c-0ubuntu0.22.04.0
 ubuntu-keyring2021.03.26
 ubuntu-mono20.10-0ubuntu2
 ucf3.0043
-unzip6.0-26ubuntu3
+unzip6.0-26ubuntu3.1
 usrmerge25ubuntu2
 util-linux2.37.2-4ubuntu3
 wget1.21.2-2ubuntu1
