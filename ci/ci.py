@@ -130,6 +130,7 @@ class CI(SetEnvs):
         2. Export the build version from the Container object.
         3. Export the package info from the Container object.
         4. Take a screenshot for the report.
+        5. Add report information to report.json.
         """
         def _endtest(self: CI, container:Container, tag:str, build_version:str, packages:str, test_success: bool):
             """End the test with as much info as we have and append to the report.
@@ -143,11 +144,18 @@ class CI(SetEnvs):
             """
             logblob = container.logs().decode('utf-8')
             container.remove(force='true')
+            warning_texts = {
+                "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
+                "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
+            }
             # Add the info to the report
             self.report_containers[tag] = {
                 'logs': logblob,
                 'sysinfo': packages,
-                'dotnet': bool("icu-libs" in packages),
+                'warnings': {
+                    'dotnet': warning_texts["dotnet"] if bool("icu-libs" in packages) and "arm32" in tag else "",
+                    'uwsgi': warning_texts["uwsgi"] if bool("uwsgi" in packages) and "arm" in tag else ""
+                },
                 'build_version': build_version,
                 'test_results': self.tag_report_tests[tag]['test'],
                 'test_success': test_success

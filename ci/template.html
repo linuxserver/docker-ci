@@ -92,7 +92,7 @@
         color: rgba(218, 59, 138);
       }
     }
-    .dotnet-note {
+    .warning-note {
       color: #96a2b4;
   }
 
@@ -102,7 +102,7 @@
         color: #738694;
       }
 
-      .dotnet-note {
+      .warning-note {
         color: #738694;
       }
 
@@ -327,7 +327,7 @@
     /*Mobile*/
       section h3,
       section details,
-      .dotnet-notice,
+      .warning-notice,
       .table-container {
           padding: 0 5px;
       }
@@ -412,20 +412,20 @@
       color: #f44336;
     }
 
-    .dotnet-notice {
+    .warning-notice {
       display: inline-flex;
     }
 
-    .dotnet-note {
+    .warning-note {
       padding-left: .5rem;
       font-weight: normal;
   }
 
-    div.dotnet-notice > p {
+    div.warning-notice > p {
       margin-bottom: 0;
     }
 
-    .dotnet-heading {
+    .warning-heading {
       padding-right:5px;
       padding-bottom:0;
       color: darkorange;
@@ -471,11 +471,14 @@
           <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
           </pre></div>
           </details>
-          {% if 'arm32' in tag and report_containers[tag]["dotnet"] == true %}
-          <div class="dotnet-notice">
-            <p class="dotnet-heading">Warning:<span class="dotnet-note">May be a .NET app. Service might not start on ARM32 with QEMU</span></p>
-          </div>
-          {% endif %}
+          {% for warning in report_containers[tag]["warnings"] %}
+            {% if report_containers[tag]["warnings"][warning] %}
+              <div class="warning-notice">
+                <p class="warning-heading">Warning:<span class="warning-note">{{ report_containers[tag]["warnings"][warning] }}</span></p>
+              </div>
+            {% endif %}
+          {% endfor %}
+
           <div class="table-container">
             <table class="styled-table">
               <thead>
