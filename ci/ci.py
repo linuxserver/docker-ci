@@ -153,14 +153,14 @@ class CI(SetEnvs):
                 'logs': logblob,
                 'sysinfo': packages,
                 'warnings': {
-                    'dotnet': warning_texts["dotnet"] if bool("icu-libs" in packages) and "arm32" in tag else "",
-                    'uwsgi': warning_texts["uwsgi"] if bool("uwsgi" in packages) and "arm" in tag else ""
+                    'dotnet': warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
+                    'uwsgi': warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
                 },
                 'build_version': build_version,
                 'test_results': self.tag_report_tests[tag]['test'],
-                'test_success': test_success
+                'test_success': test_success,
                 }
-
+            self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
         # Name the thread for easier debugging.
         if "amd" in tag or "arm" in tag:
             current_thread().name = f"{tag[:5].upper()}Thread"

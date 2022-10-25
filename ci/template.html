@@ -54,6 +54,10 @@
         color: rgba(218, 59, 138);
       }
 
+      .summary {
+        color: rgba(218, 59, 138);
+      }
+
       .styled-table {
         border: solid 1px rgb(255 255 255 / 10%);
       }
@@ -291,6 +295,13 @@
       padding: 0 30px;
     }
 
+    .summary {
+      font-weight: bold;
+      margin-block-start: 1em;
+      margin-inline-start: 0px;
+      margin-inline-end: 0px;
+    }
+
     section img {
       width: calc(100% + 60px);
       height: auto;
@@ -374,6 +385,10 @@
       margin-left: 5px;
     }
 
+    .fa-exclamation-triangle {
+      color: darkorange;
+    }
+
     .summary-container {
       min-height: 100px;
       height: 300px;
@@ -418,6 +433,7 @@
 
     .warning-note {
       padding-left: .5rem;
+      padding-top: 0.5em;
       font-weight: normal;
   }
 
@@ -425,9 +441,10 @@
       margin-bottom: 0;
     }
 
-    .warning-heading {
+    .warning-summary {
       padding-right:5px;
       padding-bottom:0;
+      margin-block-start: 1em;
       color: darkorange;
       font-weight: bold;
     }
@@ -459,26 +476,28 @@
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
-          <h3>Container Logs</h3>
           <details>
-          <summary>Expand</summary>
+          <summary class="summary">Container Logs</summary>
           <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
           </pre></div>
           </details>
-          <h3>Package info</h3>
           <details>
-          <summary>Expand</summary>
+          <summary class="summary">Package info</summary>
           <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
           </pre></div>
           </details>
-          {% for warning in report_containers[tag]["warnings"] %}
-            {% if report_containers[tag]["warnings"][warning] %}
-              <div class="warning-notice">
-                <p class="warning-heading">Warning:<span class="warning-note">{{ report_containers[tag]["warnings"][warning] }}</span></p>
-              </div>
-            {% endif %}
-          {% endfor %}
-
+          {% if report_containers[tag]["has_warnings"]%}
+          <details open>
+          <summary class="warning-summary">Warnings</summary>
+            {% for warning in report_containers[tag]["warnings"] %}
+              {% if report_containers[tag]["warnings"][warning] %}
+                <div class="warning-notice">
+                  <code class="warning-note"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ report_containers[tag]["warnings"][warning] }}</code>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </details>
+          {% endif %}
           <div class="table-container">
             <table class="styled-table">
               <thead>
