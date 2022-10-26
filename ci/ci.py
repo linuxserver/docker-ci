@@ -104,12 +104,16 @@ class CI(SetEnvs):
             aws_secret_access_key=self.s3_secret)
 
     def run(self,tags: list) -> None:
-        """Will iterate over all the tags running container_test() on each tag multithreaded.
+        """Will iterate over all the tags running container_test() on each tag, multithreaded.
+
+        Also does a pull of the linuxserver/tester:latest image before running container_test.
 
         Args:
             `tags` (list): All the tags we will test on the image.
 
         """
+        self.logger.info("Pulling ghcr.io/linuxserver/tester:latest")
+        self.client.images.pull(repository="ghcr.io/linuxserver/tester", tag="latest") # Pulls latest tester image. 
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
         display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
