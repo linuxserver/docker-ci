@@ -104,12 +104,16 @@ class CI(SetEnvs):
             aws_secret_access_key=self.s3_secret)
 
     def run(self,tags: list) -> None:
-        """Will iterate over all the tags running container_test() on each tag multithreaded.
+        """Will iterate over all the tags running container_test() on each tag, multithreaded.
+
+        Also does a pull of the linuxserver/tester:latest image before running container_test.
 
         Args:
             `tags` (list): All the tags we will test on the image.
 
         """
+        self.logger.info("Pulling ghcr.io/linuxserver/tester:latest")
+        self.client.images.pull(repository="ghcr.io/linuxserver/tester", tag="latest") # Pulls latest tester image. 
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
         display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
@@ -130,6 +134,7 @@ class CI(SetEnvs):
         2. Export the build version from the Container object.
         3. Export the package info from the Container object.
         4. Take a screenshot for the report.
+        5. Add report information to report.json.
         """
         def _endtest(self: CI, container:Container, tag:str, build_version:str, packages:str, test_success: bool):
             """End the test with as much info as we have and append to the report.
@@ -143,16 +148,23 @@ class CI(SetEnvs):
             """
             logblob = container.logs().decode('utf-8')
             container.remove(force='true')
+            warning_texts = {
+                "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
+                "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
+            }
             # Add the info to the report
             self.report_containers[tag] = {
                 'logs': logblob,
                 'sysinfo': packages,
-                'dotnet': bool("icu-libs" in packages),
+                'warnings': {
+                    'dotnet': warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
+                    'uwsgi': warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
+                },
                 'build_version': build_version,
                 'test_results': self.tag_report_tests[tag]['test'],
-                'test_success': test_success
+                'test_success': test_success,
                 }
-
+            self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
         # Name the thread for easier debugging.
         if "amd" in tag or "arm" in tag:
             current_thread().name = f"{tag[:5].upper()}Thread"

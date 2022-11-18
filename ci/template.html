@@ -54,6 +54,14 @@
         color: rgba(218, 59, 138);
       }
 
+      .summary {
+        color: rgba(218, 59, 138);
+      }
+
+      .summary:hover {
+        color: rgb(188, 52, 120);
+      }
+
       .styled-table {
         border: solid 1px rgb(255 255 255 / 10%);
       }
@@ -92,7 +100,7 @@
         color: rgba(218, 59, 138);
       }
     }
-    .dotnet-note {
+    .warning-note {
       color: #96a2b4;
   }
 
@@ -102,7 +110,7 @@
         color: #738694;
       }
 
-      .dotnet-note {
+      .warning-note {
         color: #738694;
       }
 
@@ -291,6 +299,13 @@
       padding: 0 30px;
     }
 
+    .summary {
+      font-weight: bold;
+      margin-block-start: 1em;
+      margin-inline-start: 0px;
+      margin-inline-end: 0px;
+    }
+
     section img {
       width: calc(100% + 60px);
       height: auto;
@@ -327,7 +342,7 @@
     /*Mobile*/
       section h3,
       section details,
-      .dotnet-notice,
+      .warning-notice,
       .table-container {
           padding: 0 5px;
       }
@@ -374,9 +389,14 @@
       margin-left: 5px;
     }
 
+    .fa-exclamation-triangle {
+      color: darkorange;
+    }
+
     .summary-container {
       min-height: 100px;
       height: 300px;
+      margin-top: 0.5em;
       overflow: auto;
       resize: vertical;
     }
@@ -412,24 +432,30 @@
       color: #f44336;
     }
 
-    .dotnet-notice {
+    .warning-notice {
       display: inline-flex;
     }
 
-    .dotnet-note {
+    .warning-note {
       padding-left: .5rem;
+      padding-top: 0.5em;
       font-weight: normal;
   }
 
-    div.dotnet-notice > p {
+    div.warning-notice > p {
       margin-bottom: 0;
     }
 
-    .dotnet-heading {
+    .warning-summary {
       padding-right:5px;
       padding-bottom:0;
+      margin-block-start: 1em;
       color: darkorange;
       font-weight: bold;
+    }
+
+    .warning-summary:hover {
+      color: #ff8c00db;
     }
   </style>
 
@@ -459,22 +485,27 @@
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
-          <h3>Container Logs</h3>
           <details>
-          <summary>Expand</summary>
+          <summary class="summary">Container Logs</summary>
           <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
           </pre></div>
           </details>
-          <h3>Package info</h3>
           <details>
-          <summary>Expand</summary>
+          <summary class="summary">Package info</summary>
           <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
           </pre></div>
           </details>
-          {% if 'arm32' in tag and report_containers[tag]["dotnet"] == true %}
-          <div class="dotnet-notice">
-            <p class="dotnet-heading">Warning:<span class="dotnet-note">May be a .NET app. Service might not start on ARM32 with QEMU</span></p>
-          </div>
+          {% if report_containers[tag]["has_warnings"]%}
+          <details open>
+          <summary class="warning-summary">Warnings</summary>
+            {% for warning in report_containers[tag]["warnings"] %}
+              {% if report_containers[tag]["warnings"][warning] %}
+                <div class="warning-notice">
+                  <code class="warning-note"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ report_containers[tag]["warnings"][warning] }}</code>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </details>
           {% endif %}
           <div class="table-container">
             <table class="styled-table">
