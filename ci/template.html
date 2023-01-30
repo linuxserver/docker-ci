@@ -193,6 +193,17 @@
       display: none;
     }
 
+    a {
+        text-decoration: none;
+    }
+
+    a[target="_blank"]::after {
+        content: " \2197";
+        font-size: 80%;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+
     #app {
       display: flex;
       flex-direction: column;
