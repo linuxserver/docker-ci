@@ -45,6 +45,7 @@ RUN \
     selenium \
     docker \
     boto3 \
+    ansi2html \
     anybadge \
     pyvirtualdisplay \
     jinja2 && \

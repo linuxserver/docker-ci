@@ -19,6 +19,7 @@ import docker
 from docker.errors import APIError
 from docker.models.containers import Container
 import anybadge
+from ansi2html import Ansi2HTMLConverter
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
 from jinja2 import Environment, FileSystemLoader
@@ -147,6 +148,10 @@ class CI(SetEnvs):
                 `test_success` (bool): If the testing of the container failed or not
             """
             logblob = container.logs().decode('utf-8')
+            converter = Ansi2HTMLConverter()
+            html_logs = converter.convert(logblob)
+            with open(f'{self.outdir}/{tag}.log.html', 'w', encoding='utf-8') as file:
+                file.write(html_logs)
             container.remove(force='true')
             warning_texts = {
                 "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
@@ -154,7 +159,6 @@ class CI(SetEnvs):
             }
             # Add the info to the report
             self.report_containers[tag] = {
-                'logs': logblob,
                 'sysinfo': packages,
                 'warnings': {
                     'dotnet': warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",

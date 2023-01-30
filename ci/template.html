@@ -485,11 +485,9 @@
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
-          <details>
-          <summary class="summary">Container Logs</summary>
-          <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
-          </pre></div>
-          </details>
+          <summary class="summary">
+            <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
+          </summary>
           <details>
           <summary class="summary">Package info</summary>
           <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
