@@ -59,3 +59,4 @@ def configure_logging(log_level:str):
     logging.info('Python version: %s', platform.python_version())
     if log_level.upper() == "DEBUG":
         logging.getLogger("botocore").setLevel(logging.WARNING) # Mute boto3 logging output
+        logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING) # Mute urllib3.connectionpool logging output

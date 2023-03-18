@@ -155,6 +155,9 @@
         background-color: #f3f3f3;
       }
 
+      .section-header-status .report-status-pass {
+        color: #00c29a;
+      }
       .summary-container {
         background: #e8e8e8;
       }
@@ -236,12 +239,17 @@
       width: 100%;
     }
 
-    th {
-      text-align: left
+    .styled-table th,
+    .styled-table td {
+      word-wrap: break-word;
     }
 
-    .result-cell {
-      display: inline-flex;
+    table {
+      table-layout: fixed;
+    }
+
+    th {
+      text-align: left
     }
 
     section {
@@ -272,6 +280,14 @@
       text-align: center;
       flex-wrap: wrap;
     }
+
+    .section-header-status {
+      font-size: 17px;
+      padding-top: .5rem;
+      margin: 0;
+      text-align: center;
+      flex-wrap: wrap;
+  }
 
     em {
       color: #32a7c1;
@@ -484,11 +500,16 @@
         {% for tag in report_containers %}
         <section>
           <div class="section-header">
+            {% if report_containers[tag]["test_success"] %}
+            <h3 class="section-header-status"><span class="report-status-pass">PASS</span></h3>
+            {% else %}
+            <h3 class="section-header-status"><span class="report-status-fail">FAIL</span></h3>
+            {% endif %}
             <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
           </div>
           {% if screenshot == 'true' %}
           <a href="{{ tag }}.png">
-            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','404.jpg')">
+            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
           </a>
           {% else %}
           <div class="tag-image">

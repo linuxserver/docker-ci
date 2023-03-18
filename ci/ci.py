@@ -22,7 +22,7 @@ import anybadge
 from ansi2html import Ansi2HTMLConverter
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pyvirtualdisplay import Display
 
 
@@ -61,7 +61,7 @@ class SetEnvs():
                     env_dict[var[0]] = var[1]
                 env_dict["S6_VERBOSITY"] = os.environ.get('S6_VERBOSITY')
             except Exception as error:
-                self.logger.exception(error)
+                self.logger.exception("Failed to convert DOCKER_ENV: %s to dictionary!", envs)
                 raise CIError(f"Failed converting DOCKER_ENV: {envs} to dictionary") from error
         return env_dict
 
@@ -76,7 +76,7 @@ class SetEnvs():
             self.meta_tag = os.environ['META_TAG']
             self.tags_env = os.environ['TAGS']
         except KeyError as error:
-            self.logger.exception("Key %s is not set in ENV!", error)
+            self.logger.exception("Key is not set in ENV!")
             raise CIError(f'Key {error} is not set in ENV!') from error
 
 
@@ -137,38 +137,6 @@ class CI(SetEnvs):
         4. Take a screenshot for the report.
         5. Add report information to report.json.
         """
-        def _endtest(self: CI, container:Container, tag:str, build_version:str, packages:str, test_success: bool):
-            """End the test with as much info as we have and append to the report.
-
-            Args:
-                `container` (Container): Container object
-                `tag` (str): The container tag
-                `build_version` (str): The Container build version
-                `packages` (str): Package dump from the container
-                `test_success` (bool): If the testing of the container failed or not
-            """
-            logblob = container.logs().decode('utf-8')
-            converter = Ansi2HTMLConverter()
-            html_logs = converter.convert(logblob)
-            with open(f'{self.outdir}/{tag}.log.html', 'w', encoding='utf-8') as file:
-                file.write(html_logs)
-            container.remove(force='true')
-            warning_texts = {
-                "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
-                "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
-            }
-            # Add the info to the report
-            self.report_containers[tag] = {
-                'sysinfo': packages,
-                'warnings': {
-                    'dotnet': warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
-                    'uwsgi': warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
-                },
-                'build_version': build_version,
-                'test_results': self.tag_report_tests[tag]['test'],
-                'test_success': test_success,
-                }
-            self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
         # Name the thread for easier debugging.
         if "amd" in tag or "arm" in tag:
             current_thread().name = f"{tag[:5].upper()}Thread"
@@ -180,59 +148,71 @@ class CI(SetEnvs):
                                                environment=self.dockerenv)
         container_config = container.attrs["Config"]["Env"]
         self.logger.info("Container config of tag %s: %s",tag,container_config)
-        # Watch the logs for no more than 5 minutes
-        logsfound = False
-        t_end = time.time() + 60 * 5
-        self.logger.info("Checking logs for the 'done' message on tag: %s",tag)
-        while time.time() < t_end:
-            try:
-                logblob = container.logs().decode('utf-8')
-                if '[services.d] done.' in logblob or '[ls.io-init] done.' in logblob:
-                    logsfound = True
-                    break
-                time.sleep(1)
-            except APIError as error:
-                self.logger.exception('Container startup failed for %s', tag)
-                self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
-                    'status':'FAIL',
-                    'message': f'INIT NOT FINISHED: {error}'
-                    }.items())))                               
-                self.report_status = 'FAIL'
-                _endtest(self, container, tag, 'ERROR', 'ERROR', False)
-                return
-        # Grab build version
-        try:
-            self.logger.info("Fetching build version on tag: %s",tag)
-            build_version = container.attrs['Config']['Labels']['build_version']
-            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
-                'status':'PASS',
-                'message':'-'}.items())))
-            self.logger.info('Get build version %s: PASS', tag)
-        except APIError as error:
-            build_version = 'ERROR'
-            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
-                'status':'FAIL',
-                'message':error}.items())))
-            self.logger.exception('Get build version %s: FAIL', tag)
-            self.report_status = 'FAIL'
-            _endtest(self, container, tag, build_version, 'ERROR', False)
+
+
+        logsfound = self.watch_container_logs(container, tag) # Watch the logs for no more than 5 minutes
+        if not logsfound:
+            self._endtest(container, tag, "ERROR", "ERROR", False)
             return
-        # Check if the startup marker was found in the logs during the 2 minute spinup
-        if logsfound:
-            self.logger.info('Container startup completed for %s', tag)
-            self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
-                'status':'PASS',
-                'message':'-'}.items())))
-            self.logger.info('Container startup %s: PASS', tag)
-        else:
-            self.logger.error('Container startup failed for %s', tag)
-            self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
-                'status':'FAIL',
-                'message':'INIT NOT FINISHED'}.items())))
-            self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
-            self.report_status = 'FAIL'
-            _endtest(self, container, tag, build_version, 'ERROR', False)
+
+        build_version = self.get_build_version(container,tag) # Get the image build version
+        if build_version == "ERROR":
+            self._endtest(container, tag, build_version, "ERROR", False)
             return
+
+        packages = self.export_package_info(container, tag) # Dump package information
+        if packages == "ERROR":
+            self._endtest(container, tag, build_version, packages, False)
+            return
+
+        # Screenshot web interface and check connectivity
+        if self.screenshot == 'true':
+            self.take_screenshot(container, tag)
+        # If all info is present end test
+        self._endtest(container, tag, build_version, packages, True)
+        return
+
+    def _endtest(self: 'CI', container:Container, tag:str, build_version:str, packages:str, test_success: bool) -> None:
+        """End the test with as much info as we have and append to the report.
+
+        Args:
+            `container` (Container): Container object
+            `tag` (str): The container tag
+            `build_version` (str): The Container build version
+            `packages` (str): Package dump from the container
+            `test_success` (bool): If the testing of the container failed or not
+        """
+        logblob = container.logs().decode('utf-8')
+        self.create_html_logs(logblob, tag)
+        container.remove(force='true')
+        warning_texts = {
+            "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
+            "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
+        }
+        # Add the info to the report
+        self.report_containers[tag] = {
+            'logs': logblob,
+            'sysinfo': packages,
+            'warnings': {
+                'dotnet': warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
+                'uwsgi': warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
+            },
+            'build_version': build_version,
+            'test_results': self.tag_report_tests[tag]['test'],
+            'test_success': test_success,
+            }
+        self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
+
+    def export_package_info(self, container:Container, tag:str) -> str:
+        """Dump the package info into a string for the report
+
+        Args:
+            container (Container): The container we are testing
+            tag (str): The tag we are testing
+
+        Returns:
+            str: Return the output of the dump command or 'ERROR'
+        """
         # Dump package information
         dump_commands = {
             'alpine': 'apk info -v',
@@ -245,32 +225,95 @@ class CI(SetEnvs):
             self.logger.info('Dumping package info for %s',tag)
             info = container.exec_run(dump_commands[self.base])
             packages = info[1].decode('utf-8')
+            if info[0] != 0:
+                raise CIError(f"Failed to dump packages. Output: {packages}")
             self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
                 'status':'PASS',
                 'message':'-'}.items())))
             self.logger.info('Dump package info %s: PASS', tag)
-        except (APIError, IndexError) as error:
+        except (APIError, IndexError,CIError) as error:
             packages = 'ERROR'
-            self.logger.exception(str(error))
+            self.logger.exception('Dumping package info on %s: FAIL', tag)
             self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
                 'Dump package info':'FAIL',
-                'message':error}.items())))
-            self.logger.error('Dump package info %s: FAIL', tag)
+                'message':str(error)}.items())))
             self.report_status = 'FAIL' 
-            _endtest(self, container, tag, build_version, packages, False)
-            return
-        # Screenshot web interface and check connectivity
-        if self.screenshot == 'true':
-            self.take_screenshot(container, tag)
-        # If all info is present end test
-        _endtest(self, container, tag, build_version, packages, True)
-        return
+        return packages
 
+    def get_build_version(self,container:Container,tag:str) -> str:
+        """Fetch the build version from the container object attributes.
+
+        Args:
+            container (Container): The container we are testing
+            tag (str): The current tag we are testing
+
+        Returns:
+            str: Returns the build version or 'ERROR'
+        """
+        try:
+            self.logger.info("Fetching build version on tag: %s",tag)
+            build_version = container.attrs['Config']['Labels']['build_version']
+            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
+                'status':'PASS',
+                'message':'-'}.items())))
+            self.logger.info('Get build version on tag "%s": PASS', tag)
+        except (APIError,KeyError) as error:
+            self.logger.exception('Get build version on tag "%s": FAIL', tag)
+            build_version = 'ERROR'
+            if isinstance(error,KeyError):
+                error = f"KeyError: {error}"
+            self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
+                'status':'FAIL',
+                'message':str(error)}.items())))
+            self.report_status = 'FAIL'
+        return build_version
+
+    def watch_container_logs(self, container:Container, tag:str) -> bool:
+        """Tail the container logs for 5 minutes and look for the init done message that tells us the container started up
+        successfully.
+
+        Args:
+            container (Container): The container we are testing
+            tag (str): The tag we are testing
+
+        Returns:
+            bool: Return True if the 'done' message is found, otherwise False.
+        """
+        # Watch the logs for no more than 5 minutes
+        t_end = time.time() + 60 * 5
+        self.logger.info("Checking logs for the 'done' message on tag: %s",tag)
+        while time.time() < t_end:
+            try:
+                logblob = container.logs().decode('utf-8')
+                if '[services.d] done.' in logblob or '[ls.io-init] done.' in logblob:
+                    self.logger.info('Container startup completed for %s', tag)
+                    self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+                        'status':'PASS',
+                        'message':'-'}.items())))
+                    self.logger.info('Container startup %s: PASS', tag)
+                    return True
+                time.sleep(1)
+            except APIError as error:
+                self.logger.exception('Container startup %s: FAIL - INIT NOT FINISHED', tag)
+                self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+                    'status':'FAIL',
+                    'message': f'INIT NOT FINISHED: {str(error)}'
+                    }.items())))
+                self.report_status = 'FAIL'
+                return False
+        self.logger.error('Container startup failed for %s', tag)
+        self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
+            'status':'FAIL',
+            'message':'INIT NOT FINISHED'}.items())))
+        self.logger.error('Container startup %s: FAIL - INIT NOT FINISHED', tag)
+        self.report_status = 'FAIL'
+        return False
 
     def report_render(self) -> None:
         """Render the index file for upload"""
         self.logger.info('Rendering Report')
-        env = Environment( loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
+        env = Environment(autoescape=select_autoescape(enabled_extensions=('html', 'xml'),default_for_string=True),
+                          loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
         template = env.get_template('template.html')
         self.report_containers = json.loads(json.dumps(self.report_containers,sort_keys=True))
         with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
@@ -284,7 +327,6 @@ class CI(SetEnvs):
             screenshot=self.screenshot
             ))
 
-
     def badge_render(self) -> None:
         """Render the badge file for upload"""
         self.logger.info("Creating badge")
@@ -294,8 +336,8 @@ class CI(SetEnvs):
             badge.write_badge(f'{self.outdir}/badge.svg')
             with open(f'{self.outdir}/ci-status.yml', 'w', encoding='utf-8') as file:
                 file.write(f'CI: "{self.report_status}"')
-        except (ValueError,RuntimeError,FileNotFoundError,OSError) as error:
-            self.logger.exception(error)
+        except (ValueError,RuntimeError,FileNotFoundError,OSError):
+            self.logger.exception("Failed to render badge file!")
 
     def json_render(self) -> None:
         """Create a JSON file of the report data."""
@@ -304,8 +346,8 @@ class CI(SetEnvs):
             with open(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', mode="w", encoding='utf-8') as file:
                 json.dump(self.report_containers, file, indent=2, sort_keys=True)
             shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', f'{self.outdir}/report.json')
-        except (OSError,FileNotFoundError,TypeError,Exception) as error:
-            self.logger.exception(error)
+        except (OSError,FileNotFoundError,TypeError,Exception):
+            self.logger.exception("Failed to render JSON file!")
 
     def report_upload(self) -> None:
         """Upload report files to S3
@@ -323,7 +365,7 @@ class CI(SetEnvs):
         try:
             self.upload_file(index_file, "index.html", ctype)
         except (S3UploadFailedError, ValueError, ClientError) as error:
-            self.logger.exception('Upload Error: %s',error)
+            self.logger.exception('Upload Error!')
             self.log_upload()
             raise CIError(f'Upload Error: {error}') from error
 
@@ -335,11 +377,25 @@ class CI(SetEnvs):
             try:
                 self.upload_file(f'{self.outdir}/{filename}', filename, ctype)
             except (S3UploadFailedError, ValueError, ClientError) as error:
-                self.logger.exception('Upload Error: %s',error)
+                self.logger.exception('Upload Error!')
                 self.log_upload()
                 raise CIError(f'Upload Error: {error}') from error
         self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
 
+    def create_html_logs(self, logblob:str, tag:str) -> None:
+        """Creates an HTML file in the 'self.outdir' directory that we upload to S3
+
+        Args:
+            logblob (str): The logblob of the container
+            tag (str): The tag we are testing
+        """
+        try:
+            converter = Ansi2HTMLConverter()
+            html_logs = converter.convert(logblob)
+            with open(f'{self.outdir}/{tag}.log.html', 'w', encoding='utf-8') as file:
+                file.write(html_logs)
+        except Exception:
+            self.logger.exception("Failed to create an HTML file of the %s container logblob.", tag)
 
     def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
         """Upload a file to an S3 bucket
@@ -365,8 +421,8 @@ class CI(SetEnvs):
         self.logger.info('Uploading logs')
         try:
             self.upload_file("/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
-        except (S3UploadFailedError, ClientError) as error:
-            self.logger.exception('Upload Error: %s',error)
+        except (S3UploadFailedError, ClientError):
+            self.logger.exception('Failed to upload the CI logs!')
 
 
     def take_screenshot(self, container: Container, tag:str) -> None:
@@ -383,10 +439,10 @@ class CI(SetEnvs):
         self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
         time.sleep(int(self.test_container_delay))
         container.reload()
-        ip_adr = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
-        endpoint = f'{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}'
-        testercontainer, test_endpoint = self.start_tester(proto,endpoint,tag)
         try:
+            ip_adr = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
+            endpoint = f'{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}'
+            testercontainer, test_endpoint = self.start_tester(proto,endpoint,tag)
             driver = self.setup_driver()
             driver.get(test_endpoint)
             self.logger.info('Sleeping for %s seconds before creating a screenshot on %s', self.screenshot_delay, tag)
@@ -400,20 +456,23 @@ class CI(SetEnvs):
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
                 'status':'FAIL',
-                'message': f'CONNECTION ERROR: {error}'}.items())))
+                'message': f'CONNECTION ERROR: {str(error)}'}.items())))
             self.logger.exception('Screenshot %s FAIL CONNECTION ERROR', tag)
         except TimeoutException as error:
             self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
                 'status':'FAIL',
-                'message':f'TIMEOUT: {error}'}.items())))
+                'message':f'TIMEOUT: {str(error)}'}.items())))
             self.logger.exception('Screenshot %s FAIL TIMEOUT', tag)
         except (WebDriverException, Exception) as error:
             self.tag_report_tests[tag]['test']['Get screenshot'] = (dict(sorted({
                 'status':'FAIL',
-                'message':f'UNKNOWN: {error}'}.items())))
-            self.logger.exception('Screenshot %s FAIL UNKNOWN: %s', tag, error)
+                'message':f'UNKNOWN: {str(error)}'}.items())))
+            self.logger.exception('Screenshot %s FAIL UNKNOWN', tag)
         finally:
-            testercontainer.remove(force='true')
+            try:
+                testercontainer.remove(force='true')
+            except Exception:
+                self.logger.exception("Failed to remove tester container")
 
 
     def start_tester(self, proto:str, endpoint:str, tag:str) -> tuple[Container,str]:
