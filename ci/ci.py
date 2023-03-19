@@ -16,7 +16,7 @@ import boto3
 from boto3.exceptions import S3UploadFailedError
 from botocore.exceptions import ClientError
 import docker
-from docker.errors import APIError
+from docker.errors import APIError,ContainerError,ImageNotFound
 from docker.models.containers import Container
 import anybadge
 from ansi2html import Ansi2HTMLConverter
@@ -38,6 +38,7 @@ class SetEnvs():
         self.webpath = os.environ.get('WEB_PATH', '')
         self.screenshot = os.environ.get('WEB_SCREENSHOT', 'false')
         self.screenshot_delay = os.environ.get('WEB_SCREENSHOT_DELAY', '30')
+        self.logs_delay = os.environ.get('DOCKER_LOGS_DELAY', '300')
         self.port = os.environ.get('PORT', '80')
         self.ssl = os.environ.get('SSL', 'false')
         self.region = os.environ.get('S3_REGION', 'us-east-1')
@@ -160,16 +161,17 @@ class CI(SetEnvs):
             self._endtest(container, tag, build_version, "ERROR", False)
             return
 
-        packages = self.export_package_info(container, tag) # Dump package information
-        if packages == "ERROR":
-            self._endtest(container, tag, build_version, packages, False)
+        sbom = self.generate_sbom(tag)
+        if sbom == "ERROR":
+            self._endtest(container, tag, build_version, sbom, False)
             return
 
         # Screenshot web interface and check connectivity
         if self.screenshot == 'true':
             self.take_screenshot(container, tag)
-        # If all info is present end test
-        self._endtest(container, tag, build_version, packages, True)
+
+        self._endtest(container, tag, build_version, sbom, True)
+        self.logger.info("Testing of %s PASSED", tag)
         return
 
     def _endtest(self: 'CI', container:Container, tag:str, build_version:str, packages:str, test_success: bool) -> None:
@@ -179,12 +181,15 @@ class CI(SetEnvs):
             `container` (Container): Container object
             `tag` (str): The container tag
             `build_version` (str): The Container build version
-            `packages` (str): Package dump from the container
+            `packages` (str): SBOM dump from the container
             `test_success` (bool): If the testing of the container failed or not
         """
         logblob = container.logs().decode('utf-8')
-        self.create_html_logs(logblob, tag)
-        container.remove(force='true')
+        self.create_html_ansi_file(logblob, tag, "log") # Generate html container log file based on the latest logs
+        try:
+            container.remove(force='true')
+        except APIError:
+            self.logger.exception("Failed to remove container %s",tag)
         warning_texts = {
             "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
             "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
@@ -240,6 +245,46 @@ class CI(SetEnvs):
             self.report_status = 'FAIL' 
         return packages
 
+    def generate_sbom(self, tag:str) -> str:
+        """Generate the SBOM for the image tag.
+
+        Creates the output file in `{self.outdir}/{tag}.sbom.html`
+
+        Args:
+            tag (str): The tag we are testing
+
+        Returns:
+            bool: Return the output if successful otherwise "ERROR".
+        """
+        syft:Container = self.client.containers.run(image="anchore/syft:latest",command=f"{self.image}:{tag}", detach=True)
+        self.logger.info('Creating SBOM package list on %s',tag)
+
+        t_end = time.time() + int(self.logs_delay)
+        self.logger.info("Tailing the syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.logs_delay,tag)
+        while time.time() < t_end:
+            time.sleep(5)
+            try:
+                logblob = syft.logs().decode('utf-8')
+                if 'VERSION' in logblob:
+                    self.logger.info('Get package versions for %s completed', tag)
+                    self.tag_report_tests[tag]['test']['Create SBOM'] = (dict(sorted({
+                        'status':'PASS',
+                        'message':'-'}.items())))
+                    self.logger.info('Create SBOM package list %s: PASS', tag)
+                    self.create_html_ansi_file(str(logblob),tag,"sbom")
+                    return logblob
+            except (APIError,ContainerError,ImageNotFound) as error:
+                self.logger.exception('Creating SBOM package list on %s: FAIL', tag)
+                self.tag_report_tests[tag]['test']['Create SBOM'] = (dict(sorted({
+                    'Create SBOM':'FAIL',
+                    'message':str(error)}.items())))
+                self.report_status = 'FAIL'
+        try:
+            syft.remove(force=True)
+        except Exception:
+            self.logger.exception("Failed to remove the syft container, %s",tag)
+        return "ERROR"
+
     def get_build_version(self,container:Container,tag:str) -> str:
         """Fetch the build version from the container object attributes.
 
@@ -279,9 +324,8 @@ class CI(SetEnvs):
         Returns:
             bool: Return True if the 'done' message is found, otherwise False.
         """
-        # Watch the logs for no more than 5 minutes
-        t_end = time.time() + 60 * 5
-        self.logger.info("Checking logs for the 'done' message on tag: %s",tag)
+        t_end = time.time() + int(self.logs_delay)
+        self.logger.info("Tailing the %s logs for %s seconds looking for the 'done' message", tag, self.logs_delay)
         while time.time() < t_end:
             try:
                 logblob = container.logs().decode('utf-8')
@@ -316,7 +360,7 @@ class CI(SetEnvs):
                           loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
         template = env.get_template('template.html')
         self.report_containers = json.loads(json.dumps(self.report_containers,sort_keys=True))
-        with open(f'{os.path.dirname(os.path.realpath(__file__))}/index.html', mode="w", encoding='utf-8') as file_:
+        with open(f'{self.outdir}/index.html', mode="w", encoding='utf-8') as file_:
             file_.write(template.render(
             report_containers=self.report_containers,
             report_status=self.report_status,
@@ -343,9 +387,8 @@ class CI(SetEnvs):
         """Create a JSON file of the report data."""
         self.logger.info("Creating report.json file")
         try:
-            with open(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', mode="w", encoding='utf-8') as file:
+            with open(f'{self.outdir}/report.json', mode="w", encoding='utf-8') as file:
                 json.dump(self.report_containers, file, indent=2, sort_keys=True)
-            shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/report.json', f'{self.outdir}/report.json')
         except (OSError,FileNotFoundError,TypeError,Exception):
             self.logger.exception("Failed to render JSON file!")
 
@@ -358,17 +401,10 @@ class CI(SetEnvs):
             Exception: ClientError
         """
         self.logger.info('Uploading report files')
-        # Index file upload
-        index_file = f'{os.path.dirname(os.path.realpath(__file__))}/index.html'
-        shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/404.jpg', f'{self.outdir}/404.jpg')
-        ctype = {'ContentType': 'text/html', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content type
         try:
-            self.upload_file(index_file, "index.html", ctype)
-        except (S3UploadFailedError, ValueError, ClientError) as error:
-            self.logger.exception('Upload Error!')
-            self.log_upload()
-            raise CIError(f'Upload Error: {error}') from error
-
+            shutil.copyfile(f'{os.path.dirname(os.path.realpath(__file__))}/404.jpg', f'{self.outdir}/404.jpg')
+        except Exception:
+            self.logger.exception("Failed to copy 404 file!")
         # Loop through files in outdir and upload
         for filename in os.listdir(self.outdir):
             time.sleep(0.5)
@@ -382,20 +418,22 @@ class CI(SetEnvs):
                 raise CIError(f'Upload Error: {error}') from error
         self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
 
-    def create_html_logs(self, logblob:str, tag:str) -> None:
+    def create_html_ansi_file(self, blob:str, tag:str, name:str) -> None:
         """Creates an HTML file in the 'self.outdir' directory that we upload to S3
 
         Args:
-            logblob (str): The logblob of the container
+            blob (str): The blob you want to convert
             tag (str): The tag we are testing
+            name (str): The name of the file. File name will be `{tag}.{name}.html`
         """
         try:
+            self.logger.info(f"Creating {tag}.{name}.html")
             converter = Ansi2HTMLConverter()
-            html_logs = converter.convert(logblob)
-            with open(f'{self.outdir}/{tag}.log.html', 'w', encoding='utf-8') as file:
+            html_logs = converter.convert(blob)
+            with open(f'{self.outdir}/{tag}.{name}.html', 'w', encoding='utf-8') as file:
                 file.write(html_logs)
         except Exception:
-            self.logger.exception("Failed to create an HTML file of the %s container logblob.", tag)
+            self.logger.exception("Failed to create %s.%s.html", tag,name)
 
     def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
         """Upload a file to an S3 bucket
@@ -420,7 +458,7 @@ class CI(SetEnvs):
         """
         self.logger.info('Uploading logs')
         try:
-            self.upload_file("/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
+            self.upload_file(f"{self.outdir}/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
         except (S3UploadFailedError, ClientError):
             self.logger.exception('Failed to upload the CI logs!')
 
