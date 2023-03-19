@@ -6,6 +6,14 @@ from logging.handlers import TimedRotatingFileHandler
 import re
 import platform
 
+image = os.environ.get("IMAGE")
+meta_tag = os.environ.get("META_TAG")
+if image and meta_tag:
+    dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),"output",image,meta_tag)
+    os.makedirs(dir, exist_ok=True)
+    log_dir = os.path.join(dir,'ci.log')
+else:
+    log_dir = os.path.join(os.getcwd(),'ci.log')
 
 logger = logging.getLogger()
 
@@ -49,7 +57,7 @@ def configure_logging(log_level:str):
     logger.addHandler(ch)
 
     # File logging
-    fh = TimedRotatingFileHandler(os.path.join(os.getcwd(),'ci.log'), when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
+    fh = TimedRotatingFileHandler(log_dir, when="midnight", interval=1, backupCount=7, delay=True, encoding='utf-8')
     f = CustomLogFormatter('%(asctime)-15s | %(threadName)-17s | %(name)-10s | %(levelname)-8s | (%(module)s.%(funcName)s|line:%(lineno)d) | %(message)s |', '%d/%m/%Y %H:%M:%S')
     fh.setFormatter(f)
     fh.setLevel(log_level)
