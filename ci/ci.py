@@ -455,7 +455,7 @@ class CI(SetEnvs):
         """
         try:
             self.logger.info(f"Creating {tag}.{name}.html")
-            converter = Ansi2HTMLConverter()
+            converter = Ansi2HTMLConverter(title=f"{tag}-{name}")
             html_logs = converter.convert(blob)
             with open(f'{self.outdir}/{tag}.{name}.html', 'w', encoding='utf-8') as file:
                 file.write(html_logs)
@@ -485,7 +485,11 @@ class CI(SetEnvs):
         """
         self.logger.info('Uploading logs')
         try:
-            self.upload_file(f"{self.outdir}/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'}) 
+            self.upload_file(f"{self.outdir}/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'})
+            with open(f"{self.outdir}/ci.log","r", encoding='utf-8') as logs:
+                blob = logs.read()
+                self.create_html_ansi_file(blob,"python","log")
+                self.upload_file(f"{self.outdir}/python.log.html", 'python.log.html', {'ContentType': 'text/html', 'ACL': 'public-read'})
         except (S3UploadFailedError, ClientError):
             self.logger.exception('Failed to upload the CI logs!')
 
