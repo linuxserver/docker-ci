@@ -139,8 +139,7 @@ class CI(SetEnvs):
         5. Add report information to report.json.
         """
         # Name the thread for easier debugging.
-        if "amd" in tag or "arm" in tag:
-            current_thread().name = f"{tag[:5].upper()}Thread"
+        current_thread().name = f"{self.get_platform(tag).upper()}Thread"
 
         # Start the container
         self.logger.info('Starting test of: %s', tag)
@@ -208,6 +207,25 @@ class CI(SetEnvs):
             }
         self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
 
+    def get_platform(self, tag: str) -> str:
+        """Check the 5 first characters of the tag and return the platform.
+        
+        If no match is found return amd64.
+        
+        Returns:
+            str: The platform
+        """
+        platform = tag[:5]
+        match platform:
+            case "amd64":
+                return "amd64"
+            case "arm64":
+                return "arm64"
+            case "arm32":
+                return "arm"
+            case _:
+                return "amd64"
+
     def export_package_info(self, container:Container, tag:str) -> str:
         """Dump the package info into a string for the report
 
@@ -256,11 +274,14 @@ class CI(SetEnvs):
         Returns:
             bool: Return the output if successful otherwise "ERROR".
         """
-        syft:Container = self.client.containers.run(image="anchore/syft:latest",command=f"{self.image}:{tag}", detach=True)
+        platform = self.get_platform(tag)
+        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:v0.76.1",command=f"{self.image}:{tag} --platform=linux/{platform}", 
+            detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info('Creating SBOM package list on %s',tag)
 
         t_end = time.time() + int(self.logs_delay)
         self.logger.info("Tailing the syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.logs_delay,tag)
+        error_message = "Did not find the 'VERSION' keyword in the syft container logs"
         while time.time() < t_end:
             time.sleep(5)
             try:
@@ -272,13 +293,19 @@ class CI(SetEnvs):
                         'message':'-'}.items())))
                     self.logger.info('Create SBOM package list %s: PASS', tag)
                     self.create_html_ansi_file(str(logblob),tag,"sbom")
+                    try:
+                        syft.remove(force=True)
+                    except Exception:
+                        self.logger.exception("Failed to remove the syft container, %s",tag)
                     return logblob
             except (APIError,ContainerError,ImageNotFound) as error:
+                error_message = error
                 self.logger.exception('Creating SBOM package list on %s: FAIL', tag)
-                self.tag_report_tests[tag]['test']['Create SBOM'] = (dict(sorted({
-                    'Create SBOM':'FAIL',
-                    'message':str(error)}.items())))
-                self.report_status = 'FAIL'
+        self.logger.error("Failed to generate SBOM output on tag %s. SBOM output:\n%s",tag, logblob)
+        self.report_status = "FAIL"
+        self.tag_report_tests[tag]['test']['Create SBOM'] = (dict(sorted({
+            "Create SBOM":"FAIL",
+            "message":str(error_message)}.items())))
         try:
             syft.remove(force=True)
         except Exception:
