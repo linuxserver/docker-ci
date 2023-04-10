@@ -3,6 +3,7 @@
 import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
+from logging import LogRecord
 import re
 import platform
 
@@ -16,6 +17,33 @@ else:
     log_dir = os.path.join(os.getcwd(),'ci.log')
 
 logger = logging.getLogger()
+
+class ColorPercentStyle(logging.PercentStyle):
+    """Custom log formatter that add color to specific log levels."""
+    grey = "38"
+    blue = "34"
+    yellow = "33"
+    red = "31"
+    cyan = "36"
+
+    def _get_color_fmt(self, color_code, bold=False):
+        if bold:
+            return "\x1b[" + color_code + ";1m" + self._fmt + "\x1b[0m"
+        return "\x1b[" + color_code + ";20m" + self._fmt + "\x1b[0m"
+
+    def _get_fmt(self, levelno):
+        colors = {
+            logging.DEBUG: self._get_color_fmt(self.grey),
+            logging.INFO: self._get_color_fmt(self.cyan),
+            logging.WARNING: self._get_color_fmt(self.yellow),
+            logging.ERROR: self._get_color_fmt(self.red),
+            logging.CRITICAL: self._get_color_fmt(self.red)
+        }
+
+        return colors.get(levelno, self._get_color_fmt(self.grey))
+
+    def _format(self, record:LogRecord):
+        return self._get_fmt(record.levelno) % record.__dict__
 
 class CustomLogFormatter(logging.Formatter):
     """Formatter that removes creds from logs."""
@@ -42,6 +70,8 @@ class CustomLogFormatter(logging.Formatter):
 
         return s
 
+    def formatMessage(self, record):
+        return ColorPercentStyle(self._fmt).format(record)
 
 def configure_logging(log_level:str):
     """Setup console and file logging"""

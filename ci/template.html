@@ -99,10 +99,15 @@
       strong {
         color: rgba(218, 59, 138);
       }
+      .warning-note {
+        color: #96a2b4;
+      }
+
+      .log-debug {color:lightgray}
+      .log-info {color:lightskyblue}
+      .log-warning {color:darkorange}
+      .log-error {color:red}
     }
-    .warning-note {
-      color: #96a2b4;
-  }
 
     @media (prefers-color-scheme: light) {
       body {
@@ -174,6 +179,11 @@
         border-bottom: 1px solid #dcdcdc;
         background: #f5f5f5;
       }
+
+      .log-debug {color:#9bb0bf}
+      .log-info {color:#60707c}
+      .log-warning {color:darkorange}
+      .log-error {color:red}
     }
 
     body,
@@ -577,8 +587,13 @@
     fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-        document.getElementById("logs").innerText = logs
-      })
+      pylogs = logs.replace(/\[38;20m/gi,"<span class='log-debug'>"
+        ).replace(/\[33;20m/gi,"<span class='log-warning'>"
+        ).replace(/\[31;20m/gi,"<span class='log-error'>"
+        ).replace(/\[36;20m/gi,"<span class='log-info'>"      
+        ).replace(/\[0m/gi,"</span>")
+        document.getElementById("logs").innerHTML = pylogs
+    })
   </script>
 </body>
 
