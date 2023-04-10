@@ -11,9 +11,12 @@ import requests
 import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from functools import wraps
+from typing import Callable
 
 import boto3
 from boto3.exceptions import S3UploadFailedError
+from botocore import client
 from botocore.exceptions import ClientError
 import docker
 from docker.errors import APIError,ContainerError,ImageNotFound
@@ -25,6 +28,21 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pyvirtualdisplay import Display
 
+logger = logging.getLogger(__name__)
+
+def testing(func: Callable):
+    """If the DRY_RUN env is set and this decorator is used on a function it will return None
+
+    Args:
+        func (function): A function
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if os.environ.get("DRY_RUN") == "true":
+            logger.warning("Dry run enabled, skipping execution of %s", func.__name__)
+            return
+        return func(*args,**kwargs)
+    return wrapper
 
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
@@ -99,11 +117,7 @@ class CI(SetEnvs):
         self.report_status = 'PASS'
         self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
-        self.s3_client = boto3.Session().client(
-            's3',
-            region_name=self.region,
-            aws_access_key_id=self.s3_key,
-            aws_secret_access_key=self.s3_secret)
+        self.s3_client = self.create_s3_client()
 
     def run(self,tags: list) -> None:
         """Will iterate over all the tags running container_test() on each tag, multithreaded.
@@ -445,23 +459,26 @@ class CI(SetEnvs):
                 raise CIError(f'Upload Error: {error}') from error
         self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
 
-    def create_html_ansi_file(self, blob:str, tag:str, name:str) -> None:
+    def create_html_ansi_file(self, blob:str, tag:str, name:str, full:bool = True) -> None:
         """Creates an HTML file in the 'self.outdir' directory that we upload to S3
 
         Args:
             blob (str): The blob you want to convert
             tag (str): The tag we are testing
             name (str): The name of the file. File name will be `{tag}.{name}.html`
+            full (bool): Whether to include the full HTML document or only the body.
+
         """
         try:
             self.logger.info(f"Creating {tag}.{name}.html")
             converter = Ansi2HTMLConverter(title=f"{tag}-{name}")
-            html_logs = converter.convert(blob)
+            html_logs = converter.convert(blob,full=full)
             with open(f'{self.outdir}/{tag}.{name}.html', 'w', encoding='utf-8') as file:
                 file.write(html_logs)
         except Exception:
             self.logger.exception("Failed to create %s.%s.html", tag,name)
 
+    @testing
     def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
         """Upload a file to an S3 bucket
 
@@ -593,6 +610,20 @@ class CI(SetEnvs):
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
         return driver
+
+    @testing
+    def create_s3_client(self) -> boto3.client:
+        """Create and return an s3 client object
+
+        Returns:
+            Session.client: An S3 client.
+        """
+        s3_client = boto3.Session().client(
+                's3',
+                region_name=self.region,
+                aws_access_key_id=self.s3_key,
+                aws_secret_access_key=self.s3_secret)
+        return s3_client
 
 class CIError(Exception):
     pass
