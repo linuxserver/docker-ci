@@ -530,9 +530,21 @@
           <summary class="summary">
             <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
           </summary>
+          <details>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["logs"] }}</code></pre>
+            </div>
+          </details>
           <summary class="summary">
             <a href="{{ tag }}.sbom.html" target="_blank">View SBOM output</a>
           </summary>
+          <details>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
+            </div>
+          </details>
           {% if report_containers[tag]["has_warnings"]%}
           <details open>
           <summary class="warning-summary">Warnings</summary>
