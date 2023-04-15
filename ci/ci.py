@@ -6,33 +6,34 @@ import os
 import shutil
 import time
 import logging
+from logging import Logger
 import mimetypes
 import requests
 import json
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from functools import wraps
-from typing import Callable
+from typing import Callable, Any, Literal
 
 import boto3
 from boto3.exceptions import S3UploadFailedError
-from botocore import client
 from botocore.exceptions import ClientError
 import docker
 from docker.errors import APIError,ContainerError,ImageNotFound
-from docker.models.containers import Container
+from docker.models.containers import Container, ExecResult
+from docker import DockerClient
 import anybadge
 from ansi2html import Ansi2HTMLConverter
 from selenium import webdriver
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.common.exceptions import TimeoutException, WebDriverException
-from jinja2 import Environment, FileSystemLoader, select_autoescape
+from jinja2 import Environment, FileSystemLoader, select_autoescape, Template
 from pyvirtualdisplay import Display
 
-logger = logging.getLogger(__name__)
+logger: Logger = logging.getLogger(__name__)
 
 def testing(func: Callable):
-    """If the DRY_RUN env is set and this decorator is used on a function it will return None
-
+    """If the DRY_RUN env is set and this decorator is used on a function it will return None                   
     Args:
         func (function): A function
     """
@@ -47,33 +48,43 @@ def testing(func: Callable):
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
     def __init__(self) -> None:
-        self.logger = logging.getLogger("SetEnvs")
+        self.logger: Logger = logging.getLogger("SetEnvs")
 
         os.environ['S6_VERBOSITY'] = os.environ.get("CI_S6_VERBOSITY","2")
         # Set the optional parameters
-        self.dockerenv = self.convert_env(os.environ.get("DOCKER_ENV", ""))
-        self.webauth = os.environ.get('WEB_AUTH', 'user:password')
-        self.webpath = os.environ.get('WEB_PATH', '')
-        self.screenshot = os.environ.get('WEB_SCREENSHOT', 'false')
-        self.screenshot_delay = os.environ.get('WEB_SCREENSHOT_DELAY', '30')
-        self.logs_delay = os.environ.get('DOCKER_LOGS_DELAY', '300')
-        self.port = os.environ.get('PORT', '80')
-        self.ssl = os.environ.get('SSL', 'false')
-        self.region = os.environ.get('S3_REGION', 'us-east-1')
-        self.bucket = os.environ.get('S3_BUCKET', 'ci-tests.linuxserver.io')
-        self.test_container_delay = os.environ.get('DELAY_START', '5')
+        self.dockerenv: dict[str, str] = self.convert_env(os.environ.get("DOCKER_ENV", ""))
+        self.webauth: str = os.environ.get('WEB_AUTH', 'user:password')
+        self.webpath: str = os.environ.get('WEB_PATH', '')
+        self.screenshot: str = os.environ.get('WEB_SCREENSHOT', 'false')
+        self.screenshot_delay: str = os.environ.get('WEB_SCREENSHOT_DELAY', '30')
+        self.logs_delay: str = os.environ.get('DOCKER_LOGS_DELAY', '300')
+        self.port: str = os.environ.get('PORT', '80')
+        self.ssl: str = os.environ.get('SSL', 'false')
+        self.region: str = os.environ.get('S3_REGION', 'us-east-1')
+        self.bucket: str = os.environ.get('S3_BUCKET', 'ci-tests.linuxserver.io')
+        self.test_container_delay: str = os.environ.get('DELAY_START', '5')
         self.check_env()
 
 
-    def convert_env(self, envs:str = None) -> dict:
-        """Convert env DOCKER_ENV to dictionary"""
-        env_dict = {}
+    def convert_env(self, envs:str = None) -> dict[str,str]:
+        """Convert env DOCKER_ENV to dictionary
+
+        Args:
+            envs (str, optional): A string with key values separated by the pipe symbol. e.g `key1=val1|key2=val2`. Defaults to None.
+
+        Raises:
+            CIError: Raises a CIError Exception if it failes to parse the string
+
+        Returns:
+            dict[str,str]: Returns a dictionary with our keys and values.
+        """
+        env_dict: dict = {}
         if envs:
             self.logger.info("Converting envs")
             try:
                 if '|' in envs:
                     for varpair in envs.split('|'):
-                        var = varpair.split('=')
+                        var: list[str] = varpair.split('=')
                         env_dict[var[0]] = var[1]
                 else:
                     var = envs.split('=')
@@ -86,14 +97,18 @@ class SetEnvs():
 
 
     def check_env(self) -> None:
-        """Make sure all needed ENVs are set"""
+        """Make sure all needed ENVs are set
+
+        Raises:
+            CIError: Raises a CIError exception if one of the enviroment values is not set.
+        """
         try:
-            self.image = os.environ['IMAGE']
-            self.base = os.environ['BASE']
-            self.s3_key = os.environ['ACCESS_KEY']
-            self.s3_secret = os.environ['SECRET_KEY']
-            self.meta_tag = os.environ['META_TAG']
-            self.tags_env = os.environ['TAGS']
+            self.image: str = os.environ['IMAGE']
+            self.base: str = os.environ['BASE']
+            self.s3_key: str = os.environ['ACCESS_KEY']
+            self.s3_secret: str = os.environ['SECRET_KEY']
+            self.meta_tag: str = os.environ['META_TAG']
+            self.tags_env: str = os.environ['TAGS']
         except KeyError as error:
             self.logger.exception("Key is not set in ENV!")
             raise CIError(f'Key {error} is not set in ENV!') from error
@@ -110,12 +125,12 @@ class CI(SetEnvs):
         self.logger = logging.getLogger("LSIO CI")
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
-        self.client = docker.from_env()
+        self.client: DockerClient = docker.from_env()
         self.tags = list(self.tags_env.split('|'))
-        self.tag_report_tests = {tag: {'test':{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
-        self.report_containers: dict[str,dict] = {}
+        self.tag_report_tests:dict[str,dict[str,dict]] = {tag: {'test':{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
+        self.report_containers: dict[str,dict[str,dict]] = {}
         self.report_status = 'PASS'
-        self.outdir = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
+        self.outdir: str = f'{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}'
         os.makedirs(self.outdir, exist_ok=True)
         self.s3_client = self.create_s3_client()
 
@@ -160,21 +175,21 @@ class CI(SetEnvs):
         container: Container = self.client.containers.run(f'{self.image}:{tag}',
                                                detach=True,
                                                environment=self.dockerenv)
-        container_config = container.attrs["Config"]["Env"]
+        container_config: list[str] = container.attrs["Config"]["Env"]
         self.logger.info("Container config of tag %s: %s",tag,container_config)
 
 
-        logsfound = self.watch_container_logs(container, tag) # Watch the logs for no more than 5 minutes
+        logsfound: bool = self.watch_container_logs(container, tag) # Watch the logs for no more than 5 minutes
         if not logsfound:
             self._endtest(container, tag, "ERROR", "ERROR", False)
             return
 
-        build_version = self.get_build_version(container,tag) # Get the image build version
+        build_version: str = self.get_build_version(container,tag) # Get the image build version
         if build_version == "ERROR":
             self._endtest(container, tag, build_version, "ERROR", False)
             return
 
-        sbom = self.generate_sbom(tag)
+        sbom: str = self.generate_sbom(tag)
         if sbom == "ERROR":
             self._endtest(container, tag, build_version, sbom, False)
             return
@@ -197,13 +212,13 @@ class CI(SetEnvs):
             `packages` (str): SBOM dump from the container
             `test_success` (bool): If the testing of the container failed or not
         """
-        logblob = container.logs().decode('utf-8')
+        logblob: Any = container.logs().decode('utf-8')
         self.create_html_ansi_file(logblob, tag, "log") # Generate html container log file based on the latest logs
         try:
             container.remove(force='true')
         except APIError:
             self.logger.exception("Failed to remove container %s",tag)
-        warning_texts = {
+        warning_texts: dict[str, str] = {
             "dotnet": "May be a .NET app. Service might not start on ARM32 with QEMU",
             "uwsgi": "This image uses uWSGI and might not start on ARM/QEMU"
         }
@@ -229,7 +244,7 @@ class CI(SetEnvs):
         Returns:
             str: The platform
         """
-        platform = tag[:5]
+        platform: str = tag[:5]
         match platform:
             case "amd64":
                 return "amd64"
@@ -251,7 +266,7 @@ class CI(SetEnvs):
             str: Return the output of the dump command or 'ERROR'
         """
         # Dump package information
-        dump_commands = {
+        dump_commands: dict[str, str] = {
             'alpine': 'apk info -v',
             'debian': 'apt list',
             'ubuntu': 'apt list',
@@ -260,8 +275,8 @@ class CI(SetEnvs):
             }
         try:
             self.logger.info('Dumping package info for %s',tag)
-            info = container.exec_run(dump_commands[self.base])
-            packages = info[1].decode('utf-8')
+            info: ExecResult = container.exec_run(dump_commands[self.base])
+            packages: str = info[1].decode('utf-8')
             if info[0] != 0:
                 raise CIError(f"Failed to dump packages. Output: {packages}")
             self.tag_report_tests[tag]['test']['Dump package info'] = (dict(sorted({
@@ -288,18 +303,18 @@ class CI(SetEnvs):
         Returns:
             bool: Return the output if successful otherwise "ERROR".
         """
-        platform = self.get_platform(tag)
+        platform: str = self.get_platform(tag)
         syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:v0.76.1",command=f"{self.image}:{tag} --platform=linux/{platform}", 
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info('Creating SBOM package list on %s',tag)
 
-        t_end = time.time() + int(self.logs_delay)
+        t_end: float = time.time() + int(self.logs_delay)
         self.logger.info("Tailing the syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.logs_delay,tag)
         error_message = "Did not find the 'VERSION' keyword in the syft container logs"
         while time.time() < t_end:
             time.sleep(5)
             try:
-                logblob = syft.logs().decode('utf-8')
+                logblob: str = syft.logs().decode('utf-8')
                 if 'VERSION' in logblob:
                     self.logger.info('Get package versions for %s completed', tag)
                     self.tag_report_tests[tag]['test']['Create SBOM'] = (dict(sorted({
@@ -313,7 +328,7 @@ class CI(SetEnvs):
                         self.logger.exception("Failed to remove the syft container, %s",tag)
                     return logblob
             except (APIError,ContainerError,ImageNotFound) as error:
-                error_message = error
+                error_message: APIError | ContainerError | ImageNotFound = error
                 self.logger.exception('Creating SBOM package list on %s: FAIL', tag)
         self.logger.error("Failed to generate SBOM output on tag %s. SBOM output:\n%s",tag, logblob)
         self.report_status = "FAIL"
@@ -338,7 +353,7 @@ class CI(SetEnvs):
         """
         try:
             self.logger.info("Fetching build version on tag: %s",tag)
-            build_version = container.attrs['Config']['Labels']['build_version']
+            build_version: str = container.attrs['Config']['Labels']['build_version']
             self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
                 'status':'PASS',
                 'message':'-'}.items())))
@@ -347,7 +362,7 @@ class CI(SetEnvs):
             self.logger.exception('Get build version on tag "%s": FAIL', tag)
             build_version = 'ERROR'
             if isinstance(error,KeyError):
-                error = f"KeyError: {error}"
+                error: str = f"KeyError: {error}"
             self.tag_report_tests[tag]['test']['Get build version'] = (dict(sorted({
                 'status':'FAIL',
                 'message':str(error)}.items())))
@@ -365,11 +380,11 @@ class CI(SetEnvs):
         Returns:
             bool: Return True if the 'done' message is found, otherwise False.
         """
-        t_end = time.time() + int(self.logs_delay)
+        t_end: float = time.time() + int(self.logs_delay)
         self.logger.info("Tailing the %s logs for %s seconds looking for the 'done' message", tag, self.logs_delay)
         while time.time() < t_end:
             try:
-                logblob = container.logs().decode('utf-8')
+                logblob: str = container.logs().decode('utf-8')
                 if '[services.d] done.' in logblob or '[ls.io-init] done.' in logblob:
                     self.logger.info('Container startup completed for %s', tag)
                     self.tag_report_tests[tag]['test']['Container startup'] = (dict(sorted({
@@ -399,7 +414,7 @@ class CI(SetEnvs):
         self.logger.info('Rendering Report')
         env = Environment(autoescape=select_autoescape(enabled_extensions=('html', 'xml'),default_for_string=True),
                           loader = FileSystemLoader(os.path.dirname(os.path.realpath(__file__))) )
-        template = env.get_template('template.html')
+        template: Template = env.get_template('template.html')
         self.report_containers = json.loads(json.dumps(self.report_containers,sort_keys=True))
         with open(f'{self.outdir}/index.html', mode="w", encoding='utf-8') as file_:
             file_.write(template.render(
@@ -449,7 +464,7 @@ class CI(SetEnvs):
         # Loop through files in outdir and upload
         for filename in os.listdir(self.outdir):
             time.sleep(0.5)
-            ctype = mimetypes.guess_type(filename.lower(), strict=False)
+            ctype: tuple[str | None, str | None] = mimetypes.guess_type(filename.lower(), strict=False)
             ctype = {'ContentType': ctype[0] if ctype[0] else 'text/plain', 'ACL': 'public-read', 'CacheControl': 'no-cache'}  # Set content types for files
             try:
                 self.upload_file(f'{self.outdir}/{filename}', filename, ctype)
@@ -472,7 +487,7 @@ class CI(SetEnvs):
         try:
             self.logger.info(f"Creating {tag}.{name}.html")
             converter = Ansi2HTMLConverter(title=f"{tag}-{name}")
-            html_logs = converter.convert(blob,full=full)
+            html_logs: str = converter.convert(blob,full=full)
             with open(f'{self.outdir}/{tag}.{name}.html', 'w', encoding='utf-8') as file:
                 file.write(html_logs)
         except Exception:
@@ -488,8 +503,8 @@ class CI(SetEnvs):
             `object_name` (str): S3 object name.
         """
         self.logger.info('Uploading %s to %s bucket',file_path, self.bucket)
-        destination_dir = f'{self.image}/{self.meta_tag}'
-        latest_dir = f'{self.image}/latest'
+        destination_dir: str = f'{self.image}/{self.meta_tag}'
+        latest_dir: str = f'{self.image}/latest'
         self.s3_client.upload_file(file_path, self.bucket, f'{destination_dir}/{object_name}', ExtraArgs=content_type)
         self.s3_client.upload_file(file_path, self.bucket, f'{latest_dir}/{object_name}', ExtraArgs=content_type)
 
@@ -504,7 +519,7 @@ class CI(SetEnvs):
         try:
             self.upload_file(f"{self.outdir}/ci.log", 'ci.log', {'ContentType': 'text/plain', 'ACL': 'public-read'})
             with open(f"{self.outdir}/ci.log","r", encoding='utf-8') as logs:
-                blob = logs.read()
+                blob: str = logs.read()
                 self.create_html_ansi_file(blob,"python","log")
                 self.upload_file(f"{self.outdir}/python.log.html", 'python.log.html', {'ContentType': 'text/html', 'ACL': 'public-read'})
         except (S3UploadFailedError, ClientError):
@@ -520,16 +535,16 @@ class CI(SetEnvs):
             `container` (Container): Container object
             `tag` (str): The container tag we are testing.
         """
-        proto = 'https' if self.ssl.upper() == 'TRUE' else 'http'
+        proto: Literal['https', 'http'] = 'https' if self.ssl.upper() == 'TRUE' else 'http'
         # Sleep for the user specified amount of time
         self.logger.info('Sleeping for %s seconds before reloading container: %s and refreshing container attrs', self.test_container_delay, container.image)
         time.sleep(int(self.test_container_delay))
         container.reload()
         try:
-            ip_adr = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
-            endpoint = f'{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}'
+            ip_adr: str = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
+            endpoint: str = f'{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}'
             testercontainer, test_endpoint = self.start_tester(proto,endpoint,tag)
-            driver = self.setup_driver()
+            driver: WebDriver = self.setup_driver()
             driver.get(test_endpoint)
             self.logger.info('Sleeping for %s seconds before creating a screenshot on %s', self.screenshot_delay, tag)
             time.sleep(int(self.screenshot_delay))
@@ -582,8 +597,8 @@ class CI(SetEnvs):
         self.logger.info('Sleeping for %s seconds before reloading %s and refreshing container attrs on %s run', self.test_container_delay, testercontainer.image, tag)
         time.sleep(int(self.test_container_delay))
         testercontainer.reload()
-        testerip = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
-        testerendpoint = f'http://{testerip}:3000'
+        testerip: str = testercontainer.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
+        testerendpoint: str = f'http://{testerip}:3000'
         session = requests.Session()
         retries = Retry(total=10, backoff_factor=2,status_forcelist=[502, 503, 504])
         session.mount(proto, HTTPAdapter(max_retries=retries))
@@ -591,7 +606,7 @@ class CI(SetEnvs):
         return testercontainer, testerendpoint
 
 
-    def setup_driver(self) -> webdriver.Chrome:
+    def setup_driver(self) -> WebDriver:
         """Return a single ChromiumDriver object the class can use
 
         Returns:

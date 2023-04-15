@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import os
-
+from logging import Logger
 from ci.ci import CI, CIError
 from ci.logger import configure_logging
 
-def run_test():
+def run_test() -> None:
     """Run tests on container tags then build and upload reports"""
     ci.run(ci.tags)
     # Don't set the whole report as failed if any of the ARM tag fails.
@@ -26,10 +26,10 @@ def run_test():
 
 if __name__ == '__main__':
     try:
-        log_level = os.environ.get("CI_LOG_LEVEL","INFO")
+        log_level: str = os.environ.get("CI_LOG_LEVEL","INFO")
         configure_logging(log_level)
         import logging
-        logger = logging.getLogger(__name__)
+        logger: Logger = logging.getLogger(__name__)
         ci = CI()
         run_test()
     except Exception as err:
