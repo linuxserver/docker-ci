@@ -38,12 +38,26 @@ def testing(func: Callable):
         func (function): A function
     """
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any | None:
         if os.environ.get("DRY_RUN") == "true":
             logger.warning("Dry run enabled, skipping execution of %s", func.__name__)
             return
         return func(*args,**kwargs)
     return wrapper
+
+def deprecated(reason: str):
+    """Decorator to mark a function as deprecated. Will log a warning when the function is called.
+
+    Args:
+        reason (str): The reason it is deprecated.
+    """    
+    def deprecated_decorator(func: Callable):
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Any:
+            logger.warning("Function %s is deprecated. Reason: %s", func.__name__, reason)
+            return func(*args,**kwargs)
+        return wrapper
+    return deprecated_decorator
 
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
@@ -137,14 +151,10 @@ class CI(SetEnvs):
     def run(self,tags: list) -> None:
         """Will iterate over all the tags running container_test() on each tag, multithreaded.
 
-        Also does a pull of the linuxserver/tester:latest image before running container_test.
-
         Args:
             `tags` (list): All the tags we will test on the image.
 
         """
-        self.logger.info("Pulling ghcr.io/linuxserver/tester:latest")
-        self.client.images.pull(repository="ghcr.io/linuxserver/tester", tag="latest") # Pulls latest tester image. 
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
         display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
@@ -152,7 +162,6 @@ class CI(SetEnvs):
         thread_pool.close()
         thread_pool.join()
         display.stop()
-
 
     def container_test(self, tag: str) -> None:
         """Main container test logic.
@@ -255,6 +264,7 @@ class CI(SetEnvs):
             case _:
                 return "amd64"
 
+    @deprecated(reason="Use generate_sbom instead")
     def export_package_info(self, container:Container, tag:str) -> str:
         """Dump the package info into a string for the report
 
@@ -472,7 +482,7 @@ class CI(SetEnvs):
                 self.logger.exception('Upload Error!')
                 self.log_upload()
                 raise CIError(f'Upload Error: {error}') from error
-        self.logger.info('Report available on https://ci-tests.linuxserver.io/%s/index.html', f'{self.image}/{self.meta_tag}')
+        self.logger.info('Report available on https://%s/%s/%s/index.html',self.bucket, self.image, self.meta_tag)
 
     def create_html_ansi_file(self, blob:str, tag:str, name:str, full:bool = True) -> None:
         """Creates an HTML file in the 'self.outdir' directory that we upload to S3
@@ -529,7 +539,7 @@ class CI(SetEnvs):
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir
 
-        Spins up an ghcr.io/linuxserver/tester container and takes a screenshot using Selenium.
+        Takes a screenshot using a ChromiumDriver instance.
 
         Args:
             `container` (Container): Container object
@@ -543,9 +553,8 @@ class CI(SetEnvs):
         try:
             ip_adr: str = container.attrs['NetworkSettings']['Networks']['bridge']['IPAddress']
             endpoint: str = f'{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}'
-            testercontainer, test_endpoint = self.start_tester(proto,endpoint,tag)
             driver: WebDriver = self.setup_driver()
-            driver.get(test_endpoint)
+            driver.get(endpoint)
             self.logger.info('Sleeping for %s seconds before creating a screenshot on %s', self.screenshot_delay, tag)
             time.sleep(int(self.screenshot_delay))
             self.logger.info('Taking screenshot of %s at %s', tag, endpoint)
@@ -571,11 +580,11 @@ class CI(SetEnvs):
             self.logger.exception('Screenshot %s FAIL UNKNOWN', tag)
         finally:
             try:
-                testercontainer.remove(force='true')
+                driver.quit()
             except Exception:
-                self.logger.exception("Failed to remove tester container")
+                self.logger.exception("Failed to quit the driver")
 
-
+    @deprecated(reason="Use the chrome driver directly instead")
     def start_tester(self, proto:str, endpoint:str, tag:str) -> tuple[Container,str]:
         """Spin up an RDP test container to load the container web ui.
 
