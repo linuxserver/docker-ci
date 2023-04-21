@@ -99,10 +99,15 @@
       strong {
         color: rgba(218, 59, 138);
       }
+      .warning-note {
+        color: #96a2b4;
+      }
+
+      .log-debug {color:lightgray}
+      .log-info {color:lightskyblue}
+      .log-warning {color:darkorange}
+      .log-error {color:red}
     }
-    .warning-note {
-      color: #96a2b4;
-  }
 
     @media (prefers-color-scheme: light) {
       body {
@@ -155,6 +160,9 @@
         background-color: #f3f3f3;
       }
 
+      .section-header-status .report-status-pass {
+        color: #00c29a;
+      }
       .summary-container {
         background: #e8e8e8;
       }
@@ -171,6 +179,11 @@
         border-bottom: 1px solid #dcdcdc;
         background: #f5f5f5;
       }
+
+      .log-debug {color:#9bb0bf}
+      .log-info {color:#60707c}
+      .log-warning {color:darkorange}
+      .log-error {color:red}
     }
 
     body,
@@ -191,6 +204,17 @@
 
     #logohttpsrawgithubusercontentcomlinuxserverdockertemplatesmasterlinuxserverioimglinuxserver_mediumpng {
       display: none;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    a[target="_blank"]::after {
+        content: " \2197";
+        font-size: 80%;
+        margin-left: 4px;
+        vertical-align: middle;
     }
 
     #app {
@@ -225,12 +249,17 @@
       width: 100%;
     }
 
-    th {
-      text-align: left
+    .styled-table th,
+    .styled-table td {
+      word-wrap: break-word;
     }
 
-    .result-cell {
-      display: inline-flex;
+    table {
+      table-layout: fixed;
+    }
+
+    th {
+      text-align: left
     }
 
     section {
@@ -261,6 +290,14 @@
       text-align: center;
       flex-wrap: wrap;
     }
+
+    .section-header-status {
+      font-size: 17px;
+      padding-top: .5rem;
+      margin: 0;
+      text-align: center;
+      flex-wrap: wrap;
+  }
 
     em {
       color: #32a7c1;
@@ -473,11 +510,16 @@
         {% for tag in report_containers %}
         <section>
           <div class="section-header">
+            {% if report_containers[tag]["test_success"] %}
+            <h3 class="section-header-status"><span class="report-status-pass">PASS</span></h3>
+            {% else %}
+            <h3 class="section-header-status"><span class="report-status-fail">FAIL</span></h3>
+            {% endif %}
             <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
           </div>
           {% if screenshot == 'true' %}
           <a href="{{ tag }}.png">
-            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','404.jpg')">
+            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
           </a>
           {% else %}
           <div class="tag-image">
@@ -485,15 +527,23 @@
           </div>
           {% endif %}
           <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
+          <summary class="summary">
+            <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
+          </summary>
           <details>
-          <summary class="summary">Container Logs</summary>
-          <div class="summary-container"><pre><code>{{ report_containers[tag]["logs"] }}</code>
-          </pre></div>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["logs"] }}</code></pre>
+            </div>
           </details>
+          <summary class="summary">
+            <a href="{{ tag }}.sbom.html" target="_blank">View SBOM output</a>
+          </summary>
           <details>
-          <summary class="summary">Package info</summary>
-          <div class="summary-container"><pre><code>{{ report_containers[tag]["sysinfo"] }}</code>
-          </pre></div>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
+            </div>
           </details>
           {% if report_containers[tag]["has_warnings"]%}
           <details open>
@@ -536,7 +586,9 @@
       </main>
     </div>
     <section class="debug-section">
-      <h3><a href="ci.log">Python logs</a></h3>
+      <summary class="summary">
+        <a href="python.log.html" target="_blank">View Python Logs</a>
+      </summary>
       <details>
         <summary>Expand</summary>
         <pre id="logs"></pre>
@@ -547,8 +599,13 @@
     fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-        document.getElementById("logs").innerText = logs
-      })
+      pylogs = logs.replace(/\[38;20m/gi,"<span class='log-debug'>"
+        ).replace(/\[33;20m/gi,"<span class='log-warning'>"
+        ).replace(/\[31;20m/gi,"<span class='log-error'>"
+        ).replace(/\[36;20m/gi,"<span class='log-info'>"      
+        ).replace(/\[0m/gi,"</span>")
+        document.getElementById("logs").innerHTML = pylogs
+    })
   </script>
 </body>
 
