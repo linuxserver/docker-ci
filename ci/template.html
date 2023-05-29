@@ -4,10 +4,31 @@
 
 <head>
   <meta charset="utf-8">
-
-  <title>CI Results</title>
-  <meta name="description" content="CI Results">
+  <title>CI Results {{ image }}:{{ meta_tag }}</title>
+  <meta name="description" content="CI: {{ 'PASS ✅' if report_status=='PASS' else 'FAIL ❌' }}">
   <meta name="author" content="linuxserver.io">
+
+  <meta name="theme-color" content="#da3b8a">
+  <!-- Google / Search Engine Tags -->
+  <meta itemprop="name" content="CI Results for {{ image }}:{{ meta_tag }}">
+  <meta itemprop="description" content="CI: {{ 'PASS ✅' if report_status=='PASS' else 'FAIL ❌' }}">
+  <meta itemprop="image" content="https://{{ bucket }}/{{ image }}/{{ meta_tag }}/logo.jpg">
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ bucket }}">
+  <meta property="og:url" content="https://{{ bucket }}/">
+  <meta property="og:title" content="CI Results for {{ image }}:{{ meta_tag }}">
+  <meta property="og:description" content="CI: {{ 'PASS ✅' if report_status=='PASS' else 'FAIL ❌' }}">
+  <meta property="og:image" content="https://{{ bucket }}/{{ image }}/{{ meta_tag }}/logo.jpg">
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://{{ bucket }}/">
+  <meta property="twitter:title" content="CI Results for {{ image }}:{{ meta_tag }}">
+  <meta property="twitter:description" content="CI: {{ 'PASS ✅' if report_status=='PASS' else 'FAIL ❌' }}">
+  <meta property="twitter:image" content="https://{{ bucket }}/{{ image }}/{{ meta_tag }}/logo.jpg">
+  <!-- Favicon-->
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
   <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"
@@ -90,10 +111,14 @@
         background: #1f1f1f;
       }
 
-      .build-version {
+      .build {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(0, 0, 0, 0.25);
+      }
+
+      .build-header {
+        color:rgba(218, 59, 138);
       }
 
       strong {
@@ -175,9 +200,13 @@
         background: #e8e8e8;
       }
 
-      .build-version {
+      .build {
         border-bottom: 1px solid #dcdcdc;
         background: #f5f5f5;
+      }
+
+      .build-header {
+        color:#738694;
       }
 
       .log-debug {color:#9bb0bf}
@@ -450,11 +479,28 @@
       padding: 10px;
     }
 
-    .build-version {
-      padding: 20px 30px;
+    .build-section {
+      text-align: center;
+      font-weight: bold;
+      padding: .3rem;
+      font-size: 14px;
+    }
+    
+    .build-info-section {
+      padding: 10px 30px;
       margin: 0;
       font-size: 12px;
       word-break: break-all;
+      display: grid;
+    }
+    
+    .build-info {
+      padding-right: .3rem;
+      padding-left: .3rem;
+    }
+
+    .build-summary {
+      display: inline-flex;
     }
 
     .tag-image {
@@ -526,7 +572,21 @@
             <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
           </div>
           {% endif %}
-          <h3 class="build-version">Build Version: {{ report_containers[tag]["build_version"] }}</h3>
+          <div class="build-section">Build Information</div>
+          <div class="build-info-section build">
+            <div class="build-summary">
+              <span class="build-header">Version:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["version"] }}</span>
+            </div>
+            <div class="build-summary">
+              <span class="build-header">Created:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["created"] }}</span>
+            </div>
+            <div class="build-summary">
+              <span class="build-header">Size:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["size"] }}</span>
+            </div>
+            <div class="build-summary">
+              <span class="build-header">Maintainer:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["maintainer"] }}</span>
+            </div>
+          </div>
           <summary class="summary">
             <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
           </summary>
