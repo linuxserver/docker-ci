@@ -316,7 +316,7 @@ class CI(SetEnvs):
             bool: Return the output if successful otherwise "ERROR".
         """
         platform: str = self.get_platform(tag)
-        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:v0.76.1",command=f"{self.image}:{tag} --platform=linux/{platform}", 
+        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:latest",command=f"{self.image}:{tag} --platform=linux/{platform}", 
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info("Creating SBOM package list on %s",tag)
 
