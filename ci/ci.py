@@ -71,7 +71,7 @@ class SetEnvs():
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: str = os.environ.get("WEB_SCREENSHOT", "false")
         self.screenshot_delay: str = os.environ.get("WEB_SCREENSHOT_DELAY", "30")
-        self.logs_delay: str = os.environ.get("DOCKER_LOGS_DELAY", "300")
+        self.logs_delay: str = os.environ.get("DOCKER_LOGS_DELAY", "900")
         self.port: str = os.environ.get("PORT", "80")
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
