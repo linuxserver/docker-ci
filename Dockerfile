@@ -31,14 +31,14 @@ RUN \
     xserver-xephyr \
     xvfb && \
   echo "**** install chrome driver ****" && \
-  CHROME_RELEASE=$(curl -sLk https://chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
+  CHROME_RELEASE=$(curl -sLk https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE) && \
   echo "Retrieving Chrome driver version ${CHROME_RELEASE}" && \
   curl -sk -o \
     /tmp/chrome.zip -L \
-    "https://chromedriver.storage.googleapis.com/${CHROME_RELEASE}/chromedriver_linux64.zip" && \
+    "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_RELEASE}/linux64/chromedriver-linux64.zip" && \
   cd /tmp && \
   unzip chrome.zip && \
-  mv chromedriver /usr/bin/chromedriver && \
+  mv chromedriver-linux64/chromedriver /usr/bin/chromedriver && \
   chown root:root /usr/bin/chromedriver && \
   chmod +x /usr/bin/chromedriver && \
   echo "**** Install python deps ****" && \
