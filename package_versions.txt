@@ -311,7 +311,7 @@ golang.org/x/term                                                             v0
 golang.org/x/text                                                             v0.14.0                                   go-module  
 golang.org/x/time                                                             v0.0.0-20210723032227-1f47c861a9ac        go-module  
 golang.org/x/time                                                             v0.3.0                                    go-module  
-google-chrome-stable                                                          121.0.6167.184-1                          deb        
+google-chrome-stable                                                          122.0.6261.69-1                           deb        
 google.golang.org/api                                                         v0.126.0                                  go-module  
 google.golang.org/appengine                                                   v1.6.7                                    go-module  
 google.golang.org/genproto                                                    v0.0.0-20200224152610-e50cd9704f63        go-module  
