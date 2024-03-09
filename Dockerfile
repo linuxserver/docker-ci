@@ -24,9 +24,7 @@ RUN \
   apt-get install -y --no-install-recommends \
     docker-ce \
     google-chrome-stable \
-    python3 \
-    python3-pip \
-    python3-setuptools \
+    python3-venv \
     unzip \
     xserver-xephyr \
     xvfb && \
@@ -42,7 +40,11 @@ RUN \
   chown root:root /usr/bin/chromedriver && \
   chmod +x /usr/bin/chromedriver && \
   echo "**** Install python deps ****" && \
-  pip3 install --no-cache-dir -r /tmp/requirements.txt && \
+  python3 -m venv /lsiopy && \
+  pip3 install -U --no-cache-dir \
+    pip && \
+  pip3 install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/ubuntu/ \
+    -r /tmp/requirements.txt && \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
   rm -rf \
