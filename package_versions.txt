@@ -312,7 +312,7 @@ golang.org/x/term                                                             v0
 golang.org/x/text                                                             v0.14.0                                   go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.0.0-20210723032227-1f47c861a9ac        go-module                   
 golang.org/x/time                                                             v0.3.0                                    go-module                   
-google-chrome-stable                                                          122.0.6261.111-1                          deb                         
+google-chrome-stable                                                          122.0.6261.128-1                          deb                         
 google.golang.org/api                                                         v0.126.0                                  go-module                   
 google.golang.org/appengine                                                   v1.6.7                                    go-module                   
 google.golang.org/genproto                                                    v0.0.0-20200224152610-e50cd9704f63        go-module  (+4 duplicates)  
@@ -403,7 +403,7 @@ libdrm2                                                                       2.
 libedit2                                                                      3.1-20210910-1build1                      deb                         
 libelf1                                                                       0.186-1build1                             deb                         
 libepoxy0                                                                     1.5.10-1                                  deb                         
-libexpat1                                                                     2.4.7-1ubuntu0.2                          deb                         
+libexpat1                                                                     2.4.7-1ubuntu0.3                          deb                         
 libext2fs2                                                                    1.46.5-2ubuntu1.1                         deb                         
 libffi8                                                                       3.4.2-4                                   deb                         
 libfontconfig1                                                                2.13.1-4.2ubuntu5                         deb                         
@@ -627,7 +627,7 @@ sysvinit-utils                                                                3.
 tags.cncf.io/container-device-interface                                       v0.6.2                                    go-module                   
 tags.cncf.io/container-device-interface/specs-go                              v0.6.0                                    go-module                   
 tar                                                                           1.34+dfsg-1ubuntu0.1.22.04.1              deb                         
-trio                                                                          0.24.0                                    python                      
+trio                                                                          0.25.0                                    python                      
 trio-websocket                                                                0.11.1                                    python                      
 tzdata                                                                        2024a-0ubuntu0.22.04                      deb                         
 ubuntu-keyring                                                                2021.03.26                                deb                         
