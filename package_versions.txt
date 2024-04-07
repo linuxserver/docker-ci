@@ -8,8 +8,8 @@ adduser                                                                       3.
 adwaita-icon-theme                                                            41.0-1ubuntu1                             deb                         
 ansi2html                                                                     1.8.0                                     python                      
 anybadge                                                                      1.14.0                                    python                      
-apt                                                                           2.4.11                                    deb                         
-apt-utils                                                                     2.4.11                                    deb                         
+apt                                                                           2.4.12                                    deb                         
+apt-utils                                                                     2.4.12                                    deb                         
 attrs                                                                         23.2.0                                    python                      
 base-files                                                                    12ubuntu4.6                               deb                         
 base-passwd                                                                   3.5.52build1                              deb                         
@@ -17,7 +17,7 @@ bash                                                                          5.
 bash                                                                          5.1.16                                    binary                      
 boto3                                                                         1.26.108                                  python                      
 botocore                                                                      1.29.165                                  python                      
-bsdutils                                                                      1:2.37.2-4ubuntu3                         deb                         
+bsdutils                                                                      1:2.37.2-4ubuntu3.3                       deb                         
 ca-certificates                                                               20230311ubuntu0.22.04.1                   deb                         
 certifi                                                                       2024.2.2                                  python                      
 charset-normalizer                                                            3.3.2                                     python                      
@@ -26,9 +26,9 @@ cloud.google.com/go/logging                                                   v1
 cloud.google.com/go/longrunning                                               v0.5.2                                    go-module                   
 code.cloudfoundry.org/clock                                                   v1.1.0                                    go-module                   
 containerd.io                                                                 1.6.28-2                                  deb                         
-coreutils                                                                     8.32-4.1ubuntu1.1                         deb                         
+coreutils                                                                     8.32-4.1ubuntu1.2                         deb                         
 cron                                                                          3.0pl1-137ubuntu3                         deb                         
-curl                                                                          7.81.0-1ubuntu1.15                        deb                         
+curl                                                                          7.81.0-1ubuntu1.16                        deb                         
 dario.cat/mergo                                                               v1.0.0                                    go-module  (+1 duplicate)   
 dash                                                                          0.5.11+git20210903+057cd650a4ed-3build1   deb                         
 dbus                                                                          1.12.20-2ubuntu4.1                        deb                         
@@ -319,7 +319,7 @@ golang.org/x/term                                                             v0
 golang.org/x/text                                                             v0.14.0                                   go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.0.0-20210723032227-1f47c861a9ac        go-module                   
 golang.org/x/time                                                             v0.3.0                                    go-module                   
-google-chrome-stable                                                          123.0.6312.86-1                           deb                         
+google-chrome-stable                                                          123.0.6312.105-1                          deb                         
 google.golang.org/api                                                         v0.128.0                                  go-module                   
 google.golang.org/appengine                                                   v1.6.7                                    go-module                   
 google.golang.org/genproto                                                    v0.0.0-20200224152610-e50cd9704f63        go-module  (+4 duplicates)  
@@ -363,7 +363,7 @@ k8s.io/klog/v2                                                                v2
 k8s.io/utils                                                                  v0.0.0-20210930125809-cb0fa318a74b        go-module                   
 libacl1                                                                       2.3.1-1                                   deb                         
 libapparmor1                                                                  3.0.4-2ubuntu2.3                          deb                         
-libapt-pkg6.0                                                                 2.4.11                                    deb                         
+libapt-pkg6.0                                                                 2.4.12                                    deb                         
 libargon2-1                                                                   0~20171227-0.3                            deb                         
 libasound2                                                                    1.2.6.1-1ubuntu1                          deb                         
 libasound2-data                                                               1.2.6.1-1ubuntu1                          deb                         
@@ -378,7 +378,7 @@ libaudit1                                                                     1:
 libavahi-client3                                                              0.8-5ubuntu5.2                            deb                         
 libavahi-common-data                                                          0.8-5ubuntu5.2                            deb                         
 libavahi-common3                                                              0.8-5ubuntu5.2                            deb                         
-libblkid1                                                                     2.37.2-4ubuntu3                           deb                         
+libblkid1                                                                     2.37.2-4ubuntu3.3                         deb                         
 libbrotli1                                                                    1.0.9-2build6                             deb                         
 libbsd0                                                                       0.11.5-1                                  deb                         
 libbz2-1.0                                                                    1.0.8-5build1                             deb                         
@@ -393,7 +393,7 @@ libcom-err2                                                                   1.
 libcrypt1                                                                     1:4.4.27-1                                deb                         
 libcryptsetup12                                                               2:2.4.3-1ubuntu1.2                        deb                         
 libcups2                                                                      2.4.1op1-1ubuntu4.8                       deb                         
-libcurl4                                                                      7.81.0-1ubuntu1.15                        deb                         
+libcurl4                                                                      7.81.0-1ubuntu1.16                        deb                         
 libdatrie1                                                                    0.2.13-2                                  deb                         
 libdb5.3                                                                      5.3.28+dfsg1-0.8ubuntu3                   deb                         
 libdbus-1-3                                                                   1.12.20-2ubuntu4.1                        deb                         
@@ -462,7 +462,7 @@ liblz4-1                                                                      1.
 liblzma5                                                                      5.2.5-2ubuntu1                            deb                         
 libmd0                                                                        1.0.4-1build1                             deb                         
 libmnl0                                                                       1.0.4-3build2                             deb                         
-libmount1                                                                     2.37.2-4ubuntu3                           deb                         
+libmount1                                                                     2.37.2-4ubuntu3.3                         deb                         
 libmpdec3                                                                     2.5.1-2build2                             deb                         
 libncurses6                                                                   6.3-2ubuntu0.1                            deb                         
 libncursesw6                                                                  6.3-2ubuntu0.1                            deb                         
@@ -508,7 +508,7 @@ libsensors-config                                                             1:
 libsensors5                                                                   1:3.6.0-7ubuntu1                          deb                         
 libsepol2                                                                     3.3-1build1                               deb                         
 libsm6                                                                        2:1.2.3-1build2                           deb                         
-libsmartcols1                                                                 2.37.2-4ubuntu3                           deb                         
+libsmartcols1                                                                 2.37.2-4ubuntu3.3                         deb                         
 libsqlite3-0                                                                  3.37.2-2ubuntu0.3                         deb                         
 libss2                                                                        1.46.5-2ubuntu1.1                         deb                         
 libssh-4                                                                      0.9.6-2ubuntu0.22.04.3                    deb                         
@@ -526,7 +526,7 @@ libu2f-udev                                                                   1.
 libudev1                                                                      249.11-0ubuntu3.12                        deb                         
 libunistring2                                                                 1.0-1                                     deb                         
 libunwind8                                                                    1.3.2-2build2.1                           deb                         
-libuuid1                                                                      2.37.2-4ubuntu3                           deb                         
+libuuid1                                                                      2.37.2-4ubuntu3.3                         deb                         
 libvulkan1                                                                    1.3.204.1-2                               deb                         
 libwayland-client0                                                            1.20.0-1ubuntu0.1                         deb                         
 libwayland-cursor0                                                            1.20.0-1ubuntu0.1                         deb                         
@@ -585,7 +585,7 @@ logsave                                                                       1.
 lsb-base                                                                      11.1.0ubuntu4                             deb                         
 mawk                                                                          1.3.4.20200120-3                          deb                         
 media-types                                                                   7.0.0                                     deb                         
-mount                                                                         2.37.2-4ubuntu3                           deb                         
+mount                                                                         2.37.2-4ubuntu3.3                         deb                         
 ncurses-base                                                                  6.3-2ubuntu0.1                            deb                         
 ncurses-bin                                                                   6.3-2ubuntu0.1                            deb                         
 netbase                                                                       6.3                                       deb                         
@@ -643,7 +643,7 @@ udev                                                                          24
 unzip                                                                         6.0-26ubuntu3.2                           deb                         
 urllib3                                                                       1.26.18                                   python                      
 usrmerge                                                                      25ubuntu2                                 deb                         
-util-linux                                                                    2.37.2-4ubuntu3                           deb                         
+util-linux                                                                    2.37.2-4ubuntu3.3                         deb                         
 websocket-client                                                              1.7.0                                     python                      
 wget                                                                          1.21.2-2ubuntu1                           deb                         
 wsproto                                                                       1.2.0                                     python                      
@@ -652,7 +652,7 @@ x11-xkb-utils                                                                 7.
 xauth                                                                         1:1.1-1build2                             deb                         
 xdg-utils                                                                     1.1.3-4.1ubuntu3~22.04.1                  deb                         
 xkb-data                                                                      2.33-1                                    deb                         
-xserver-common                                                                2:21.1.4-2ubuntu1.7~22.04.8               deb                         
-xserver-xephyr                                                                2:21.1.4-2ubuntu1.7~22.04.8               deb                         
-xvfb                                                                          2:21.1.4-2ubuntu1.7~22.04.8               deb                         
+xserver-common                                                                2:21.1.4-2ubuntu1.7~22.04.9               deb                         
+xserver-xephyr                                                                2:21.1.4-2ubuntu1.7~22.04.9               deb                         
+xvfb                                                                          2:21.1.4-2ubuntu1.7~22.04.9               deb                         
 zlib1g                                                                        1:1.2.11.dfsg-2ubuntu9.2                  deb                         
