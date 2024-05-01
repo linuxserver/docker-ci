@@ -563,7 +563,7 @@
             {% endif %}
             <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
           </div>
-          {% if screenshot == 'true' %}
+          {% if screenshot %}
           <a href="{{ tag }}.png">
             <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
           </a>
