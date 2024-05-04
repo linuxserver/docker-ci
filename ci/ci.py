@@ -69,15 +69,16 @@ class SetEnvs():
         os.environ["S6_VERBOSITY"] = os.environ.get("CI_S6_VERBOSITY","2")
         # Set the optional parameters
         self.dockerenv: dict[str, str] = self.convert_env(os.environ.get("DOCKER_ENV", ""))
-        self.docker_volumes: list[str] = self.convert_volumes(os.environ.get("DOCKER_VOLUMES", ""))
-        self.docker_privileged: bool = os.environ.get("DOCKER_PRIVILEGED", "false").lower() == "true"
+        # self.docker_volumes: list[str] = self.convert_volumes(os.environ.get("DOCKER_VOLUMES", "")) # For future use
+        # self.docker_privileged: bool = os.environ.get("DOCKER_PRIVILEGED", "false").lower() == "true" # For future use
         self.webauth: str = os.environ.get("WEB_AUTH", "user:password")
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: bool = os.environ.get("WEB_SCREENSHOT", "false").lower() == "true"
-        self.screenshot_timeout: str = os.environ.get("WEB_SCREENSHOT_TIMEOUT", os.environ.get("WEB_SCREENSHOT_DELAY", "30"))
-        self.logs_timeout: str = os.environ.get("DOCKER_LOGS_TIMEOUT", os.environ.get("DOCKER_LOGS_DELAY","900"))
-        self.sbom_timeout: str = os.environ.get("SBOM_TIMEOUT", "900")
-        self.port: str = os.environ.get("PORT", "80")
+        self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", os.environ.get("WEB_SCREENSHOT_DELAY", "120"))
+        self.screenshot_delay: int = os.environ.get("SCREENSHOT_DELAY", "5")
+        self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", os.environ.get("DOCKER_LOGS_DELAY","900"))
+        self.sbom_timeout: int = os.environ.get("SBOM_TIMEOUT", "900")
+        self.port: int = os.environ.get("PORT", "80")
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
@@ -94,6 +95,7 @@ class SetEnvs():
            self.logger.warning("DOCKER_PRIVILEGED env is not in use")
 
         self.check_env()
+        self.validate_attrs()
         
         env_data = dedent(f"""
         ENVIRONMENT DATA:
@@ -112,6 +114,7 @@ class SetEnvs():
         WEB_SCREENSHOT:         '{os.environ.get("WEB_SCREENSHOT")}'
         WEB_SCREENSHOT_TIMEOUT: '{os.environ.get("WEB_SCREENSHOT_TIMEOUT")}'
         WEB_SCREENSHOT_DELAY:   '{os.environ.get("WEB_SCREENSHOT_DELAY")}' (Deprecated)
+        SCREENSHOT_DELAY:       '{os.environ.get("SCREENSHOT_DELAY")}'
         DOCKER_LOGS_TIMEOUT:    '{os.environ.get("DOCKER_LOGS_TIMEOUT")}'
         DOCKER_LOGS_DELAY:      '{os.environ.get("DOCKER_LOGS_DELAY")}' (Deprecated)
         SBOM_TIMEOUT:           '{os.environ.get("SBOM_TIMEOUT")}'
@@ -120,9 +123,21 @@ class SetEnvs():
         SSL:                    '{os.environ.get("SSL")}'
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
-        Docker Engine Version:  '{docker.from_env().version()["Version"]}'
+        Docker Engine Version:  '{docker.from_env().version().get("Version")}'
         """)
         self.logger.info(env_data)
+
+    def validate_attrs(self) -> None:
+        """Validate the numeric environment variables"""
+        try:
+            self.screenshot_timeout = int(self.screenshot_timeout)
+            self.screenshot_delay = int(self.screenshot_delay)
+            self.logs_timeout = int(self.logs_timeout)
+            self.sbom_timeout = int(self.sbom_timeout)
+            self.port = int(self.port)
+        except (ValueError,TypeError) as error:
+            self.logger.exception("Failed to convert numeric envs to int!")
+            raise CIError("Failed to convert numeric envs to int!") from error
 
     def _split_key_value_string(self, kv:str, make_list:bool = False) -> dict[str,str] | list[str]:
         """Split a key value string into a dictionary or list.
@@ -406,7 +421,7 @@ class CI(SetEnvs):
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info("Creating SBOM package list on %s",tag)
         test = "Create SBOM"
-        t_end: float = time.time() + int(self.sbom_timeout)
+        t_end: float = time.time() + self.sbom_timeout
         self.logger.info("Tailing the syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.sbom_timeout,tag)
         error_message = "Did not find the 'VERSION' keyword in the syft container logs"
         while time.time() < t_end:
@@ -516,7 +531,7 @@ class CI(SetEnvs):
         """
         test = "Container startup"
         start_time = time.time()
-        t_end: float = time.time() + int(self.logs_timeout)
+        t_end: float = time.time() + self.logs_timeout
         self.logger.info("Tailing the %s logs for %s seconds looking for the 'done' message", tag, self.logs_timeout)
         while time.time() < t_end:
             try:
@@ -685,34 +700,36 @@ class CI(SetEnvs):
         if not self.screenshot:
             return
         proto: Literal["https", "http"] = "https" if self.ssl.upper() == "TRUE" else "http"
-        screenshot_timeout = time.time() + int(self.screenshot_timeout)
+        screenshot_timeout = time.time() + self.screenshot_timeout
         test = "Get screenshot"
         start_time = time.time()
         try:
-            self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             driver: WebDriver = self.setup_driver()
+            container.reload()
+            ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
+            self.webauth = f"{self.webauth}@" if self.webauth else ""
+            endpoint: str = f"{proto}://{self.webauth}{ip_adr}:{self.port}{self.webpath}"
+            self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             while time.time() < screenshot_timeout:
                 try:
-                    container.reload()
-                    ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
-                    endpoint: str = f"{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}"
+                    if not self._check_response(endpoint):
+                        raise requests.ConnectionError("Bad response")
                     driver.get(endpoint)
-                    time.sleep(5)
+                    time.sleep(self.screenshot_delay) # A grace period for the page to load
                     self.logger.debug("Trying to take screenshot of %s at %s", tag, endpoint)
                     driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
-                        time.sleep(3)
-                        continue
+                        raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
                     self._add_test_result(tag, test, "PASS", "-")
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
                     return
                 except Exception as error:
-                    logger.debug("Failed to take screenshot of %s at %s, trying again in 1 second", tag, endpoint)
-                    logger.debug("Error: %s", error)
-                    time.sleep(1)
+                    logger.debug("Failed to take screenshot of %s at %s, trying again in 3 seconds", tag, endpoint, exc_info=error)
+                    time.sleep(3)
                     if time.time() >= screenshot_timeout:
                         self.logger.error("Failed to take screenshot of %s at %s", tag, endpoint)
                         raise error
+            raise TimeoutException("Timeout taking screenshot")
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}")
             self.logger.exception("Screenshot %s FAIL CONNECTION ERROR", tag)
@@ -727,6 +744,24 @@ class CI(SetEnvs):
                 driver.quit()
             except Exception:
                 self.logger.exception("Failed to quit the driver")
+
+    def _check_response(self, endpoint:str) -> bool:
+        """Check if we can get a good response from the endpoint
+
+        Args:
+            endpoint (str): The endpoint we are testing
+
+        Returns:
+            bool: Return True if we get a good response, otherwise False.
+        """
+        try:
+            self.logger.debug("Checking response on %s", endpoint)
+            response = requests.get(endpoint, timeout=10)
+            response.raise_for_status()
+            return True
+        except (requests.ConnectionError, requests.Timeout, requests.HTTPError, requests.RequestException) as exc:
+            self.logger.warning("Failed to get a good response on %s", endpoint, exc_info=exc)
+            return False
 
     @deprecated(reason="Use the chrome driver directly instead")
     def start_tester(self, proto:str, endpoint:str, tag:str) -> tuple[Container,str]:
