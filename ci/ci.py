@@ -399,6 +399,7 @@ class CI(SetEnvs):
         Returns:
             bool: Return the output if successful otherwise "ERROR".
         """
+        start_time = time.time()
         platform: str = self.get_platform(tag)
         syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:latest",command=f"{self.image}:{tag} --platform=linux/{platform}", 
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
@@ -414,7 +415,7 @@ class CI(SetEnvs):
                 if "VERSION" in logblob:
                     self.logger.info("Get package versions for %s completed", tag)
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.success("%s package list %s: PASS", test, tag)
+                    self.logger.success("%s package list %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
                     self.create_html_ansi_file(str(logblob),tag,"sbom")
                     try:
                         syft.remove(force=True)
@@ -513,6 +514,7 @@ class CI(SetEnvs):
             bool: Return True if the "done" message is found, otherwise False.
         """
         test = "Container startup"
+        start_time = time.time()
         t_end: float = time.time() + int(self.logs_timeout)
         self.logger.info("Tailing the %s logs for %s seconds looking for the 'done' message", tag, self.logs_timeout)
         while time.time() < t_end:
@@ -521,7 +523,7 @@ class CI(SetEnvs):
                 if "[services.d] done." in logblob or "[ls.io-init] done." in logblob:
                     self.logger.info("%s completed for %s",test, tag)
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.success("%s %s: PASS", test, tag)
+                    self.logger.success("%s %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
                     return True
                 time.sleep(1)
             except APIError as error:
@@ -684,6 +686,7 @@ class CI(SetEnvs):
         proto: Literal["https", "http"] = "https" if self.ssl.upper() == "TRUE" else "http"
         screenshot_timeout = time.time() + int(self.screenshot_timeout)
         test = "Get screenshot"
+        start_time = time.time()
         try:
             self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             driver: WebDriver = self.setup_driver()
@@ -698,7 +701,7 @@ class CI(SetEnvs):
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
                         continue
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.success("Screenshot %s: PASS", tag)
+                    self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
                     return
                 except Exception as error:
                     logger.debug("Failed to take screenshot of %s at %s, trying again in 1 second", tag, endpoint)
