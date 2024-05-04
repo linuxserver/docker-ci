@@ -120,6 +120,7 @@ class SetEnvs():
         SSL:                    '{os.environ.get("SSL")}'
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
+        Docker Engine Version:  '{docker.from_env().version()["Version"]}'
         """)
         self.logger.info(env_data)
 
@@ -128,14 +129,14 @@ class SetEnvs():
 
         Args:
             kv (str): A string with key values separated by the pipe symbol. e.g `key1=val1|key2=val2`.
-            make_list (bool, optional): If the value should be a list of strings where the key and value is separated by :. Defaults to False.
+            make_list (bool, optional): If the return value should be a list of strings where the key and value is separated by :. Defaults to False.
 
         Returns:
             dict[str,str]: Returns a dictionary with our keys and values.
         """
         if make_list:
             return [f"{k}:{v}" for k,v in (item.split("=") for item in kv.split("|"))]
-        return {k: v for k, v in (item.split("=") for item in kv.split("|"))}
+        return dict((item.split('=') for item in kv.split('|')))
 
     def convert_env(self, envs:str = None) -> dict[str,str]:
         """Convert env DOCKER_ENV to dictionary
@@ -151,7 +152,7 @@ class SetEnvs():
         """
         env_dict: dict = {}
         if envs:
-            self.logger.info("Converting envs")
+            self.logger.info("Converting envs '%s' to dictionary", envs)
             try:
                 env_dict = self._split_key_value_string(envs)
                 env_dict["S6_VERBOSITY"] = os.environ.get("S6_VERBOSITY")
@@ -174,7 +175,7 @@ class SetEnvs():
         """
         volume_list: list = []
         if volumes:
-            self.logger.info("Converting volumes")
+            self.logger.info("Converting volumes '%s' to list", volumes)
             try:
                 volume_list = self._split_key_value_string(volumes, make_list=True)
             except Exception as error:
@@ -289,7 +290,7 @@ class CI(SetEnvs):
             self._endtest(container, tag, build_info, sbom, False)
             return
 
-        # Screenshot web interface and check connectivity
+        # Screenshot the web interface and check connectivity
         self.take_screenshot(container, tag)
 
         self._endtest(container, tag, build_info, sbom, True)
@@ -307,7 +308,7 @@ class CI(SetEnvs):
             `test_success` (bool): If the testing of the container failed or not
         """
         logblob: Any = container.logs().decode("utf-8")
-        self.create_html_ansi_file(logblob, tag, "log") # Generate html container log file based on the latest logs
+        self.create_html_ansi_file(logblob, tag, "log") # Generate an html container log file based on the latest logs
         try:
             container.remove(force="true")
         except APIError:
@@ -696,9 +697,11 @@ class CI(SetEnvs):
                     ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
                     endpoint: str = f"{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}"
                     driver.get(endpoint)
+                    time.sleep(5)
                     self.logger.debug("Trying to take screenshot of %s at %s", tag, endpoint)
                     driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
+                        time.sleep(3)
                         continue
                     self._add_test_result(tag, test, "PASS", "-")
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
