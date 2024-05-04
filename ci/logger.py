@@ -66,8 +66,8 @@ class ColorPercentStyle(logging.PercentStyle):
 
 class CustomLogFormatter(logging.Formatter):
     """Formatter that removes creds from logs."""
-    ACCESS_KEY: str = os.environ.get("ACCESS_KEY","super_secret_key")
-    SECRET_KEY: str = os.environ.get("SECRET_KEY","super_secret_key")
+    ACCESS_KEY: str = os.environ.get("ACCESS_KEY","super_secret_key") or "super_secret_key" # If env is an empty string, use default value
+    SECRET_KEY: str = os.environ.get("SECRET_KEY","super_secret_key") or "super_secret_key" # If env is an empty string, use default value
 
     def formatException(self, exc_info) -> str:
         """Format an exception so that it prints on a single line."""
