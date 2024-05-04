@@ -131,7 +131,8 @@
       .log-debug {color:lightgray}
       .log-info {color:lightskyblue}
       .log-warning {color:darkorange}
-      .log-error {color:red}
+      .log-error {color:red;font-weight: bolder;}
+      .log-success{color:limegreen;font-weight: bolder;}
     }
 
     @media (prefers-color-scheme: light) {
@@ -212,7 +213,8 @@
       .log-debug {color:#9bb0bf}
       .log-info {color:#60707c}
       .log-warning {color:darkorange}
-      .log-error {color:red}
+      .log-error {color:red;font-weight: bolder;}
+      .log-success{color:#009879;font-weight: bolder;}
     }
 
     body,
@@ -662,7 +664,8 @@
       pylogs = logs.replace(/\[38;20m/gi,"<span class='log-debug'>"
         ).replace(/\[33;20m/gi,"<span class='log-warning'>"
         ).replace(/\[31;20m/gi,"<span class='log-error'>"
-        ).replace(/\[36;20m/gi,"<span class='log-info'>"      
+        ).replace(/\[36;20m/gi,"<span class='log-info'>"
+        ).replace(/\[32;20m/gi,"<span class='log-success'>"
         ).replace(/\[0m/gi,"</span>")
         document.getElementById("logs").innerHTML = pylogs
     })

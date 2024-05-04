@@ -102,6 +102,8 @@ class SetEnvs():
         META_TAG:               '{os.environ.get("META_TAG")}'
         TAGS:                   '{os.environ.get("TAGS")}'
         S6_VERBOSITY:           '{os.environ.get("S6_VERBOSITY")}'
+        CI_S6_VERBOSITY         '{os.environ.get("CI_S6_VERBOSITY")}'
+        CI_LOG_LEVEL            '{os.environ.get("CI_LOG_LEVEL")}'
         DOCKER_ENV:             '{os.environ.get("DOCKER_ENV")}'
         DOCKER_VOLUMES:         '{os.environ.get("DOCKER_VOLUMES")}' (Not in use)
         DOCKER_PRIVILEGED:      '{os.environ.get("DOCKER_PRIVILEGED")}' (Not in use)
@@ -119,7 +121,7 @@ class SetEnvs():
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
         """)
-        logger.info(env_data)
+        self.logger.info(env_data)
 
     def _split_key_value_string(self, kv:str, make_list:bool = False) -> dict[str,str] | list[str]:
         """Split a key value string into a dictionary or list.
@@ -165,7 +167,7 @@ class SetEnvs():
             volumes (str, optional): A string with key values separated by the pipe symbol. e.g `key1=val1|key2=val2`. Defaults to None.
 
         Raises:
-            CIError: Raises a CIError Exception if it failes to parse the string
+            CIError: Raises a CIError Exception if it fails to parse the string
 
         Returns:
             list[str]: Returns a list with our keys and values.
@@ -184,7 +186,7 @@ class SetEnvs():
         """Make sure all needed ENVs are set
 
         Raises:
-            CIError: Raises a CIError exception if one of the enviroment values is not set.
+            CIError: Raises a CIError exception if one of the environment values is not set.
         """
         try:
             self.image: str = os.environ["IMAGE"]
@@ -211,12 +213,12 @@ class CI(SetEnvs):
         s3_client (boto3.client): S3 client object
 
     Args:
-        SetEnvs (Object): Helper class that initializes and checks that all the necessary enviroment variables exists. Object is initialized upon init of CI.
+        SetEnvs (Object): Helper class that initializes and checks that all the necessary environment variables exists. Object is initialized upon init of CI.
     """
     def __init__(self) -> None:
         super().__init__()  # Init the SetEnvs object.
         self.logger = logging.getLogger("LSIO CI")
-        logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don"t log the S3 authentication steps.
+        logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
         self.client: DockerClient = docker.from_env()
         self.tags = list(self.tags_env.split("|"))
@@ -291,7 +293,7 @@ class CI(SetEnvs):
         self.take_screenshot(container, tag)
 
         self._endtest(container, tag, build_info, sbom, True)
-        self.logger.info("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
+        self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
         return
 
     def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool) -> None:
@@ -412,7 +414,7 @@ class CI(SetEnvs):
                 if "VERSION" in logblob:
                     self.logger.info("Get package versions for %s completed", tag)
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.info("%s package list %s: PASS", test, tag)
+                    self.logger.success("%s package list %s: PASS", test, tag)
                     self.create_html_ansi_file(str(logblob),tag,"sbom")
                     try:
                         syft.remove(force=True)
@@ -489,7 +491,7 @@ class CI(SetEnvs):
                 "maintainer": container.attrs["Config"]["Labels"]["maintainer"],
             }
             self._add_test_result(tag, test, "PASS", "-")
-            self.logger.info("Get build info on tag '%s': PASS", tag)
+            self.logger.success("Get build info on tag '%s': PASS", tag)
         except (APIError,KeyError) as error:
             self.logger.exception("Get build info on tag '%s': FAIL", tag)
             build_info = {"version": "ERROR", "created": "ERROR", "size": "ERROR", "maintainer": "ERROR"}
@@ -519,7 +521,7 @@ class CI(SetEnvs):
                 if "[services.d] done." in logblob or "[ls.io-init] done." in logblob:
                     self.logger.info("%s completed for %s",test, tag)
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.info("%s %s: PASS", test, tag)
+                    self.logger.success("%s %s: PASS", test, tag)
                     return True
                 time.sleep(1)
             except APIError as error:
@@ -611,7 +613,7 @@ class CI(SetEnvs):
 
         """
         try:
-            self.logger.info(f"Creating {tag}.{name}.html")
+            self.logger.info("Creating %s.%s.html", tag, name)
             converter = Ansi2HTMLConverter(title=f"{tag}-{name}")
             html_logs: str = converter.convert(blob,full=full)
             with open(f"{self.outdir}/{tag}.{name}.html", "w", encoding="utf-8") as file:
@@ -683,6 +685,7 @@ class CI(SetEnvs):
         screenshot_timeout = time.time() + int(self.screenshot_timeout)
         test = "Get screenshot"
         try:
+            self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             driver: WebDriver = self.setup_driver()
             while time.time() < screenshot_timeout:
                 try:
@@ -690,12 +693,13 @@ class CI(SetEnvs):
                     ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
                     endpoint: str = f"{proto}://{self.webauth}@{ip_adr}:{self.port}{self.webpath}"
                     driver.get(endpoint)
-                    self.logger.info("Trying to take screenshot of %s at %s", tag, endpoint)
+                    self.logger.debug("Trying to take screenshot of %s at %s", tag, endpoint)
                     driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
                         continue
                     self._add_test_result(tag, test, "PASS", "-")
-                    self.logger.info("Screenshot %s: PASS", tag)
+                    self.logger.success("Screenshot %s: PASS", tag)
+                    return
                 except Exception as error:
                     logger.debug("Failed to take screenshot of %s at %s, trying again in 1 second", tag, endpoint)
                     logger.debug("Error: %s", error)
