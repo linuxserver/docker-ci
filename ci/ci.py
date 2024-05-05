@@ -92,7 +92,7 @@ class SetEnvs():
         if os.environ.get("DOCKER_VOLUMES"):
             self.logger.warning("DOCKER_VOLUMES env is not in use")
         if os.environ.get("DOCKER_PRIVILEGED"):
-           self.logger.warning("DOCKER_PRIVILEGED env is not in use")
+            self.logger.warning("DOCKER_PRIVILEGED env is not in use")
 
         self.check_env()
         self.validate_attrs()
