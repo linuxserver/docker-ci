@@ -74,19 +74,15 @@ class SetEnvs():
         self.webauth: str = os.environ.get("WEB_AUTH", "user:password")
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: bool = os.environ.get("WEB_SCREENSHOT", "false").lower() == "true"
-        self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", os.environ.get("WEB_SCREENSHOT_DELAY", "120"))
+        self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120")
         self.screenshot_delay: int = os.environ.get("SCREENSHOT_DELAY", "10")
-        self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", os.environ.get("DOCKER_LOGS_DELAY","900"))
+        self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", "120")
         self.sbom_timeout: int = os.environ.get("SBOM_TIMEOUT", "900")
         self.port: int = os.environ.get("PORT", "80")
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
-        
-        if os.environ.get("WEB_SCREENSHOT_DELAY"):
-            self.logger.warning("WEB_SCREENSHOT_DELAY env is deprecated, please use WEB_SCREENSHOT_TIMEOUT instead")
-        if os.environ.get("DOCKER_LOGS_DELAY"):
-            self.logger.warning("DOCKER_LOGS_DELAY env is deprecated, please use DOCKER_LOGS_TIMEOUT instead")
+
         if os.environ.get("DELAY_START"):
             self.logger.warning("DELAY_START env is obsolete, and not in use anymore")
         if os.environ.get("DOCKER_VOLUMES"):
@@ -113,10 +109,8 @@ class SetEnvs():
         WEB_PATH:               '{os.environ.get("WEB_PATH")}'
         WEB_SCREENSHOT:         '{os.environ.get("WEB_SCREENSHOT")}'
         WEB_SCREENSHOT_TIMEOUT: '{os.environ.get("WEB_SCREENSHOT_TIMEOUT")}'
-        WEB_SCREENSHOT_DELAY:   '{os.environ.get("WEB_SCREENSHOT_DELAY")}' (Deprecated)
         SCREENSHOT_DELAY:       '{os.environ.get("SCREENSHOT_DELAY")}'
         DOCKER_LOGS_TIMEOUT:    '{os.environ.get("DOCKER_LOGS_TIMEOUT")}'
-        DOCKER_LOGS_DELAY:      '{os.environ.get("DOCKER_LOGS_DELAY")}' (Deprecated)
         SBOM_TIMEOUT:           '{os.environ.get("SBOM_TIMEOUT")}'
         DELAY_START:            '{os.environ.get("DELAY_START")}' (Not in use)
         PORT:                   '{os.environ.get("PORT")}'
