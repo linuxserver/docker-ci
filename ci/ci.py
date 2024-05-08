@@ -75,7 +75,7 @@ class SetEnvs():
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: bool = os.environ.get("WEB_SCREENSHOT", "false").lower() == "true"
         self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120")
-        self.screenshot_delay: int = os.environ.get("SCREENSHOT_DELAY", "10")
+        self.screenshot_delay: int = os.environ.get("WEB_SCREENSHOT_DELAY", "10")
         self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", "120")
         self.sbom_timeout: int = os.environ.get("SBOM_TIMEOUT", "900")
         self.port: int = os.environ.get("PORT", "80")
@@ -109,7 +109,7 @@ class SetEnvs():
         WEB_PATH:               '{os.environ.get("WEB_PATH")}'
         WEB_SCREENSHOT:         '{os.environ.get("WEB_SCREENSHOT")}'
         WEB_SCREENSHOT_TIMEOUT: '{os.environ.get("WEB_SCREENSHOT_TIMEOUT")}'
-        SCREENSHOT_DELAY:       '{os.environ.get("SCREENSHOT_DELAY")}'
+        WEB_SCREENSHOT_DELAY:   '{os.environ.get("WEB_SCREENSHOT_DELAY")}'
         DOCKER_LOGS_TIMEOUT:    '{os.environ.get("DOCKER_LOGS_TIMEOUT")}'
         SBOM_TIMEOUT:           '{os.environ.get("SBOM_TIMEOUT")}'
         DELAY_START:            '{os.environ.get("DELAY_START")}' (Not in use)

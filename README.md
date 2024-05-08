@@ -45,7 +45,7 @@ sudo docker run --rm -i \
 -e S3_REGION=<optional, custom S3 Region. Defaults to 'us-east-1'> \
 -e S3_BUCKET=<optional, custom S3 Bucket. Defaults to 'ci-tests.linuxserver.io'> \
 -e WEB_SCREENSHOT_TIMEOUT=<optional, time in seconds before timing out trying to take a screenshot. Defaults to '120'>
--e SCREENSHOT_DELAY=<optional, time in seconds to delay before taking a screenshot after loading the web page. Defaults to '10'> \
+-e WEB_SCREENSHOT_DELAY=<optional, time in seconds to delay before taking a screenshot after loading the web page. Defaults to '10'> \
 -e SBOM_TIMEOUT=<optional, time in seconds before timing out trying to generate a SBOM. Defaults to '900'>
 -e WEB_SCREENSHOT=<optional, set to false if not a web app. Defaults to 'false'> \
 -e PORT=<optional, port web application listens on internal docker port. Defaults to '80'> \
