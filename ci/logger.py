@@ -19,12 +19,30 @@ else:
 
 logger: Logger = logging.getLogger()
 
+# Add custom log level for success messages
+logging.SUCCESS = 25
+logging.addLevelName(logging.SUCCESS, "SUCCESS")
+
+def success(self:'Logger', message:str, *args, **kwargs):
+    """Log 'message % args' with severity 'SUCCESS'.
+    
+    To pass exception information, use the keyword argument exc_info with
+    a true value, e.g.
+    
+    logger.success("Houston, Tranquility Base Here. The Eagle has Landed.", exc_info=1)
+    """
+    if self.isEnabledFor(logging.SUCCESS):
+        self._log(logging.SUCCESS, message, args, **kwargs)
+
+logging.Logger.success = success
+
 class ColorPercentStyle(logging.PercentStyle):
     """Custom log formatter that add color to specific log levels."""
     grey: str = "38"
     yellow: str = "33"
     red: str = "31"
     cyan: str = "36"
+    green: str = "32"
 
     def _get_color_fmt(self, color_code, bold=False) -> str:
         if bold:
@@ -37,7 +55,8 @@ class ColorPercentStyle(logging.PercentStyle):
             logging.INFO: self._get_color_fmt(self.cyan),
             logging.WARNING: self._get_color_fmt(self.yellow),
             logging.ERROR: self._get_color_fmt(self.red),
-            logging.CRITICAL: self._get_color_fmt(self.red)
+            logging.CRITICAL: self._get_color_fmt(self.red),
+            logging.SUCCESS: self._get_color_fmt(self.green)
         }
 
         return colors.get(levelno, self._get_color_fmt(self.grey))
@@ -47,8 +66,8 @@ class ColorPercentStyle(logging.PercentStyle):
 
 class CustomLogFormatter(logging.Formatter):
     """Formatter that removes creds from logs."""
-    ACCESS_KEY: str = os.environ.get("ACCESS_KEY","super_secret_key")
-    SECRET_KEY: str = os.environ.get("SECRET_KEY","super_secret_key")
+    ACCESS_KEY: str = os.environ.get("ACCESS_KEY","super_secret_key") or "super_secret_key" # If env is an empty string, use default value
+    SECRET_KEY: str = os.environ.get("SECRET_KEY","super_secret_key") or "super_secret_key" # If env is an empty string, use default value
 
     def formatException(self, exc_info) -> str:
         """Format an exception so that it prints on a single line."""
