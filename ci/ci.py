@@ -52,7 +52,7 @@ def deprecated(reason: str):
 
     Args:
         reason (str): The reason it is deprecated.
-    """    
+    """
     def deprecated_decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs) -> Any:
@@ -92,7 +92,7 @@ class SetEnvs():
 
         self.check_env()
         self.validate_attrs()
-        
+
         env_data = dedent(f"""
         ENVIRONMENT DATA:
         IMAGE:                  '{os.environ.get("IMAGE")}'
@@ -343,9 +343,9 @@ class CI(SetEnvs):
 
     def get_platform(self, tag: str) -> str:
         """Check the 5 first characters of the tag and return the platform.
-        
+
         If no match is found return amd64.
-        
+
         Returns:
             str: The platform
         """
@@ -395,7 +395,7 @@ class CI(SetEnvs):
             self.tag_report_tests[tag]["test"]["Dump package info"] = (dict(sorted({
                 "Dump package info":"FAIL",
                 "message":str(error)}.items())))
-            self.report_status = "FAIL" 
+            self.report_status = "FAIL"
         return packages
 
     def generate_sbom(self, tag:str) -> str:
@@ -411,7 +411,7 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         platform: str = self.get_platform(tag)
-        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:latest",command=f"{self.image}:{tag} --platform=linux/{platform}", 
+        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:latest",command=f"{self.image}:{tag} --platform=linux/{platform}",
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info("Creating SBOM package list on %s",tag)
         test = "Create SBOM"
@@ -472,7 +472,7 @@ class CI(SetEnvs):
                 "message":str(error)}.items())))
             self.report_status = "FAIL"
         return build_version
-    
+
     def get_build_info(self,container:Container,tag:str) -> dict[str,str]:
         """Get the build information from the container object.
 
@@ -482,7 +482,7 @@ class CI(SetEnvs):
 
         Returns:
             dict[str,str]: Returns a dictionary with the build information
-            
+
             ```
             {
                 "version": "1.0.0",
@@ -684,7 +684,7 @@ class CI(SetEnvs):
 
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir if self.screenshot is True
-        
+
         Takes a screenshot using a ChromiumDriver instance.
 
         Args:
@@ -750,7 +750,7 @@ class CI(SetEnvs):
         """
         try:
             self.logger.debug("Checking response on %s", endpoint)
-            response = requests.get(endpoint, timeout=10)
+            response = requests.get(endpoint, timeout=10, verify=False)
             response.raise_for_status()
             return True
         except (requests.ConnectionError, requests.Timeout, requests.HTTPError, requests.RequestException) as exc:
