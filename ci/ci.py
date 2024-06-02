@@ -287,11 +287,12 @@ class CI(SetEnvs):
         self.logger.info("Container config of tag %s: %s",tag,container_config)
 
 
+        sbom: str = self.generate_sbom(tag)
         logsfound: bool = self.watch_container_logs(container, tag) # Watch the logs for no more than 5 minutes
         if not logsfound:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             build_info = {"version": "-", "created": "-", "size": "-", "maintainer": "-"}
-            self._endtest(container, tag, build_info, "ERROR", False, start_time)
+            self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
         # build_version: str = self.get_build_version(container,tag) # Get the image build version
@@ -301,7 +302,6 @@ class CI(SetEnvs):
             self._endtest(container, tag, build_info, "ERROR", False, start_time)
             return
 
-        sbom: str = self.generate_sbom(tag)
         if sbom == "ERROR":
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             self._endtest(container, tag, build_info, sbom, False, start_time)
