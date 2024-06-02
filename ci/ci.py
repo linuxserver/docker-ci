@@ -74,11 +74,14 @@ class SetEnvs():
         self.webauth: str = os.environ.get("WEB_AUTH", "user:password")
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: bool = os.environ.get("WEB_SCREENSHOT", "false").lower() == "true"
-        self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120")
-        self.screenshot_delay: int = os.environ.get("WEB_SCREENSHOT_DELAY", "10")
-        self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", "120")
-        self.sbom_timeout: int = os.environ.get("SBOM_TIMEOUT", "900")
-        self.port: int = os.environ.get("PORT", "80")
+
+        # Make sure the numeric values are set even if they are set to empty strings in the environment
+        self.screenshot_timeout: int = (os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120") or "120")
+        self.screenshot_delay: int = (os.environ.get("WEB_SCREENSHOT_DELAY", "10") or "10")
+        self.logs_timeout: int = (os.environ.get("DOCKER_LOGS_TIMEOUT", "120") or "120")
+        self.sbom_timeout: int = (os.environ.get("SBOM_TIMEOUT", "120") or "120")
+        self.port: int = (os.environ.get("PORT", "80") or "80")
+
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
