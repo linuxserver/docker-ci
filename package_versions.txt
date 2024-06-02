@@ -19,7 +19,7 @@ botocore                                                                      1.
 bsdutils                                                                      1:2.37.2-4ubuntu3.4                      deb                         
 ca-certificates                                                               20230311ubuntu0.22.04.1                  deb                         
 catatonit                                                                     0.1.7-1                                  deb                         
-certifi                                                                       2024.2.2                                 python                      
+certifi                                                                       2024.6.2                                 python                      
 charset-normalizer                                                            3.3.2                                    python                      
 cloud.google.com/go/compute/metadata                                          v0.2.3                                   go-module                   
 cloud.google.com/go/logging                                                   v1.8.1                                   go-module                   
@@ -320,7 +320,7 @@ golang.org/x/term                                                             v0
 golang.org/x/text                                                             v0.14.0                                  go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.0.0-20210723032227-1f47c861a9ac       go-module                   
 golang.org/x/time                                                             v0.3.0                                   go-module                   
-google-chrome-stable                                                          125.0.6422.112-1                         deb                         
+google-chrome-stable                                                          125.0.6422.141-1                         deb                         
 google.golang.org/api                                                         v0.128.0                                 go-module                   
 google.golang.org/appengine                                                   v1.6.7                                   go-module                   
 google.golang.org/genproto                                                    v0.0.0-20200224152610-e50cd9704f63       go-module  (+4 duplicates)  
