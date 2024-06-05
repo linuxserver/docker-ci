@@ -95,6 +95,7 @@ class CustomLogFormatter(logging.Formatter):
 def configure_logging(log_level:str) -> None:
     """Setup console and file logging"""
 
+    log_level = log_level.upper()
     logger.handlers = []
     logger.setLevel(log_level)
 

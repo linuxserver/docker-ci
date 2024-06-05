@@ -74,11 +74,14 @@ class SetEnvs():
         self.webauth: str = os.environ.get("WEB_AUTH", "user:password")
         self.webpath: str = os.environ.get("WEB_PATH", "")
         self.screenshot: bool = os.environ.get("WEB_SCREENSHOT", "false").lower() == "true"
-        self.screenshot_timeout: int = os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120")
-        self.screenshot_delay: int = os.environ.get("WEB_SCREENSHOT_DELAY", "10")
-        self.logs_timeout: int = os.environ.get("DOCKER_LOGS_TIMEOUT", "120")
-        self.sbom_timeout: int = os.environ.get("SBOM_TIMEOUT", "900")
-        self.port: int = os.environ.get("PORT", "80")
+
+        # Make sure the numeric values are set even if they are set to empty strings in the environment
+        self.screenshot_timeout: int = (os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120") or "120")
+        self.screenshot_delay: int = (os.environ.get("WEB_SCREENSHOT_DELAY", "10") or "10")
+        self.logs_timeout: int = (os.environ.get("DOCKER_LOGS_TIMEOUT", "120") or "120")
+        self.sbom_timeout: int = (os.environ.get("SBOM_TIMEOUT", "120") or "120")
+        self.port: int = (os.environ.get("PORT", "80") or "80")
+
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
@@ -228,6 +231,8 @@ class CI(SetEnvs):
     def __init__(self) -> None:
         super().__init__()  # Init the SetEnvs object.
         self.logger = logging.getLogger("LSIO CI")
+        self.start_time: float = 0.0
+        self.total_runtime: float = 0.0
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
         self.client: DockerClient = docker.from_env()
@@ -246,6 +251,7 @@ class CI(SetEnvs):
             `tags` (list): All the tags we will test on the image.
 
         """
+        self.start_time = time.time()
         thread_pool = ThreadPool(processes=10)
         thread_pool.map(self.container_test,tags)
         display = Display(size=(1920, 1080)) # Setup an x virtual frame buffer (Xvfb) that Selenium can use during the tests.
@@ -253,6 +259,7 @@ class CI(SetEnvs):
         thread_pool.close()
         thread_pool.join()
         display.stop()
+        self.total_runtime = time.time() - self.start_time
 
     def container_test(self, tag: str) -> None:
         """Main container test logic.
@@ -280,33 +287,34 @@ class CI(SetEnvs):
         self.logger.info("Container config of tag %s: %s",tag,container_config)
 
 
+        sbom: str = self.generate_sbom(tag)
         logsfound: bool = self.watch_container_logs(container, tag) # Watch the logs for no more than 5 minutes
         if not logsfound:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, "ERROR", "ERROR", False)
+            build_info = {"version": "-", "created": "-", "size": "-", "maintainer": "-"}
+            self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
         # build_version: str = self.get_build_version(container,tag) # Get the image build version
         build_info: dict = self.get_build_info(container,tag) # Get the image build info
         if build_info["version"] == "ERROR":
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, build_info, "ERROR", False)
+            self._endtest(container, tag, build_info, "ERROR", False, start_time)
             return
 
-        sbom: str = self.generate_sbom(tag)
         if sbom == "ERROR":
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, build_info, sbom, False)
+            self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
         # Screenshot the web interface and check connectivity
         self.take_screenshot(container, tag)
 
-        self._endtest(container, tag, build_info, sbom, True)
+        self._endtest(container, tag, build_info, sbom, True, start_time)
         self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
         return
 
-    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool) -> None:
+    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool, start_time:float|int = 0.0) -> None:
         """End the test with as much info as we have and append to the report.
 
         Args:
@@ -315,7 +323,12 @@ class CI(SetEnvs):
             `build_info` (str): Information about the build (version, size etc)
             `packages` (str): SBOM dump from the container
             `test_success` (bool): If the testing of the container failed or not
+            `start_time` (float, optional): The start time of the test. Defaults to 0.0. Used to calculate the runtime of the test.
         """
+        if not start_time:
+            runtime = "-"
+        if isinstance(start_time,(float, int)):
+            runtime = f"{time.time() - start_time:.2f}s"
         logblob: Any = container.logs().decode("utf-8")
         self.create_html_ansi_file(logblob, tag, "log") # Generate an html container log file based on the latest logs
         try:
@@ -335,9 +348,9 @@ class CI(SetEnvs):
                 "uwsgi": warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
             },
             "build_info": build_info,
-            # "build_version": build_version,
             "test_results": self.tag_report_tests[tag]["test"],
             "test_success": test_success,
+            "runtime": runtime
             }
         self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
 
@@ -424,7 +437,7 @@ class CI(SetEnvs):
                 logblob: str = syft.logs().decode("utf-8")
                 if "VERSION" in logblob:
                     self.logger.info("Get package versions for %s completed", tag)
-                    self._add_test_result(tag, test, "PASS", "-")
+                    self._add_test_result(tag, test, "PASS", "-", start_time)
                     self.logger.success("%s package list %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
                     self.create_html_ansi_file(str(logblob),tag,"sbom")
                     try:
@@ -437,7 +450,7 @@ class CI(SetEnvs):
                 self.logger.exception("Creating SBOM package list on %s: FAIL", tag)
         self.logger.error("Failed to generate SBOM output on tag %s. SBOM output:\n%s",tag, logblob)
         self.report_status = "FAIL"
-        self._add_test_result(tag, test, "FAIL", str(error_message))
+        self._add_test_result(tag, test, "FAIL", str(error_message), start_time)
         try:
             syft.remove(force=True)
         except Exception:
@@ -493,6 +506,7 @@ class CI(SetEnvs):
             ```
         """
         test = "Get build info"
+        start_time = time.time()
         try:
             self.logger.info("Fetching build info on tag: %s",tag)
             build_info: dict[str,str] = {
@@ -501,14 +515,14 @@ class CI(SetEnvs):
                 "size": "%.2f" % float(int(container.image.attrs["Size"])/1000000) + "MB",
                 "maintainer": container.attrs["Config"]["Labels"]["maintainer"],
             }
-            self._add_test_result(tag, test, "PASS", "-")
+            self._add_test_result(tag, test, "PASS", "-", start_time)
             self.logger.success("Get build info on tag '%s': PASS", tag)
         except (APIError,KeyError) as error:
             self.logger.exception("Get build info on tag '%s': FAIL", tag)
             build_info = {"version": "ERROR", "created": "ERROR", "size": "ERROR", "maintainer": "ERROR"}
             if isinstance(error,KeyError):
                 error: str = f"KeyError: {error}"
-            self._add_test_result(tag, test, "FAIL", str(error))
+            self._add_test_result(tag, test, "FAIL", str(error), start_time)
             self.report_status = "FAIL"
         return build_info
 
@@ -532,17 +546,17 @@ class CI(SetEnvs):
                 logblob: str = container.logs().decode("utf-8")
                 if "[services.d] done." in logblob or "[ls.io-init] done." in logblob:
                     self.logger.info("%s completed for %s",test, tag)
-                    self._add_test_result(tag, test, "PASS", "-")
+                    self._add_test_result(tag, test, "PASS", "-", start_time)
                     self.logger.success("%s %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
                     return True
                 time.sleep(1)
             except APIError as error:
                 self.logger.exception("%s %s: FAIL - INIT NOT FINISHED", test, tag)
-                self._add_test_result(tag, test, "FAIL", f"INIT NOT FINISHED: {str(error)}")
+                self._add_test_result(tag, test, "FAIL", f"INIT NOT FINISHED: {str(error)}", start_time)
                 self.report_status = "FAIL"
                 return False
         self.logger.error("%s failed for %s", test, tag)
-        self._add_test_result(tag, test, "FAIL", "INIT NOT FINISHED")
+        self._add_test_result(tag, test, "FAIL", "INIT NOT FINISHED", start_time)
         self.logger.error("%s %s: FAIL - INIT NOT FINISHED", test, tag)
         self.report_status = "FAIL"
         return False
@@ -562,7 +576,8 @@ class CI(SetEnvs):
             image=self.image,
             bucket=self.bucket,
             region=self.region,
-            screenshot=self.screenshot
+            screenshot=self.screenshot,
+            total_runtime=f"{self.total_runtime:.2f}s",
             ))
 
     def badge_render(self) -> None:
@@ -665,7 +680,7 @@ class CI(SetEnvs):
         except (S3UploadFailedError, ClientError):
             self.logger.exception("Failed to upload the CI logs!")
 
-    def _add_test_result(self, tag:str, test:str, status:str, message:str) -> None:
+    def _add_test_result(self, tag:str, test:str, status:str, message:str, start_time:float|int = 0.0) -> None:
         """Add a test result to the report
 
         Args:
@@ -673,14 +688,20 @@ class CI(SetEnvs):
             test (str): The test we are running
             status (str): The status of the test
             message (str): The message of the test
+            start_time (str, optional): The start time of the test. Defaults to 0.0. Used to calculate the runtime of the test.
         """
         if status not in ["PASS","FAIL"]:
             raise ValueError("Status must be either PASS or FAIL")
         if tag not in self.tags:
             raise ValueError("Tag not in the list of tags")
+        if not start_time:
+            runtime = "-"
+        if isinstance(start_time,(float, int)):
+            runtime: str = f"{time.time() - start_time:.2f}s"
         self.tag_report_tests[tag]["test"][test] = (dict(sorted({
             "status":status,
-            "message":message}.items())))
+            "message":message,
+            "runtime": runtime}.items())))
 
     def take_screenshot(self, container: Container, tag:str) -> None:
         """Take a screenshot and save it to self.outdir if self.screenshot is True
@@ -701,8 +722,8 @@ class CI(SetEnvs):
             driver: WebDriver = self.setup_driver()
             container.reload()
             ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
-            self.webauth = f"{self.webauth}@" if self.webauth else ""
-            endpoint: str = f"{proto}://{self.webauth}{ip_adr}:{self.port}{self.webpath}"
+            webauth: str = f"{self.webauth}@" if self.webauth else ""
+            endpoint: str = f"{proto}://{webauth}{ip_adr}:{self.port}{self.webpath}"
             self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             while time.time() < screenshot_timeout:
                 try:
@@ -714,7 +735,7 @@ class CI(SetEnvs):
                     driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
                         raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
-                    self._add_test_result(tag, test, "PASS", "-")
+                    self._add_test_result(tag, test, "PASS", "-", start_time)
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
                     return
                 except Exception as error:
@@ -725,13 +746,13 @@ class CI(SetEnvs):
                         raise error
             raise TimeoutException("Timeout taking screenshot")
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
-            self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}")
+            self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL CONNECTION ERROR", tag)
         except TimeoutException as error:
-            self._add_test_result(tag, test, "FAIL", f"TIMEOUT: {str(error)}")
+            self._add_test_result(tag, test, "FAIL", f"TIMEOUT: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL TIMEOUT", tag)
         except (WebDriverException, Exception) as error:
-            self._add_test_result(tag, test, "FAIL", f"UNKNOWN: {str(error)}")
+            self._add_test_result(tag, test, "FAIL", f"UNKNOWN: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL UNKNOWN", tag)
         finally:
             try:

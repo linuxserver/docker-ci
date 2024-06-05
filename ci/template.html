@@ -121,6 +121,11 @@
         color:rgba(218, 59, 138);
       }
 
+      .runtime {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.25);
+      }
+
       strong {
         color: rgba(218, 59, 138);
       }
@@ -202,6 +207,11 @@
       }
 
       .build {
+        border-bottom: 1px solid #dcdcdc;
+        background: #f5f5f5;
+      }
+
+      .runtime {
         border-bottom: 1px solid #dcdcdc;
         background: #f5f5f5;
       }
@@ -553,7 +563,8 @@
     </header>
     <div id="results">
       <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
-      <h2>Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
+      <h2 style="margin-bottom: 0">Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
+      <span>Total Runtime: {{ total_runtime }}</span>
       <main>
         {% for tag in report_containers %}
         <section>
@@ -565,6 +576,7 @@
             {% endif %}
             <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
           </div>
+          <div class="runtime build-section">Runtime: {{ report_containers[tag]["runtime"] }}</div>
           {% if screenshot %}
           <a href="{{ tag }}.png">
             <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
@@ -626,6 +638,7 @@
                   <th>Test</th>
                   <th>Result</th>
                   <th>Message</th>
+                  <th>Runtime</th>
                 </tr>
               </thead>
               <tbody>
@@ -638,6 +651,7 @@
                   <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></td>
                   {% endif %}
                   <td>{{ report_containers[tag]["test_results"][test]["message"] }}</td>
+                  <td>{{ report_containers[tag]["test_results"][test]["runtime"] }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
