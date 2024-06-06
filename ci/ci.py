@@ -79,7 +79,7 @@ class SetEnvs():
         self.screenshot_timeout: int = (os.environ.get("WEB_SCREENSHOT_TIMEOUT", "120") or "120")
         self.screenshot_delay: int = (os.environ.get("WEB_SCREENSHOT_DELAY", "10") or "10")
         self.logs_timeout: int = (os.environ.get("DOCKER_LOGS_TIMEOUT", "120") or "120")
-        self.sbom_timeout: int = (os.environ.get("SBOM_TIMEOUT", "120") or "120")
+        self.sbom_timeout: int = (os.environ.get("SBOM_TIMEOUT", "900") or "900")
         self.port: int = (os.environ.get("PORT", "80") or "80")
 
         self.ssl: str = os.environ.get("SSL", "false")
