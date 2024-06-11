@@ -329,7 +329,7 @@ class CI(SetEnvs):
             runtime = "-"
         if isinstance(start_time,(float, int)):
             runtime = f"{time.time() - start_time:.2f}s"
-        logblob: Any = container.logs().decode("utf-8")
+        logblob: str = container.logs(timestamps=True).decode("utf-8")
         self.create_html_ansi_file(logblob, tag, "log") # Generate an html container log file based on the latest logs
         try:
             container.remove(force="true")
