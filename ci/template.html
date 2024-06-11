@@ -574,8 +574,13 @@
             {% else %}
             <h3 class="section-header-status"><span class="report-status-fail">FAIL</span></h3>
             {% endif %}
-            <h2 class="section-header-h2"> {{ image }}:{{ tag }} </h2>
-          </div>
+            <h2 class="section-header-h2">
+              {% if report_status.lower() == "pass" %}
+                <a target="_blank" href="https://ghcr.io/{{ image }}:{{ tag }}">{{ image }}:{{ tag }}</a>
+              {% else %}
+                {{ image }}:{{ tag }}
+              {% endif %}
+            </h2>          </div>
           <div class="runtime build-section">Runtime: {{ report_containers[tag]["runtime"] }}</div>
           {% if screenshot %}
           <a href="{{ tag }}.png">
