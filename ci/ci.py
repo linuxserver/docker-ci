@@ -2,6 +2,7 @@
 
 from multiprocessing.pool import ThreadPool
 from threading import current_thread
+from concurrent.futures import Future, ThreadPoolExecutor
 import os
 import shutil
 import time
@@ -276,7 +277,8 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         # Name the thread for easier debugging.
-        current_thread().name = f"{self.get_platform(tag).upper()}Thread"
+        thread_name: str = f"{self.get_platform(tag).upper()}Thread"
+        current_thread().name = thread_name
 
         # Start the container
         self.logger.info("Starting test of: %s", tag)
@@ -286,19 +288,23 @@ class CI(SetEnvs):
         container_config: list[str] = container.attrs["Config"]["Env"]
         self.logger.info("Container config of tag %s: %s",tag,container_config)
 
+        # Run these tests in parallel so the runtime data is more accurate.
+        with ThreadPoolExecutor(max_workers=2,thread_name_prefix=thread_name) as executor:
+            future_sbom: Future[str] = executor.submit(self.generate_sbom, tag)
+            future_logs: Future[bool] = executor.submit(self.watch_container_logs, container, tag)
 
-        sbom: str = self.generate_sbom(tag)
-        logsfound: bool = self.watch_container_logs(container, tag)
+        sbom: str = future_sbom.result(self.sbom_timeout + 5) # Set a thread timeout if the function for some reason hangs
+        logsfound: bool = future_logs.result(self.logs_timeout + 5) # Set a thread timeout if the function for some reason hangs
+        build_info: dict = self.get_build_info(container,tag) # Get the image build info
+
         if not logsfound:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            build_info = {"version": "-", "created": "-", "size": "-", "maintainer": "-"}
             self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
-        build_info: dict = self.get_build_info(container,tag) # Get the image build info
         if build_info["version"] == "ERROR":
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, build_info, "ERROR", False, start_time)
+            self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
         if sbom == "ERROR":
@@ -585,7 +591,7 @@ class CI(SetEnvs):
         try:
             badge = anybadge.Badge("CI", self.report_status, thresholds={
                                    "PASS": "green", "FAIL": "red"})
-            badge.write_badge(f"{self.outdir}/badge.svg")
+            badge.write_badge(f"{self.outdir}/badge.svg", overwrite=True)
             with open(f"{self.outdir}/ci-status.yml", "w", encoding="utf-8") as file:
                 file.write(f"CI: '{self.report_status}'")
         except (ValueError,RuntimeError,FileNotFoundError,OSError):
