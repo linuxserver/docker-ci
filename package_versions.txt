@@ -44,7 +44,7 @@ docker-ce                                                                     5:
 docker-ce-cli                                                                 5:27.0.3-1~ubuntu.22.04~jammy            deb                         
 dpkg                                                                          1.21.1ubuntu2.3                          deb                         
 e2fsprogs                                                                     1.46.5-2ubuntu1.1                        deb                         
-exceptiongroup                                                                1.2.1                                    python                      
+exceptiongroup                                                                1.2.2                                    python                      
 findutils                                                                     4.8.0-1ubuntu3                           deb                         
 fontconfig                                                                    2.13.1-4.2ubuntu5                        deb                         
 fontconfig-config                                                             2.13.1-4.2ubuntu5                        deb                         
@@ -493,8 +493,8 @@ libpng16-16                                                                   1.
 libprocps8                                                                    2:3.3.17-6ubuntu2.1                      deb                         
 libpsl5                                                                       0.21.0-1.2build2                         deb                         
 libpython3-stdlib                                                             3.10.6-1~22.04                           deb                         
-libpython3.10-minimal                                                         3.10.12-1~22.04.3                        deb                         
-libpython3.10-stdlib                                                          3.10.12-1~22.04.3                        deb                         
+libpython3.10-minimal                                                         3.10.12-1~22.04.4                        deb                         
+libpython3.10-stdlib                                                          3.10.12-1~22.04.4                        deb                         
 libreadline8                                                                  8.1.2-1                                  deb                         
 librtmp1                                                                      2.4+20151223.gitfa8646d.1-2build4        deb                         
 libsasl2-2                                                                    2.1.27+dfsg2-3ubuntu1.2                  deb                         
@@ -597,7 +597,7 @@ packaging                                                                     24
 passwd                                                                        1:4.8.1-2ubuntu2.2                       deb                         
 perl-base                                                                     5.34.0-3ubuntu1.3                        deb                         
 pinentry-curses                                                               1.1.1-1build2                            deb                         
-pip                                                                           24.1.1                                   python                      
+pip                                                                           24.1.2                                   python                      
 procps                                                                        2:3.3.17-6ubuntu2.1                      deb                         
 publicsuffix                                                                  20211207.1025-1                          deb                         
 python-dateutil                                                               2.9.0.post0                              python                      
@@ -608,9 +608,9 @@ python3-minimal                                                               3.
 python3-pip-whl                                                               22.0.2+dfsg-1ubuntu0.4                   deb                         
 python3-setuptools-whl                                                        59.6.0-1.2ubuntu0.22.04.1                deb                         
 python3-venv                                                                  3.10.6-1~22.04                           deb                         
-python3.10                                                                    3.10.12-1~22.04.3                        deb                         
-python3.10-minimal                                                            3.10.12-1~22.04.3                        deb                         
-python3.10-venv                                                               3.10.12-1~22.04.3                        deb                         
+python3.10                                                                    3.10.12-1~22.04.4                        deb                         
+python3.10-minimal                                                            3.10.12-1~22.04.4                        deb                         
+python3.10-venv                                                               3.10.12-1~22.04.4                        deb                         
 readline-common                                                               8.1.2-1                                  deb                         
 requests                                                                      2.28.2                                   python                      
 resenje.org/singleflight                                                      v0.4.1                                   go-module                   
@@ -635,7 +635,7 @@ tags.cncf.io/container-device-interface/specs-go                              v0
 tar                                                                           1.34+dfsg-1ubuntu0.1.22.04.2             deb                         
 trio                                                                          0.26.0                                   python                      
 trio-websocket                                                                0.11.1                                   python                      
-tzdata                                                                        2024a-0ubuntu0.22.04                     deb                         
+tzdata                                                                        2024a-0ubuntu0.22.04.1                   deb                         
 ubuntu-keyring                                                                2021.03.26                               deb                         
 ubuntu-mono                                                                   20.10-0ubuntu2                           deb                         
 ucf                                                                           3.0043                                   deb                         
@@ -652,7 +652,7 @@ x11-xkb-utils                                                                 7.
 xauth                                                                         1:1.1-1build2                            deb                         
 xdg-utils                                                                     1.1.3-4.1ubuntu3~22.04.1                 deb                         
 xkb-data                                                                      2.33-1                                   deb                         
-xserver-common                                                                2:21.1.4-2ubuntu1.7~22.04.10             deb                         
-xserver-xephyr                                                                2:21.1.4-2ubuntu1.7~22.04.10             deb                         
-xvfb                                                                          2:21.1.4-2ubuntu1.7~22.04.10             deb                         
+xserver-common                                                                2:21.1.4-2ubuntu1.7~22.04.11             deb                         
+xserver-xephyr                                                                2:21.1.4-2ubuntu1.7~22.04.11             deb                         
+xvfb                                                                          2:21.1.4-2ubuntu1.7~22.04.11             deb                         
 zlib1g                                                                        1:1.2.11.dfsg-2ubuntu9.2                 deb                         
