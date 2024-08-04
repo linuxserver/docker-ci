@@ -1,8 +1,4 @@
 NAME                                                                          VERSION                                  TYPE                       
-Jinja2                                                                        3.1.2                                    python                      
-MarkupSafe                                                                    2.1.5                                    python                      
-PySocks                                                                       1.7.1                                    python                      
-PyVirtualDisplay                                                              3.0                                      python                      
 Simple Launcher                                                               1.1.0.14                                 dotnet     (+5 duplicates)  
 adduser                                                                       3.118ubuntu5                             deb                         
 adwaita-icon-theme                                                            41.0-1ubuntu1                            deb                         
@@ -10,7 +6,7 @@ ansi2html                                                                     1.
 anybadge                                                                      1.14.0                                   python                      
 apt                                                                           2.4.12                                   deb                         
 apt-utils                                                                     2.4.12                                   deb                         
-attrs                                                                         23.2.0                                   python                      
+attrs                                                                         24.1.0                                   python                      
 base-files                                                                    12ubuntu4.6                              deb                         
 base-passwd                                                                   3.5.52build1                             deb                         
 bash                                                                          5.1-6ubuntu1.1                           deb                         
@@ -124,7 +120,7 @@ github.com/davecgh/go-spew                                                    v1
 github.com/deckarep/golang-set/v2                                             v2.3.0                                   go-module                   
 github.com/dimchansky/utfbom                                                  v1.1.1                                   go-module                   
 github.com/distribution/reference                                             v0.6.0                                   go-module  (+2 duplicates)  
-github.com/docker/cli/cmd/docker                                              v27.1.1                                  go-module                   
+github.com/docker/cli/cmd/docker                                              27.1.1                                   go-module                   
 github.com/docker/distribution                                                v2.8.3+incompatible                      go-module                   
 github.com/docker/docker                                                      v27.1.1                                  go-module  (+1 duplicate)   
 github.com/docker/go-connections                                              v0.5.0                                   go-module                   
@@ -329,7 +325,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.15.0                                  go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8       go-module                   
 golang.org/x/time                                                             v0.3.0                                   go-module                   
-google-chrome-stable                                                          127.0.6533.72-1                          deb                         
+google-chrome-stable                                                          127.0.6533.88-1                          deb                         
 google.golang.org/api                                                         v0.149.0                                 go-module                   
 google.golang.org/genproto                                                    v0.0.0-20230920204549-e6e6cdab5c13       go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3       go-module                   
@@ -360,6 +356,7 @@ humanity-icon-theme                                                           0.
 idna                                                                          3.7                                      python                      
 init-system-helpers                                                           1.62                                     deb                         
 iptables                                                                      1.8.7-1ubuntu5.2                         deb                         
+jinja2                                                                        3.1.2                                    python                      
 jmespath                                                                      1.0.1                                    python                      
 jq                                                                            1.6-2.1ubuntu3                           deb                         
 k8s.io/api                                                                    v0.26.2                                  go-module                   
@@ -464,8 +461,8 @@ libkrb5-3                                                                     1.
 libkrb5support0                                                               1.19.2-2ubuntu0.3                        deb                         
 libksba8                                                                      1.6.0-2ubuntu0.2                         deb                         
 liblcms2-2                                                                    2.12~rc1-2build2                         deb                         
-libldap-2.5-0                                                                 2.5.18+dfsg-0ubuntu0.22.04.1             deb                         
-libldap-common                                                                2.5.18+dfsg-0ubuntu0.22.04.1             deb                         
+libldap-2.5-0                                                                 2.5.18+dfsg-0ubuntu0.22.04.2             deb                         
+libldap-common                                                                2.5.18+dfsg-0ubuntu0.22.04.2             deb                         
 libllvm15                                                                     1:15.0.7-0ubuntu0.22.04.3                deb                         
 liblz4-1                                                                      1.9.3-2build2                            deb                         
 liblzma5                                                                      5.2.5-2ubuntu1                           deb                         
@@ -502,8 +499,8 @@ libpng16-16                                                                   1.
 libprocps8                                                                    2:3.3.17-6ubuntu2.1                      deb                         
 libpsl5                                                                       0.21.0-1.2build2                         deb                         
 libpython3-stdlib                                                             3.10.6-1~22.04                           deb                         
-libpython3.10-minimal                                                         3.10.12-1~22.04.4                        deb                         
-libpython3.10-stdlib                                                          3.10.12-1~22.04.4                        deb                         
+libpython3.10-minimal                                                         3.10.12-1~22.04.5                        deb                         
+libpython3.10-stdlib                                                          3.10.12-1~22.04.5                        deb                         
 libreadline8                                                                  8.1.2-1                                  deb                         
 librtmp1                                                                      2.4+20151223.gitfa8646d.1-2build4        deb                         
 libsasl2-2                                                                    2.1.27+dfsg2-3ubuntu1.2                  deb                         
@@ -592,6 +589,7 @@ locales                                                                       2.
 login                                                                         1:4.8.1-2ubuntu2.2                       deb                         
 logsave                                                                       1.46.5-2ubuntu1.1                        deb                         
 lsb-base                                                                      11.1.0ubuntu4                            deb                         
+markupsafe                                                                    2.1.5                                    python                      
 mawk                                                                          1.3.4.20200120-3                         deb                         
 media-types                                                                   7.0.0                                    deb                         
 mount                                                                         2.37.2-4ubuntu3.4                        deb                         
@@ -606,9 +604,10 @@ packaging                                                                     24
 passwd                                                                        1:4.8.1-2ubuntu2.2                       deb                         
 perl-base                                                                     5.34.0-3ubuntu1.3                        deb                         
 pinentry-curses                                                               1.1.1-1build2                            deb                         
-pip                                                                           24.1.2                                   python                      
+pip                                                                           24.2                                     python                      
 procps                                                                        2:3.3.17-6ubuntu2.1                      deb                         
 publicsuffix                                                                  20211207.1025-1                          deb                         
+pysocks                                                                       1.7.1                                    python                      
 python-dateutil                                                               2.9.0.post0                              python                      
 python3                                                                       3.10.6-1~22.04                           deb                         
 python3-distutils                                                             3.10.8-1~22.04                           deb                         
@@ -617,9 +616,10 @@ python3-minimal                                                               3.
 python3-pip-whl                                                               22.0.2+dfsg-1ubuntu0.4                   deb                         
 python3-setuptools-whl                                                        59.6.0-1.2ubuntu0.22.04.1                deb                         
 python3-venv                                                                  3.10.6-1~22.04                           deb                         
-python3.10                                                                    3.10.12-1~22.04.4                        deb                         
-python3.10-minimal                                                            3.10.12-1~22.04.4                        deb                         
-python3.10-venv                                                               3.10.12-1~22.04.4                        deb                         
+python3.10                                                                    3.10.12-1~22.04.5                        deb                         
+python3.10-minimal                                                            3.10.12-1~22.04.5                        deb                         
+python3.10-venv                                                               3.10.12-1~22.04.5                        deb                         
+pyvirtualdisplay                                                              3.0                                      python                      
 readline-common                                                               8.1.2-1                                  deb                         
 requests                                                                      2.28.2                                   python                      
 resenje.org/singleflight                                                      v0.4.1                                   go-module                   
