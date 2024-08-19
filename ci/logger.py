@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import logging
 from logging import Logger
 from logging.handlers import TimedRotatingFileHandler
@@ -19,6 +20,16 @@ else:
 
 logger: Logger = logging.getLogger()
 
+# Get the major and minor version of Python
+major_version = sys.version_info.major
+minor_version = sys.version_info.minor
+
+# https://stackoverflow.com/a/78515926/15290341
+# The stack level is different for Python 3.9 and above
+# We need to set the correct stack level so that the log (%(module)s.%(funcName)s|line:%(lineno)d) output is correct
+stack_level_per_py_version = 2 if (major_version, minor_version) >= (3, 9) else 1
+
+
 # Add custom log level for success messages
 logging.SUCCESS = 25
 logging.addLevelName(logging.SUCCESS, "SUCCESS")
@@ -32,7 +43,7 @@ def success(self:'Logger', message:str, *args, **kwargs):
     logger.success("Houston, Tranquility Base Here. The Eagle has Landed.", exc_info=1)
     """
     if self.isEnabledFor(logging.SUCCESS):
-        self._log(logging.SUCCESS, message, args, **kwargs)
+        self._log(logging.SUCCESS, message, args, stacklevel = stack_level_per_py_version, **kwargs)
 
 logging.Logger.success = success
 
