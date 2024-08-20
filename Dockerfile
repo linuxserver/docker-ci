@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-ubuntu:jammy
+FROM ghcr.io/linuxserver/baseimage-ubuntu:noble
 
 # set version label
 ARG BUILD_DATE
@@ -15,7 +15,7 @@ RUN \
     gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
   curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | \
     gpg --dearmor -o /etc/apt/keyrings/google.gpg && \
-  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | \
+  echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu noble stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null && \
   echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/google.gpg] http://dl.google.com/linux/chrome/deb/ stable main' > \
     /etc/apt/sources.list.d/google-chrome.list && \
@@ -45,6 +45,7 @@ RUN \
     pip && \
   pip3 install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/ubuntu/ \
     -r /tmp/requirements.txt && \
+  printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
   echo "**** cleanup ****" && \
   apt-get autoclean && \
   rm -rf \
