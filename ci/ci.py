@@ -82,7 +82,7 @@ class SetEnvs():
         self.logs_timeout: int = (os.environ.get("DOCKER_LOGS_TIMEOUT", "120") or "120")
         self.sbom_timeout: int = (os.environ.get("SBOM_TIMEOUT", "900") or "900")
         self.port: int = (os.environ.get("PORT", "80") or "80")
-
+        self.builder: str = os.environ.get("NODE_NAME", "-")
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
@@ -99,6 +99,7 @@ class SetEnvs():
 
         env_data = dedent(f"""
         ENVIRONMENT DATA:
+        NODE_NAME:              '{os.environ.get("NODE_NAME")}'
         IMAGE:                  '{os.environ.get("IMAGE")}'
         BASE:                   '{os.environ.get("BASE")}'
         META_TAG:               '{os.environ.get("META_TAG")}'
@@ -121,9 +122,21 @@ class SetEnvs():
         SSL:                    '{os.environ.get("SSL")}'
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
-        Docker Engine Version:  '{docker.from_env().version().get("Version")}'
+        Docker Engine Version:  '{self.get_docker_engine_version()}'
         """)
         self.logger.info(env_data)
+        
+    def get_docker_engine_version(self) -> str:
+        """Get the Docker Engine version
+
+        Returns:
+            str: The Docker Engine version
+        """
+        try:
+            return docker.from_env().version().get("Version")
+        except Exception:
+            logger.error("Failed to get Docker Engine version!")
+            return "Unknown"
 
     def validate_attrs(self) -> None:
         """Validate the numeric environment variables"""
@@ -148,8 +161,8 @@ class SetEnvs():
             dict[str,str]: Returns a dictionary with our keys and values.
         """
         if make_list:
-            return [f"{k}:{v}" for k,v in (item.split("=") for item in kv.split("|"))]
-        return dict((item.split('=') for item in kv.split('|')))
+            return [f"{k}:{v}" for k,v in (item.split("=") for item in kv.split("|") if item and "=" in item and item.split('=')[1])]
+        return dict((item.split('=') for item in kv.split('|') if item and "=" in item and item.split('=')[1]))
 
     def convert_env(self, envs:str = None) -> dict[str,str]:
         """Convert env DOCKER_ENV to dictionary
@@ -236,7 +249,7 @@ class CI(SetEnvs):
         self.total_runtime: float = 0.0
         logging.getLogger("botocore.auth").setLevel(logging.INFO)  # Don't log the S3 authentication steps.
 
-        self.client: DockerClient = docker.from_env()
+        self.client: DockerClient = self.create_docker_client()
         self.tags = list(self.tags_env.split("|"))
         self.tag_report_tests:dict[str,dict[str,dict]] = {tag: {"test":{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
         self.report_containers: dict[str,dict[str,dict]] = {}
@@ -507,6 +520,7 @@ class CI(SetEnvs):
                 "created": "xxxx-xx-xx",
                 "size": "100MB",
                 "maintainer": "user"
+                "builder": "node"
             }
             ```
         """
@@ -519,6 +533,7 @@ class CI(SetEnvs):
                 "created": container.attrs["Config"]["Labels"]["org.opencontainers.image.created"],
                 "size": "%.2f" % float(int(container.image.attrs["Size"])/1000000) + "MB",
                 "maintainer": container.attrs["Config"]["Labels"]["maintainer"],
+                "builder": self.builder
             }
             self._add_test_result(tag, test, "PASS", "-", start_time)
             self.logger.success("Get build info on tag '%s': PASS", tag)
@@ -847,6 +862,17 @@ class CI(SetEnvs):
                 aws_access_key_id=self.s3_key,
                 aws_secret_access_key=self.s3_secret)
         return s3_client
+    
+    def create_docker_client(self) -> DockerClient|None:
+        """Create and return a docker client object
+
+        Returns:
+            DockerClient: A docker client object
+        """
+        try:
+            return docker.from_env()
+        except Exception:
+            self.logger.error("Failed to create Docker client!")
 
 class CIError(Exception):
     pass

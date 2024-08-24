@@ -1,0 +1,116 @@
+{
+    "Id": "sha256:89ee66ddec666aa6f4bdb6eb28aaa3e035a8b709757cb546601334913903b894",
+    "RepoTags": [
+        "linuxserver/lidarr:latest"
+    ],
+    "RepoDigests": [
+        "linuxserver/lidarr@sha256:d30f42dc071f77ae833d094083263d38be2dd0ddfff3c234ede29a36673a8603"
+    ],
+    "Parent": "",
+    "Comment": "buildkit.dockerfile.v0",
+    "Created": "2024-08-21T02:19:08.22468109Z",
+    "Container": "",
+    "ContainerConfig": {
+        "Hostname": "",
+        "Domainname": "",
+        "User": "",
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "AttachStderr": false,
+        "Tty": false,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Env": null,
+        "Cmd": null,
+        "Image": "",
+        "Volumes": null,
+        "WorkingDir": "",
+        "Entrypoint": null,
+        "OnBuild": null,
+        "Labels": null
+    },
+    "DockerVersion": "",
+    "Author": "",
+    "Config": {
+        "Hostname": "",
+        "Domainname": "",
+        "User": "",
+        "AttachStdin": false,
+        "AttachStdout": false,
+        "AttachStderr": false,
+        "ExposedPorts": {
+            "8686/tcp": {}
+        },
+        "Tty": false,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Env": [
+            "PATH=/lsiopy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "PS1=$(whoami)@$(hostname):$(pwd)\\$ ",
+            "HOME=/root",
+            "TERM=xterm",
+            "S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0",
+            "S6_VERBOSITY=1",
+            "S6_STAGE2_HOOK=/docker-mods",
+            "VIRTUAL_ENV=/lsiopy",
+            "LSIO_FIRST_PARTY=true",
+            "XDG_CONFIG_HOME=/config/xdg",
+            "COMPlus_EnableDiagnostics=0",
+            "TMPDIR=/run/lidarr-temp"
+        ],
+        "Cmd": null,
+        "Image": "",
+        "Volumes": {
+            "/config": {}
+        },
+        "WorkingDir": "/",
+        "Entrypoint": [
+            "/init"
+        ],
+        "OnBuild": null,
+        "Labels": {
+            "build_version": "Linuxserver.io version:- 2.4.3.4248-ls7 Build-date:- 2024-08-21T02:17:44+00:00",
+            "maintainer": "Roxedus,thespad",
+            "org.opencontainers.image.authors": "linuxserver.io",
+            "org.opencontainers.image.created": "2024-08-21T02:17:44+00:00",
+            "org.opencontainers.image.description": "[Lidarr](https://github.com/lidarr/Lidarr) is a music collection manager for Usenet and BitTorrent users. It can monitor multiple RSS feeds for new tracks from your favorite artists and will grab, sort and rename them. It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.",
+            "org.opencontainers.image.documentation": "https://docs.linuxserver.io/images/docker-lidarr",
+            "org.opencontainers.image.licenses": "GPL-3.0-only",
+            "org.opencontainers.image.ref.name": "691414f065169ab94b736ca08d8996dc565643e5",
+            "org.opencontainers.image.revision": "691414f065169ab94b736ca08d8996dc565643e5",
+            "org.opencontainers.image.source": "https://github.com/linuxserver/docker-lidarr",
+            "org.opencontainers.image.title": "Lidarr",
+            "org.opencontainers.image.url": "https://github.com/linuxserver/docker-lidarr/packages",
+            "org.opencontainers.image.vendor": "linuxserver.io",
+            "org.opencontainers.image.version": "2.4.3.4248-ls7"
+        }
+    },
+    "Architecture": "amd64",
+    "Os": "linux",
+    "Size": 275928526,
+    "GraphDriver": {
+        "Data": {
+            "LowerDir": "/var/lib/docker/overlay2/a229adaf5fb77dc1d46423f0514c8ef221a74df2bf7a46ece379f60b883bfa43/diff:/var/lib/docker/overlay2/21a5c12f14c14b8af99fc159dce1c59b853a495bc3d3ad8ab04a4ddefec3d9e6/diff:/var/lib/docker/overlay2/e41c1d2e4e51a80936224f1a9408c0b233445c590aea77337b94c3196cb164e0/diff:/var/lib/docker/overlay2/4371b5b22b85e4c6598034f67495ab37ce48ebad57bfbecc9b4803bcf9610663/diff:/var/lib/docker/overlay2/32dbcbe4de9378090f6751783a2e434c0f15d20477e7d4a5a97942c7a32b6fc2/diff:/var/lib/docker/overlay2/2cfaa506bfadfadab25605d7316d55cd37e5003dfbce486bfca32c3c090cb6a4/diff:/var/lib/docker/overlay2/665b442ff9cf40434ea5196b83543bb8bc3c2b68b38c4bc66ffe50db0099a685/diff",
+            "MergedDir": "/var/lib/docker/overlay2/0a97303478160bf01a3091fd2b587fc896a7bf1779ede34255353b8595bad41f/merged",
+            "UpperDir": "/var/lib/docker/overlay2/0a97303478160bf01a3091fd2b587fc896a7bf1779ede34255353b8595bad41f/diff",
+            "WorkDir": "/var/lib/docker/overlay2/0a97303478160bf01a3091fd2b587fc896a7bf1779ede34255353b8595bad41f/work"
+        },
+        "Name": "overlay2"
+    },
+    "RootFS": {
+        "Type": "layers",
+        "Layers": [
+            "sha256:092e17aad84ead6b9b7105b3978c511d25fff4574a06baf24a8211e947509986",
+            "sha256:8cf796425b7c1aeb4db19c2affb3e8d833cbad96e0b47d693b2ff19276400368",
+            "sha256:462393ec710cc9a645e33fa1aa17fe7ced6209b18c244dbe1b5dd0fdd2c8dfbe",
+            "sha256:bdbf23bbbf6402d93df92ed0d0549605f5d1c654b784aba3cf9e6682d5b63d6b",
+            "sha256:188595493c2807a0f40386ca01f64ea6bbd08d474230cd210a6d596d9c318c33",
+            "sha256:5e075cf56b52be11935333b8845c031d6df28b32cfa5f1196f89e5300fdad658",
+            "sha256:b8d3d05b0d9043991cdcff5d5c00a68602abee651b317db5e653d4345d9d4aa1",
+            "sha256:4a5e4ccfe32d7f0f87dfe202b1c360ea708c5ff20a7a8f320a1e1a5800df292c"
+        ]
+    },
+    "Metadata": {
+        "LastTagTime": "0001-01-01T00:00:00Z"
+    }
+}

@@ -593,18 +593,11 @@
           {% endif %}
           <div class="build-section">Build Information</div>
           <div class="build-info-section build">
-            <div class="build-summary">
-              <span class="build-header">Version:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["version"] }}</span>
-            </div>
-            <div class="build-summary">
-              <span class="build-header">Created:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["created"] }}</span>
-            </div>
-            <div class="build-summary">
-              <span class="build-header">Size:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["size"] }}</span>
-            </div>
-            <div class="build-summary">
-              <span class="build-header">Maintainer:</span> <span class="build-info">{{ report_containers[tag]["build_info"]["maintainer"] }}</span>
-            </div>
+            {% for key, value in report_containers[tag]["build_info"].items() %}
+              <div class="build-summary">
+                <span class="build-header">{{ key|capitalize }}:</span> <span class="build-info">{{ value }}</span>
+              </div>
+            {% endfor %}
           </div>
           <summary class="summary">
             <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
