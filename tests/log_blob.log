@@ -1,0 +1,116 @@
+2024-08-24T10:50:17.122835042Z s6-rc: info: service s6rc-oneshot-runner: starting
+2024-08-24T10:50:17.124912597Z s6-rc: info: service s6rc-oneshot-runner successfully started
+2024-08-24T10:50:17.124973716Z s6-rc: info: service fix-attrs: starting
+2024-08-24T10:50:17.125050965Z s6-rc: info: service init-migrations: starting
+2024-08-24T10:50:17.125146673Z s6-rc: info: service init-envfile: starting
+2024-08-24T10:50:17.128569035Z [migrations] started
+2024-08-24T10:50:17.128588625Z s6-rc: info: service fix-attrs successfully started
+2024-08-24T10:50:17.128612144Z [migrations] no migrations found
+2024-08-24T10:50:17.128687663Z s6-rc: info: service legacy-cont-init: starting
+2024-08-24T10:50:17.129015388Z s6-rc: info: service init-migrations successfully started
+2024-08-24T10:50:17.129110196Z s6-rc: info: service init-adduser: starting
+2024-08-24T10:50:17.130271146Z s6-rc: info: service init-envfile successfully started
+2024-08-24T10:50:17.132198574Z s6-rc: info: service legacy-cont-init successfully started
+2024-08-24T10:50:17.276658044Z usermod: no changes
+2024-08-24T10:50:17.277582028Z ───────────────────────────────────────
+2024-08-24T10:50:17.277599098Z 
+2024-08-24T10:50:17.277603338Z       ██╗     ███████╗██╗ ██████╗
+2024-08-24T10:50:17.277607428Z       ██║     ██╔════╝██║██╔═══██╗
+2024-08-24T10:50:17.277611307Z       ██║     ███████╗██║██║   ██║
+2024-08-24T10:50:17.277615167Z       ██║     ╚════██║██║██║   ██║
+2024-08-24T10:50:17.277619017Z       ███████╗███████║██║╚██████╔╝
+2024-08-24T10:50:17.277622717Z       ╚══════╝╚══════╝╚═╝ ╚═════╝
+2024-08-24T10:50:17.277626577Z 
+2024-08-24T10:50:17.277630167Z    Brought to you by linuxserver.io
+2024-08-24T10:50:17.277633967Z ───────────────────────────────────────
+2024-08-24T10:50:17.277812604Z 
+2024-08-24T10:50:17.277820684Z To support LSIO projects visit:
+2024-08-24T10:50:17.277824054Z https://www.linuxserver.io/donate/
+2024-08-24T10:50:17.277827204Z 
+2024-08-24T10:50:17.277830024Z ───────────────────────────────────────
+2024-08-24T10:50:17.277833524Z GID/UID
+2024-08-24T10:50:17.277836354Z ───────────────────────────────────────
+2024-08-24T10:50:17.280318612Z 
+2024-08-24T10:50:17.280328742Z User UID:    911
+2024-08-24T10:50:17.280340991Z User GID:    911
+2024-08-24T10:50:17.280344011Z ───────────────────────────────────────
+2024-08-24T10:50:17.290792965Z s6-rc: info: service init-adduser successfully started
+2024-08-24T10:50:17.290863793Z s6-rc: info: service init-os-end: starting
+2024-08-24T10:50:17.291607871Z s6-rc: info: service init-os-end successfully started
+2024-08-24T10:50:17.291684610Z s6-rc: info: service init-kasmvnc: starting
+2024-08-24T10:50:17.291768548Z s6-rc: info: service init-crontab-config: starting
+2024-08-24T10:50:17.292426547Z s6-rc: info: service init-kasmvnc successfully started
+2024-08-24T10:50:17.292495636Z s6-rc: info: service init-nginx: starting
+2024-08-24T10:50:17.297762517Z s6-rc: info: service init-crontab-config successfully started
+2024-08-24T10:50:17.433126600Z .............+.+.....+............+..........+..+....+..+....+...........+...+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+.......+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*.......+..+....+............+.........+.....+...+.......+........+..........+...+..+.+...............+..+...+......+.+...............+...............+...+......+...+........+...+....+........+.......+...........+......+.+............+........+...+..........+.........+..+.+..................+.....+....+.....+...+....+...............+.........+......+.....+.+..+............+.+...+............+............+.....+..................+....+........+..................+...+.+...+.....+.......+...+...........+....+.....+...+............+...+...+...............+.+...+..+....+......+......+...+.....+......+.........+.+.........+...............+......+...+.....+.+......+...+.....+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2024-08-24T10:50:17.521335090Z ..+...+...+..+......+..........+.....+....+..+.+...+..+....+...+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*..+..+..........+...+..+.........+.........+.......+...+.....+......+....+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*...+....+...............+.....+..........+...........+...+..................+...+......................+..+...+............+.+............+...+......+..............+.+......+...+..+......................+..+....+.....+....+..+.+.....+............+......+.+...+........+....+.........+..............+.......+.....+...+......+.+...+...+........+....+..+...+...+....+...+...........+.+........+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2024-08-24T10:50:17.523934416Z -----
+2024-08-24T10:50:17.534042865Z s6-rc: info: service init-nginx successfully started
+2024-08-24T10:50:17.534141954Z s6-rc: info: service init-kasmvnc-config: starting
+2024-08-24T10:50:17.578754430Z s6-rc: info: service init-kasmvnc-config successfully started
+2024-08-24T10:50:17.579685815Z s6-rc: info: service init-video: starting
+2024-08-24T10:50:17.586924972Z s6-rc: info: service init-video successfully started
+2024-08-24T10:50:17.587018161Z s6-rc: info: service init-kasmvnc-end: starting
+2024-08-24T10:50:17.587849567Z s6-rc: info: service init-kasmvnc-end successfully started
+2024-08-24T10:50:17.588260720Z s6-rc: info: service init-config: starting
+2024-08-24T10:50:17.589203354Z s6-rc: info: service init-config successfully started
+2024-08-24T10:50:17.589295582Z s6-rc: info: service init-config-end: starting
+2024-08-24T10:50:17.590151768Z s6-rc: info: service init-config-end successfully started
+2024-08-24T10:50:17.590226156Z s6-rc: info: service init-mods: starting
+2024-08-24T10:50:17.590921155Z s6-rc: info: service init-mods successfully started
+2024-08-24T10:50:17.590990383Z s6-rc: info: service init-mods-package-install: starting
+2024-08-24T10:50:17.594913657Z s6-rc: info: service init-mods-package-install successfully started
+2024-08-24T10:50:17.594981996Z s6-rc: info: service init-mods-end: starting
+2024-08-24T10:50:17.595687814Z s6-rc: info: service init-mods-end successfully started
+2024-08-24T10:50:17.595757153Z s6-rc: info: service init-custom-files: starting
+2024-08-24T10:50:17.598857481Z [custom-init] No custom files found, skipping...
+2024-08-24T10:50:17.599207205Z s6-rc: info: service init-custom-files successfully started
+2024-08-24T10:50:17.599285493Z s6-rc: info: service init-services: starting
+2024-08-24T10:50:17.599980762Z s6-rc: info: service init-services successfully started
+2024-08-24T10:50:17.600063090Z s6-rc: info: service svc-pulseaudio: starting
+2024-08-24T10:50:17.600142799Z s6-rc: info: service svc-cron: starting
+2024-08-24T10:50:17.601347238Z s6-rc: info: service svc-pulseaudio successfully started
+2024-08-24T10:50:17.601456507Z s6-rc: info: service svc-kasmvnc: starting
+2024-08-24T10:50:17.601586164Z s6-rc: info: service svc-cron successfully started
+2024-08-24T10:50:17.602806224Z s6-rc: info: service svc-kasmvnc successfully started
+2024-08-24T10:50:17.602933032Z s6-rc: info: service svc-kclient: starting
+2024-08-24T10:50:17.604124731Z s6-rc: info: service svc-kclient successfully started
+2024-08-24T10:50:17.604230550Z s6-rc: info: service svc-nginx: starting
+2024-08-24T10:50:17.605527468Z s6-rc: info: service svc-nginx successfully started
+2024-08-24T10:50:17.605638686Z s6-rc: info: service svc-de: starting
+2024-08-24T10:50:17.607027492Z s6-rc: info: service svc-de successfully started
+2024-08-24T10:50:17.607146910Z s6-rc: info: service svc-docker: starting
+2024-08-24T10:50:17.608408179Z s6-rc: info: service svc-docker successfully started
+2024-08-24T10:50:17.608492298Z s6-rc: info: service legacy-services: starting
+2024-08-24T10:50:17.613769568Z _XSERVTransmkdir: ERROR: euid != 0,directory /tmp/.X11-unix will not be created.
+2024-08-24T10:50:17.614036994Z 
+2024-08-24T10:50:17.614045764Z Xvnc KasmVNC 1.2.0 - built Aug 17 2024 19:02:57
+2024-08-24T10:50:17.614050214Z Copyright (C) 1999-2018 KasmVNC Team and many others (see README.me)
+2024-08-24T10:50:17.614053934Z See http://kasmweb.com for information on KasmVNC.
+2024-08-24T10:50:17.614057574Z Underlying X server release 12014000, The X.Org Foundation
+2024-08-24T10:50:17.614070483Z 
+2024-08-24T10:50:17.614802321Z s6-rc: info: service legacy-services successfully started
+2024-08-24T10:50:17.614884720Z s6-rc: info: service ci-service-check: starting
+2024-08-24T10:50:17.615947832Z [ls.io-init] done.
+2024-08-24T10:50:17.616290966Z s6-rc: info: service ci-service-check successfully started
+2024-08-24T10:50:17.703191248Z Obt-Message: Xinerama extension is not present on the server
+2024-08-24T10:50:17.779509218Z Traceback (most recent call last):
+2024-08-24T10:50:17.779525098Z   File \"<string>\", line 8, in <module>
+2024-08-24T10:50:17.779529558Z FileNotFoundError: [Errno 2] No such file or directory: '/lsiopy/bin/activate_this.py'
+2024-08-24T10:50:17.869610146Z FreeCAD 0.20.2, Libs: 0.20.2R
+2024-08-24T10:50:17.869629786Z © Juergen Riegel, Werner Mayer, Yorik van Havre and others 2001-2022
+2024-08-24T10:50:17.869633766Z FreeCAD is free and open-source software licensed under the terms of LGPL2+ license.
+2024-08-24T10:50:17.869636936Z FreeCAD wouldn't be possible without FreeCAD community.
+2024-08-24T10:50:17.869639846Z   #####                 ####  ###   ####  
+2024-08-24T10:50:17.869643056Z   #                    #      # #   #   # 
+2024-08-24T10:50:17.869645926Z   #     ##  #### ####  #     #   #  #   # 
+2024-08-24T10:50:17.869648846Z   ####  # # #  # #  #  #     #####  #   # 
+2024-08-24T10:50:17.869651696Z   #     #   #### ####  #    #     # #   # 
+2024-08-24T10:50:17.869654495Z   #     #   #    #     #    #     # #   #  ##  ##  ##
+2024-08-24T10:50:17.869657395Z   #     #   #### ####   ### #     # ####   ##  ##  ##
+2024-08-24T10:50:17.869660235Z 
+2024-08-24T10:50:18.114299083Z 17
+2024-08-24T10:50:21.902274200Z [350:356:0824/035021.902000:ERROR:command_buffer_proxy_impl.cc(141)] ContextResult::kTransientFailure: Failed to send GpuChannelMsg_CreateCommandBuffer.
+2024-08-24T10:51:53.810828279Z  2024-08-24 03:51:53,810 [INFO] websocket 0: got client connection from 127.0.0.1
+2024-08-24T10:51:53.827898731Z  2024-08-24 03:51:53,827 [PRIO] Connections: accepted: @172.17.0.2_1724496713.810946::websocket
+2024-08-24T10:52:03.966292085Z  2024-08-24 03:52:03,966 [PRIO] Connections: closed: @172.17.0.2_1724496713.810946::websocket (Clean disconnection)
