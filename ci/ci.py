@@ -841,12 +841,12 @@ class CI(SetEnvs):
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920x1080")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.add_argument("--disable-dev-shm-usage")  # https://developers.google.com/web/tools/puppeteer/troubleshooting#tips
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
+        driver.set_window_size(1920,1080)
         return driver
 
     @testing
