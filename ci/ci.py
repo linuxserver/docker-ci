@@ -326,7 +326,11 @@ class CI(SetEnvs):
             return
 
         # Screenshot the web interface and check connectivity
-        self.take_screenshot(container, tag)
+        screenshot: bool = self.take_screenshot(container, tag)
+        if not screenshot and self.get_platform(tag) == "amd64": # Allow ARM tags to fail the screenshot test
+            self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
+            self._endtest(container, tag, build_info, sbom, False, start_time)
+            return
 
         self._endtest(container, tag, build_info, sbom, True, start_time)
         self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
@@ -723,7 +727,7 @@ class CI(SetEnvs):
             "message":message,
             "runtime": runtime}.items())))
 
-    def take_screenshot(self, container: Container, tag:str) -> None:
+    def take_screenshot(self, container: Container, tag:str) -> bool:
         """Take a screenshot and save it to self.outdir if self.screenshot is True
 
         Takes a screenshot using a ChromiumDriver instance.
@@ -731,9 +735,12 @@ class CI(SetEnvs):
         Args:
             container (Container): Container object
             tag (str): The container tag we are testing.
+        
+        Returns:
+            bool: Return True if the screenshot was successful, otherwise False.
         """
         if not self.screenshot:
-            return
+            return True
         proto: Literal["https", "http"] = "https" if self.ssl.upper() == "TRUE" else "http"
         screenshot_timeout = time.time() + self.screenshot_timeout
         test = "Get screenshot"
@@ -757,7 +764,7 @@ class CI(SetEnvs):
                         raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
                     self._add_test_result(tag, test, "PASS", "-", start_time)
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
-                    return
+                    return True
                 except Exception as error:
                     logger.debug("Failed to take screenshot of %s at %s, trying again in 3 seconds", tag, endpoint, exc_info=error)
                     time.sleep(3)
@@ -768,12 +775,18 @@ class CI(SetEnvs):
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
             self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL CONNECTION ERROR", tag)
+            self.report_status = "FAIL"
+            return False
         except TimeoutException as error:
             self._add_test_result(tag, test, "FAIL", f"TIMEOUT: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL TIMEOUT", tag)
+            self.report_status = "FAIL"
+            return False
         except (WebDriverException, Exception) as error:
             self._add_test_result(tag, test, "FAIL", f"UNKNOWN: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL UNKNOWN", tag)
+            self.report_status = "FAIL"
+            return False
         finally:
             try:
                 driver.quit()
