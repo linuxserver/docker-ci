@@ -49,7 +49,8 @@ sudo docker run --rm -i \
 -e CI_S6_VERBOSITY=<optional, Updates the S6_VERBOSITY env. Defaults to '2'> \
 -e CI_LOG_LEVEL=<optional, Sets the ci logging level. Defaults to 'INFO'> \
 -e DOCKER_LOGS_TIMEOUT=<optional, How long to wait in seconds while tailing the container logs before timing out. Defaults to '120'> \
--e DRY_RUN=<optional, Set to 'true' when you don't want to upload files to S3 when testing>
+-e DRY_RUN=<optional, Set to 'true' when you don't want to upload files to S3 when testing> \
+-e NODE_NAME=<optional, Name of the builder that runs the CI test.> \
 -t lsiodev/ci:latest \
 python3 test_build.py
 ```
