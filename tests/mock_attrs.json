@@ -224,7 +224,7 @@
                 "NetworkID": "",
                 "EndpointID": "",
                 "Gateway": "",
-                "IPAddress": "",
+                "IPAddress": "www.linuxserver.io",
                 "IPPrefixLen": 0,
                 "IPv6Gateway": "",
                 "GlobalIPv6Address": "",
