@@ -4,6 +4,8 @@ import json
 
 import pytest
 from docker.models.containers import Container
+import chromedriver_autoinstaller
+from docker import DockerClient
 
 from ci.ci import CI, SetEnvs
 
@@ -13,13 +15,33 @@ os.environ["BASE"] = "alpine"
 os.environ["ACCESS_KEY"] = "secret-access-key"
 os.environ["SECRET_KEY"] = "secret-key"
 os.environ["META_TAG"] = "test-meta-tag"
-os.environ["TAGS"] = "amd64|arm64"
+os.environ["TAGS"] = "amd64-nightly-5.10.1.9109-ls85|arm64v8-nightly-5.10.1.9109-ls85"
 os.environ["CI_LOG_LEVEL"] = "DEBUG"
 os.environ["NODE_NAME"] = "test-node"
+os.environ["SSL"] = "true"
+os.environ["PORT"] = "443"
+os.environ["WEB_SCREENSHOT"] = "true"
+os.environ["WEB_AUTH"] = ""
 
 @pytest.fixture
-def ci(tmpdir) -> CI:
+def sbom_blob() -> bytes:
+    with open("tests/sbom_blob.txt", "rb") as f:
+        yield f.read()
+
+@pytest.fixture
+def syft_mock_container(sbom_blob:bytes) -> Mock:
+    container = Mock(spec=Container)
+    container.logs = Mock(return_value=sbom_blob)
+    container.reload = Mock(return_value=None)
+    container.remove = Mock(return_value=None)
+    yield container
+
+@pytest.fixture
+def ci(tmpdir, syft_mock_container: Mock) -> CI:
     ci = CI()
+    ci.client = Mock(DockerClient)
+    ci.client.containers = Mock()
+    ci.client.containers.run = Mock(return_value=syft_mock_container)
     ci.outdir = tmpdir
     yield ci
 
@@ -54,7 +76,14 @@ def mock_container(mock_attrs, mock_image_attrs, log_blob) -> Mock:
     container.attrs = mock_attrs
     container.image.attrs = mock_image_attrs
     container.logs = Mock(return_value=log_blob)
+    container.reload = Mock(return_value=None)
+    container.remove = Mock(return_value=None)
     yield container
+
+@pytest.fixture
+def chromedriver_path(tmpdir):
+    path: None | str = chromedriver_autoinstaller.install(path=tmpdir)
+    yield path
 
 def test_convert_env(set_envs: SetEnvs):
     envs = "ENV1=VALUE1|ENV2=VALUE2"
@@ -81,9 +110,9 @@ def test_add_test_result(ci: CI):
         ci._add_test_result(tag=tag, test=f"test-{tag}", status="PASS", message="-", start_time="")
         assert ci.tag_report_tests[tag] == {'test': {f"test-{tag}": {"status": "PASS", "message": "-", "runtime": "-"}}}
 
-def test_mock_container(ci:CI,mock_container: Mock):
-    info = ci.get_build_info(mock_container,"amd64")
-    mock_info = {
+def test_get_build_info(ci: CI, mock_container: Mock):
+    info: dict[str, str] = ci.get_build_info(mock_container,ci.tags[0])
+    mock_info: dict[str, str] = {
                 "version": "2.4.3.4248-ls7",
                 "created": "2024-08-21T02:17:44+00:00",
                 "size": '275.93MB',
@@ -91,21 +120,33 @@ def test_mock_container(ci:CI,mock_container: Mock):
                 "builder": "test-node"
             }
     assert info == mock_info
-    
-    ci.watch_container_logs(mock_container, "amd64")
-    assert ci.tag_report_tests["amd64"]["test"]["Container startup"]["status"] == "PASS"
 
+def test_get_platform(ci: CI):
+    assert ci.get_platform(ci.tags[0]) == "amd64"
+    assert ci.get_platform(ci.tags[1]) == "arm64"
+
+def test_watch_container_logs(ci: CI, mock_container: Mock):
+    ci.watch_container_logs(mock_container, ci.tags[0])
+    assert ci.tag_report_tests[ci.tags[0]]["test"]["Container startup"]["status"] == "PASS"
+
+def test_take_screenshot(ci:CI,mock_container: Mock):
+    screenshot: bool = ci.take_screenshot(mock_container, ci.tags[0])
+    if screenshot:
+        assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.png")) is True
+        assert ci.tag_report_tests[ci.tags[0]]["test"]["Get screenshot"]["status"] == "PASS"
+    else:
+        assert ci.tag_report_tests[ci.tags[0]]["test"]["Get screenshot"]["status"] == "FAIL"
 
 def test_create_html_ansi_file(ci:CI, log_blob:bytes):
     logs = log_blob.decode("utf-8")
-    ci.create_html_ansi_file(logs,"amd64","log")
-    assert os.path.isfile(os.path.join(ci.outdir,"amd64.log.html")) is True
-    
+    ci.create_html_ansi_file(logs,ci.tags[0],"log")
+    assert os.path.isfile(os.path.join(ci.outdir,f"{ci.tags[0]}.log.html")) is True
+
 def test_report_render(ci:CI, report_containers:dict):
     ci.report_containers = report_containers
     ci.report_render()
     assert os.path.isfile(os.path.join(ci.outdir,"index.html")) is True
-    
+
 def test_json_render(ci:CI, report_containers:dict):
     ci.report_containers = report_containers
     ci.json_render()
@@ -114,3 +155,7 @@ def test_json_render(ci:CI, report_containers:dict):
 def test_badge_render(ci:CI):
     ci.badge_render()
     assert os.path.isfile(os.path.join(ci.outdir,"ci-status.yml")) is True
+
+def test_generate_sbom(ci:CI, syft_mock_container:Mock, sbom_blob:bytes):
+    sbom = ci.generate_sbom(ci.tags[0])
+    assert "VERSION" in sbom
