@@ -86,6 +86,7 @@ class SetEnvs():
         self.ssl: str = os.environ.get("SSL", "false")
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
+        self.release_tag: str = os.environ.get("RELEASE_TAG", "latest")
 
         if os.environ.get("DELAY_START"):
             self.logger.warning("DELAY_START env is obsolete, and not in use anymore")
@@ -103,6 +104,7 @@ class SetEnvs():
         IMAGE:                  '{os.environ.get("IMAGE")}'
         BASE:                   '{os.environ.get("BASE")}'
         META_TAG:               '{os.environ.get("META_TAG")}'
+        RELEASE_TAG:            '{os.environ.get("RELEASE_TAG")}'
         TAGS:                   '{os.environ.get("TAGS")}'
         S6_VERBOSITY:           '{os.environ.get("S6_VERBOSITY")}'
         CI_S6_VERBOSITY         '{os.environ.get("CI_S6_VERBOSITY")}'
@@ -674,7 +676,11 @@ class CI(SetEnvs):
 
     @testing
     def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
-        """Upload a file to an S3 bucket
+        """Upload a file to an S3 bucket.
+        
+        The file is uploaded to two directories in the bucket, one for the meta tag and one for the release tag.
+        
+        e.g. `https://ci-tests.linuxserver.io/linuxserver/plex/1.40.5.8921-836b34c27-ls233/index.html` and `https://ci-tests.linuxserver.io/linuxserver/plex/latest/index.html`
 
         Args:
             file_path (str): File to upload
@@ -682,10 +688,10 @@ class CI(SetEnvs):
             content_type (dict): Content type for the file
         """
         self.logger.info("Uploading %s to %s bucket",file_path, self.bucket)
-        destination_dir: str = f"{self.image}/{self.meta_tag}"
-        latest_dir: str = f"{self.image}/latest"
-        self.s3_client.upload_file(file_path, self.bucket, f"{destination_dir}/{object_name}", ExtraArgs=content_type)
-        self.s3_client.upload_file(file_path, self.bucket, f"{latest_dir}/{object_name}", ExtraArgs=content_type)
+        meta_dir: str = f"{self.image}/{self.meta_tag}"
+        release_dir: str = f"{self.image}/{self.release_tag}"
+        self.s3_client.upload_file(file_path, self.bucket, f"{meta_dir}/{object_name}", ExtraArgs=content_type)
+        self.s3_client.upload_file(file_path, self.bucket, f"{release_dir}/{object_name}", ExtraArgs=content_type)
 
     def log_upload(self) -> None:
         """Upload the ci.log to S3
