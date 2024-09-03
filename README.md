@@ -51,6 +51,7 @@ sudo docker run --rm -i \
 -e DOCKER_LOGS_TIMEOUT=<optional, How long to wait in seconds while tailing the container logs before timing out. Defaults to '120'> \
 -e DRY_RUN=<optional, Set to 'true' when you don't want to upload files to S3 when testing> \
 -e NODE_NAME=<optional, Name of the builder that runs the CI test.> \
+-e RELEASE_TAG=<optional, The release tag of the docker image. Used for upload location. Defaults to 'latest'> \
 -t lsiodev/ci:latest \
 python3 test_build.py
 ```
