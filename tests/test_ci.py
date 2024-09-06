@@ -6,17 +6,18 @@ import pytest
 from docker.models.containers import Container
 import chromedriver_autoinstaller
 from docker import DockerClient
+from moto import mock_aws
 
 from ci.ci import CI, SetEnvs
 
-os.environ["DRY_RUN"] = "true"
+os.environ["DRY_RUN"] = "false"
 os.environ["IMAGE"] = "linuxserver/test"
 os.environ["BASE"] = "alpine"
 os.environ["ACCESS_KEY"] = "secret-access-key"
 os.environ["SECRET_KEY"] = "secret-key"
 os.environ["META_TAG"] = "test-meta-tag"
 os.environ["TAGS"] = "amd64-nightly-5.10.1.9109-ls85|arm64v8-nightly-5.10.1.9109-ls85"
-os.environ["CI_LOG_LEVEL"] = "DEBUG"
+os.environ["CI_LOG_LEVEL"] = "ERROR"
 os.environ["NODE_NAME"] = "test-node"
 os.environ["SSL"] = "true"
 os.environ["PORT"] = "443"
@@ -159,3 +160,17 @@ def test_badge_render(ci:CI):
 def test_generate_sbom(ci:CI, syft_mock_container:Mock, sbom_blob:bytes):
     sbom = ci.generate_sbom(ci.tags[0])
     assert "VERSION" in sbom
+
+def test_create_s3_client(ci:CI):
+    with mock_aws():
+        ci.s3_client = ci.create_s3_client()
+        assert ci.s3_client is not None
+
+def test_upload_file(ci: CI) -> None:
+    with mock_aws():
+        # Create the mock S3 client
+        ci.s3_client = ci.create_s3_client()
+        # Create the bucket
+        ci.s3_client.create_bucket(Bucket=ci.bucket)
+        # Upload a file to the bucket
+        ci.upload_file("tests/log_blob.log", "log_blob.log", {"ContentType": "text/plain", "ACL": "public-read"})
