@@ -174,3 +174,12 @@ def test_upload_file(ci: CI) -> None:
         ci.s3_client.create_bucket(Bucket=ci.bucket)
         # Upload a file to the bucket
         ci.upload_file("tests/log_blob.log", "log_blob.log", {"ContentType": "text/plain", "ACL": "public-read"})
+
+def test_make_build_url(ci: CI) -> None:
+    ci.image = "linuxserver/plex"
+    tag = "amd64-nightly-5.10.1.9109-ls85"
+    assert ci.make_build_url(tag) == f"https://ghcr.io/{ci.image}:{tag}"
+    ci.image = "lsiodev/plex"
+    assert ci.make_build_url(tag) == f"https://ghcr.io/linuxserver/lsiodev-plex:{tag}"
+    ci.image = "lspipepr/plex"
+    assert ci.make_build_url(tag) == f"https://ghcr.io/linuxserver/lspipepr-plex:{tag}"

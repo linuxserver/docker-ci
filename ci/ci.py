@@ -374,7 +374,8 @@ class CI(SetEnvs):
             "build_info": build_info,
             "test_results": self.tag_report_tests[tag]["test"],
             "test_success": test_success,
-            "runtime": runtime
+            "runtime": runtime,
+            "build_url": self.make_build_url(tag)
             }
         self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
 
@@ -892,6 +893,24 @@ class CI(SetEnvs):
             return docker.from_env()
         except Exception:
             self.logger.error("Failed to create Docker client!")
+    
+    def make_build_url(self, tag) -> str:
+        """Create a build url for the image
 
+        Args:
+            tag (str): The tag we are testing
+            
+        Returns:
+            str: Returns a build url
+        """
+        _, container_name = self.image.split("/")
+        match self.image:
+            case _ if "lspipepr" in self.image:
+                return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
+            case _ if "lsiodev" in self.image:
+                return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
+            case _:
+                return f"https://ghcr.io/{self.image}:{tag}"
+        
 class CIError(Exception):
     pass

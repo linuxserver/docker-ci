@@ -576,7 +576,7 @@
             {% endif %}
             <h2 class="section-header-h2">
               {% if report_status.lower() == "pass" %}
-                <a target="_blank" href="https://ghcr.io/{{ image }}:{{ tag }}">{{ image }}:{{ tag }}</a>
+                <a target="_blank" href="{{ report_containers[tag]['build_url'] }}">{{ image }}:{{ tag }}</a>
               {% else %}
                 {{ image }}:{{ tag }}
               {% endif %}
