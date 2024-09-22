@@ -375,7 +375,8 @@ class CI(SetEnvs):
             "test_results": self.tag_report_tests[tag]["test"],
             "test_success": test_success,
             "runtime": runtime,
-            "build_url": self.make_build_url(tag)
+            "build_url": self.get_build_url(tag),
+            "platform": self.get_platform(tag).upper()
             }
         self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
 
@@ -511,6 +512,39 @@ class CI(SetEnvs):
             self.report_status = "FAIL"
         return build_version
 
+    def get_image_name(self) -> str:
+        """Get the image name from the IMAGE env.
+
+        Returns:
+            str: The container name
+        """
+        _, container_name = self.image.split("/")
+        match self.image:
+            case _ if "lspipepr" in self.image:
+                return f"linuxserver/lspipepr-{container_name}"
+            case _ if "lsiodev" in self.image:
+                return f"linuxserver/lsiodev-{container_name}"
+            case _:
+                return self.image
+
+    def get_build_url(self, tag) -> str:
+        """Get the build url from the IMAGE env.
+
+        Args:
+            tag (str): The tag we are testing
+            
+        Returns:
+            dict: Returns a dictionary with the build url and container name
+        """
+        _, container_name = self.image.split("/")
+        match self.image:
+            case _ if "lspipepr" in self.image:
+                return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
+            case _ if "lsiodev" in self.image:
+                return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
+            case _:
+                return f"https://ghcr.io/{self.image}:{tag}"
+    
     def get_build_info(self,container:Container,tag:str) -> dict[str,str]:
         """Get the build information from the container object.
 
@@ -527,7 +561,9 @@ class CI(SetEnvs):
                 "created": "xxxx-xx-xx",
                 "size": "100MB",
                 "maintainer": "user"
-                "builder": "node"
+                "builder": "node",
+                "tag": "latest",
+                "image": "linuxserver/xxx"
             }
             ```
         """
@@ -540,7 +576,9 @@ class CI(SetEnvs):
                 "created": container.attrs["Config"]["Labels"]["org.opencontainers.image.created"],
                 "size": "%.2f" % float(int(container.image.attrs["Size"])/1000000) + "MB",
                 "maintainer": container.attrs["Config"]["Labels"]["maintainer"],
-                "builder": self.builder
+                "builder": self.builder,
+                "tag": tag,
+                "image": self.get_image_name()
             }
             self._add_test_result(tag, test, "PASS", "-", start_time)
             self.logger.success("Get build info on tag '%s': PASS", tag)
@@ -600,7 +638,7 @@ class CI(SetEnvs):
             report_containers=self.report_containers,
             report_status=self.report_status,
             meta_tag=self.meta_tag,
-            image=self.image,
+            image=self.get_image_name(),
             bucket=self.bucket,
             region=self.region,
             screenshot=self.screenshot,
@@ -894,23 +932,6 @@ class CI(SetEnvs):
         except Exception:
             self.logger.error("Failed to create Docker client!")
     
-    def make_build_url(self, tag) -> str:
-        """Create a build url for the image
 
-        Args:
-            tag (str): The tag we are testing
-            
-        Returns:
-            str: Returns a build url
-        """
-        _, container_name = self.image.split("/")
-        match self.image:
-            case _ if "lspipepr" in self.image:
-                return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
-            case _ if "lsiodev" in self.image:
-                return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
-            case _:
-                return f"https://ghcr.io/{self.image}:{tag}"
-        
 class CIError(Exception):
     pass
