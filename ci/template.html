@@ -502,17 +502,18 @@
       padding: 10px 30px;
       margin: 0;
       font-size: 12px;
-      word-break: break-all;
-      display: grid;
     }
     
     .build-info {
       padding-right: .3rem;
       padding-left: .3rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .build-summary {
-      display: inline-flex;
+     display: flex;
     }
 
     .tag-image {
