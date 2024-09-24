@@ -118,7 +118,9 @@ def test_get_build_info(ci: CI, mock_container: Mock):
                 "created": "2024-08-21T02:17:44+00:00",
                 "size": '275.93MB',
                 "maintainer": "Roxedus,thespad",
-                "builder": "test-node"
+                "builder": "test-node",
+                "tag": "amd64-nightly-5.10.1.9109-ls85",
+                "image": "linuxserver/test",
             }
     assert info == mock_info
 
@@ -174,3 +176,20 @@ def test_upload_file(ci: CI) -> None:
         ci.s3_client.create_bucket(Bucket=ci.bucket)
         # Upload a file to the bucket
         ci.upload_file("tests/log_blob.log", "log_blob.log", {"ContentType": "text/plain", "ACL": "public-read"})
+
+def test_get_build_url(ci: CI) -> None:
+    ci.image = "linuxserver/plex"
+    tag = "amd64-nightly-5.10.1.9109-ls85"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/{ci.image}:{tag}"
+    ci.image = "lsiodev/plex"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lsiodev-plex:{tag}"
+    ci.image = "lspipepr/plex"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lspipepr-plex:{tag}"
+
+def test_get_image_name(ci: CI) -> None:
+    ci.image = "linuxserver/plex"
+    assert ci.get_image_name() == "linuxserver/plex"
+    ci.image = "lsiodev/plex"
+    assert ci.get_image_name() == "linuxserver/lsiodev-plex"
+    ci.image = "lspipepr/plex"
+    assert ci.get_image_name() == "linuxserver/lspipepr-plex"

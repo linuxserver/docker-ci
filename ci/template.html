@@ -502,17 +502,18 @@
       padding: 10px 30px;
       margin: 0;
       font-size: 12px;
-      word-break: break-all;
-      display: grid;
     }
     
     .build-info {
       padding-right: .3rem;
       padding-left: .3rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .build-summary {
-      display: inline-flex;
+     display: flex;
     }
 
     .tag-image {
@@ -562,7 +563,9 @@
       <h1>Linux<span>Server</span>.io</h1>
     </header>
     <div id="results">
-      <h1>Test Results <strong>{{ image }}:{{ meta_tag }}</strong></h1>
+      <h1 style="margin-bottom: 0; text-align: center;">Test Results</h1>
+      <h2 style="margin-bottom: 0; text-align: center;"><strong>{{ image }}</strong></span></h2>
+      <h3 style="margin-top:0; margin-bottom: 0; text-align: center;"><strong>{{ meta_tag }}</strong></span></h2>
       <h2 style="margin-bottom: 0">Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
       <span>Total Runtime: {{ total_runtime }}</span>
       <main>
@@ -570,13 +573,13 @@
         <section>
           <div class="section-header">
             {% if report_containers[tag]["test_success"] %}
-            <h3 class="section-header-status"><span class="report-status-pass">PASS</span></h3>
+            <h3 class="section-header-status"><span class="report-status-pass">{{ report_containers[tag]["platform"] }} PASS</span></h3>
             {% else %}
-            <h3 class="section-header-status"><span class="report-status-fail">FAIL</span></h3>
+            <h3 class="section-header-status"><span class="report-status-fail">{{ report_containers[tag]["platform"] }} FAIL</span></h3>
             {% endif %}
             <h2 class="section-header-h2">
               {% if report_status.lower() == "pass" %}
-                <a target="_blank" href="https://ghcr.io/{{ image }}:{{ tag }}">{{ image }}:{{ tag }}</a>
+                <a target="_blank" href="{{ report_containers[tag]['build_url'] }}">{{ image }}</a>
               {% else %}
                 {{ image }}:{{ tag }}
               {% endif %}
