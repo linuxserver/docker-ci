@@ -524,6 +524,8 @@ class CI(SetEnvs):
                 return f"linuxserver/lspipepr-{container_name}"
             case _ if "lsiodev" in self.image:
                 return f"linuxserver/lsiodev-{container_name}"
+            case _ if "lsiobase" in self.image:
+                return f"linuxserver/docker-baseimage-{container_name}"
             case _:
                 return self.image
 
@@ -542,9 +544,11 @@ class CI(SetEnvs):
                 return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
             case _ if "lsiodev" in self.image:
                 return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
+            case _ if "lsiobase" in self.image:
+                return f"https://ghcr.io/linuxserver/baseimage-{container_name}:{tag}"
             case _:
                 return f"https://ghcr.io/{self.image}:{tag}"
-    
+
     def get_build_info(self,container:Container,tag:str) -> dict[str,str]:
         """Get the build information from the container object.
 
