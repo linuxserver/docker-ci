@@ -398,7 +398,7 @@ libcolord2                                                                    1.
 libcom-err2                                                                   1.47.0-2.4~exp1ubuntu4.1               deb                         
 libcrypt1                                                                     1:4.4.36-4build1                       deb                         
 libcryptsetup12                                                               2:2.7.0-1ubuntu4.1                     deb                         
-libcups2t64                                                                   2.4.7-1.2ubuntu7.2                     deb                         
+libcups2t64                                                                   2.4.7-1.2ubuntu7.3                     deb                         
 libcurl4t64                                                                   8.5.0-2ubuntu10.4                      deb                         
 libdatrie1                                                                    0.2.13-3build1                         deb                         
 libdb5.3t64                                                                   5.3.28+dfsg2-7                         deb                         
@@ -494,7 +494,7 @@ libpciaccess0                                                                 0.
 libpcre2-8-0                                                                  10.42-4ubuntu2                         deb                         
 libpixman-1-0                                                                 0.42.2-1build1                         deb                         
 libpng16-16t64                                                                1.6.43-5build1                         deb                         
-libproc2-0                                                                    2:4.0.4-4ubuntu3                       deb                         
+libproc2-0                                                                    2:4.0.4-4ubuntu3.1                     deb                         
 libpsl5t64                                                                    0.21.2-1.1build1                       deb                         
 libpython3-stdlib                                                             3.12.3-0ubuntu2                        deb                         
 libpython3.12-minimal                                                         3.12.3-1ubuntu0.2                      deb                         
@@ -600,7 +600,7 @@ passwd                                                                        1:
 perl-base                                                                     5.38.2-3.2build2                       deb                         
 pinentry-curses                                                               1.2.1-3ubuntu5                         deb                         
 pip                                                                           24.2                                   python                      
-procps                                                                        2:4.0.4-4ubuntu3                       deb                         
+procps                                                                        2:4.0.4-4ubuntu3.1                     deb                         
 publicsuffix                                                                  20231001.0357-0.1                      deb                         
 pysocks                                                                       1.7.1                                  python                      
 python-dateutil                                                               2.9.0.post0                            python                      
