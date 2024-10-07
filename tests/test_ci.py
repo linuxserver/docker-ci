@@ -185,6 +185,8 @@ def test_get_build_url(ci: CI) -> None:
     assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lsiodev-plex:{tag}"
     ci.image = "lspipepr/plex"
     assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lspipepr-plex:{tag}"
+    ci.image = "lsiobase/ubuntu"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/baseimage-ubuntu:{tag}"
 
 def test_get_image_name(ci: CI) -> None:
     ci.image = "linuxserver/plex"
@@ -193,3 +195,5 @@ def test_get_image_name(ci: CI) -> None:
     assert ci.get_image_name() == "linuxserver/lsiodev-plex"
     ci.image = "lspipepr/plex"
     assert ci.get_image_name() == "linuxserver/lspipepr-plex"
+    ci.image = "lsiobase/ubuntu"
+    assert ci.get_image_name() == "linuxserver/docker-baseimage-ubuntu"
