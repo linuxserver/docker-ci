@@ -325,7 +325,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.17.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.6.0                                 go-module                   
-google-chrome-stable                                                          130.0.6723.91-1                        deb                         
+google-chrome-stable                                                          130.0.6723.116-1                       deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
@@ -595,7 +595,7 @@ netbase                                                                       6.
 netcat-openbsd                                                                1.226-1ubuntu2                         deb                         
 openssl                                                                       3.0.13-0ubuntu3.4                      deb                         
 outcome                                                                       1.3.0.post0                            python                      
-packaging                                                                     24.1                                   python                      
+packaging                                                                     24.2                                   python                      
 passwd                                                                        1:4.13+dfsg1-4ubuntu3.2                deb                         
 perl-base                                                                     5.38.2-3.2build2                       deb                         
 pinentry-curses                                                               1.2.1-3ubuntu5                         deb                         
