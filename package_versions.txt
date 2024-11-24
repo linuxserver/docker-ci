@@ -327,7 +327,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.17.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.6.0                                 go-module                   
-google-chrome-stable                                                          131.0.6778.69-1                        deb                         
+google-chrome-stable                                                          131.0.6778.85-1                        deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
@@ -434,7 +434,7 @@ libgdk-pixbuf2.0-common                                                       2.
 libgl1                                                                        1.7.0-1build1                          deb                         
 libgl1-mesa-dri                                                               24.0.9-0ubuntu0.2                      deb                         
 libglapi-mesa                                                                 24.0.9-0ubuntu0.2                      deb                         
-libglib2.0-0t64                                                               2.80.0-6ubuntu3.1                      deb                         
+libglib2.0-0t64                                                               2.80.0-6ubuntu3.2                      deb                         
 libglvnd0                                                                     1.7.0-1build1                          deb                         
 libglx-mesa0                                                                  24.0.9-0ubuntu0.2                      deb                         
 libglx0                                                                       1.7.0-1build1                          deb                         
@@ -499,8 +499,8 @@ libpng16-16t64                                                                1.
 libproc2-0                                                                    2:4.0.4-4ubuntu3.2                     deb                         
 libpsl5t64                                                                    0.21.2-1.1build1                       deb                         
 libpython3-stdlib                                                             3.12.3-0ubuntu2                        deb                         
-libpython3.12-minimal                                                         3.12.3-1ubuntu0.2                      deb                         
-libpython3.12-stdlib                                                          3.12.3-1ubuntu0.2                      deb                         
+libpython3.12-minimal                                                         3.12.3-1ubuntu0.3                      deb                         
+libpython3.12-stdlib                                                          3.12.3-1ubuntu0.3                      deb                         
 libreadline8t64                                                               8.2-4build1                            deb                         
 librtmp1                                                                      2.4+20151223.gitfa8646d.1-2build7      deb                         
 libsasl2-2                                                                    2.1.28+dfsg1-5ubuntu3.1                deb                         
@@ -611,9 +611,9 @@ python3-minimal                                                               3.
 python3-pip-whl                                                               24.0+dfsg-1ubuntu1.1                   deb                         
 python3-setuptools-whl                                                        68.1.2-2ubuntu1.1                      deb                         
 python3-venv                                                                  3.12.3-0ubuntu2                        deb                         
-python3.12                                                                    3.12.3-1ubuntu0.2                      deb                         
-python3.12-minimal                                                            3.12.3-1ubuntu0.2                      deb                         
-python3.12-venv                                                               3.12.3-1ubuntu0.2                      deb                         
+python3.12                                                                    3.12.3-1ubuntu0.3                      deb                         
+python3.12-minimal                                                            3.12.3-1ubuntu0.3                      deb                         
+python3.12-venv                                                               3.12.3-1ubuntu0.3                      deb                         
 pyvirtualdisplay                                                              3.0                                    python                      
 readline-common                                                               8.2-4build1                            deb                         
 requests                                                                      2.28.2                                 python                      
