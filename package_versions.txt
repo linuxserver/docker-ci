@@ -17,7 +17,7 @@ bsdutils                                                                      1:
 ca-certificates                                                               20240203                               deb                         
 catatonit                                                                     0.1.7-1                                deb                         
 certifi                                                                       2024.12.14                             python                      
-charset-normalizer                                                            3.4.0                                  python                      
+charset-normalizer                                                            3.4.1                                  python                      
 cloud.google.com/go/compute/metadata                                          v0.3.0                                 go-module                   
 cloud.google.com/go/logging                                                   v1.9.0                                 go-module                   
 cloud.google.com/go/longrunning                                               v0.5.4                                 go-module                   
@@ -635,7 +635,7 @@ tags.cncf.io/container-device-interface                                       v0
 tags.cncf.io/container-device-interface/specs-go                              v0.7.0                                 go-module                   
 tags.cncf.io/container-device-interface/specs-go                              v0.8.0                                 go-module                   
 tar                                                                           1.35+dfsg-3build1                      deb                         
-trio                                                                          0.27.0                                 python                      
+trio                                                                          0.28.0                                 python                      
 trio-websocket                                                                0.11.1                                 python                      
 tzdata                                                                        2024a-3ubuntu1.1                       deb                         
 ubuntu-keyring                                                                2023.11.28.1                           deb                         
