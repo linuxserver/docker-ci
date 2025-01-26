@@ -7,7 +7,7 @@ anybadge                                                                      1.
 apt                                                                           2.7.14build2                           deb                         
 apt-utils                                                                     2.7.14build2                           deb                         
 at-spi2-common                                                                2.52.0-1build1                         deb                         
-attrs                                                                         24.3.0                                 python                      
+attrs                                                                         25.1.0                                 python                      
 base-files                                                                    13ubuntu10.1                           deb                         
 base-passwd                                                                   3.6.3build1                            deb                         
 bash                                                                          5.2.21-2ubuntu4                        deb                         
