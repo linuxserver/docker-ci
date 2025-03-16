@@ -7,7 +7,7 @@ anybadge                                                                      1.
 apt                                                                           2.7.14build2                           deb                         
 apt-utils                                                                     2.7.14build2                           deb                         
 at-spi2-common                                                                2.52.0-1build1                         deb                         
-attrs                                                                         25.1.0                                 python                      
+attrs                                                                         25.3.0                                 python                      
 base-files                                                                    13ubuntu10.2                           deb                         
 base-passwd                                                                   3.6.3build1                            deb                         
 bash                                                                          5.2.21-2ubuntu4                        deb                         
@@ -341,7 +341,7 @@ golang.org/x/term                                                             v0
 golang.org/x/text                                                             v0.21.0                                go-module  (+3 duplicates)  
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.6.0                                 go-module                   
-google-chrome-stable                                                          134.0.6998.35-1                        deb                         
+google-chrome-stable                                                          134.0.6998.88-1                        deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
