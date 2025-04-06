@@ -1,5 +1,4 @@
 NAME                                                                          VERSION                                TYPE                       
-Simple Launcher                                                               1.1.0.14                               dotnet     (+5 duplicates)  
 adduser                                                                       3.137ubuntu1                           deb                         
 adwaita-icon-theme                                                            46.0-1                                 deb                         
 ansi2html                                                                     1.8.0                                  python                      
@@ -22,7 +21,7 @@ cloud.google.com/go/compute/metadata                                          v0
 cloud.google.com/go/logging                                                   v1.9.0                                 go-module                   
 cloud.google.com/go/longrunning                                               v0.5.4                                 go-module                   
 code.cloudfoundry.org/clock                                                   v1.1.0                                 go-module                   
-containerd.io                                                                 1.7.26-1                               deb                         
+containerd.io                                                                 1.7.27-1                               deb                         
 coreutils                                                                     9.4-3ubuntu6                           deb                         
 cron                                                                          3.0pl1-184ubuntu2                      deb                         
 cron-daemon-common                                                            3.0pl1-184ubuntu2                      deb                         
@@ -98,7 +97,7 @@ github.com/containerd/cgroups/v3                                              v3
 github.com/containerd/cgroups/v3                                              v3.0.5                                 go-module                   
 github.com/containerd/console                                                 v1.0.3                                 go-module  (+4 duplicates)  
 github.com/containerd/console                                                 v1.0.4                                 go-module  (+1 duplicate)   
-github.com/containerd/containerd                                              v1.7.26                                go-module  (+4 duplicates)  
+github.com/containerd/containerd                                              v1.7.27                                go-module  (+4 duplicates)  
 github.com/containerd/containerd/api                                          v1.8.0                                 go-module  (+5 duplicates)  
 github.com/containerd/containerd/v2                                           v2.0.4                                 go-module                   
 github.com/containerd/continuity                                              v0.4.4                                 go-module  (+4 duplicates)  
@@ -175,19 +174,19 @@ github.com/grpc-ecosystem/go-grpc-middleware                                  v1
 github.com/grpc-ecosystem/go-grpc-prometheus                                  v1.2.0                                 go-module  (+1 duplicate)   
 github.com/grpc-ecosystem/grpc-gateway/v2                                     v2.16.0                                go-module                   
 github.com/grpc-ecosystem/grpc-gateway/v2                                     v2.22.0                                go-module                   
-github.com/hashicorp/errwrap                                                  v1.1.0                                 go-module  (+5 duplicates)  
+github.com/hashicorp/errwrap                                                  v1.1.0                                 go-module                   
 github.com/hashicorp/go-immutable-radix                                       v1.3.1                                 go-module                   
 github.com/hashicorp/go-immutable-radix/v2                                    v2.1.0                                 go-module                   
 github.com/hashicorp/go-memdb                                                 v1.3.2                                 go-module                   
 github.com/hashicorp/go-msgpack                                               v0.5.5                                 go-module                   
-github.com/hashicorp/go-multierror                                            v1.1.1                                 go-module  (+5 duplicates)  
+github.com/hashicorp/go-multierror                                            v1.1.1                                 go-module                   
 github.com/hashicorp/go-sockaddr                                              v1.0.2                                 go-module                   
 github.com/hashicorp/golang-lru                                               v0.5.4                                 go-module                   
 github.com/hashicorp/golang-lru/v2                                            v2.0.7                                 go-module                   
 github.com/hashicorp/memberlist                                               v0.4.0                                 go-module                   
 github.com/hashicorp/serf                                                     v0.8.5                                 go-module                   
 github.com/in-toto/in-toto-golang                                             v0.5.0                                 go-module                   
-github.com/intel/goresctrl                                                    v0.3.0                                 go-module  (+1 duplicate)   
+github.com/intel/goresctrl                                                    v0.5.0                                 go-module  (+1 duplicate)   
 github.com/ishidawataru/sctp                                                  v0.0.0-20230406120618-7ff4192f6ff2     go-module  (+1 duplicate)   
 github.com/jmoiron/sqlx                                                       v1.3.3                                 go-module                   
 github.com/json-iterator/go                                                   v1.1.12                                go-module                   
@@ -244,14 +243,14 @@ github.com/philhofer/fwd                                                      v1
 github.com/pkg/errors                                                         v0.9.1                                 go-module  (+5 duplicates)  
 github.com/planetscale/vtprotobuf                                             v0.6.1-0.20240319094008-0393e58bdf10   go-module                   
 github.com/pmezard/go-difflib                                                 v1.0.0                                 go-module                   
-github.com/prometheus/client_golang                                           v1.14.0                                go-module                   
+github.com/prometheus/client_golang                                           v1.16.0                                go-module                   
 github.com/prometheus/client_golang                                           v1.20.5                                go-module                   
 github.com/prometheus/client_model                                            v0.3.0                                 go-module                   
 github.com/prometheus/client_model                                            v0.6.1                                 go-module                   
-github.com/prometheus/common                                                  v0.37.0                                go-module                   
+github.com/prometheus/common                                                  v0.42.0                                go-module                   
 github.com/prometheus/common                                                  v0.55.0                                go-module                   
+github.com/prometheus/procfs                                                  v0.10.1                                go-module                   
 github.com/prometheus/procfs                                                  v0.15.1                                go-module                   
-github.com/prometheus/procfs                                                  v0.8.0                                 go-module                   
 github.com/rootless-containers/rootlesskit/v2                                 v2.3.4                                 go-module                   
 github.com/sean-/seed                                                         v0.0.0-20170313163322-e2103e2c3529     go-module                   
 github.com/seccomp/libseccomp-golang                                          v0.10.0                                go-module                   
@@ -341,7 +340,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.22.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.6.0                                 go-module                   
-google-chrome-stable                                                          134.0.6998.165-1                       deb                         
+google-chrome-stable                                                          135.0.7049.52-1                        deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
@@ -376,7 +375,7 @@ jinja2                                                                        3.
 jmespath                                                                      1.0.1                                  python                      
 jq                                                                            1.7.1-3build1                          deb                         
 k8s.io/api                                                                    v0.26.2                                go-module                   
-k8s.io/apimachinery                                                           v0.26.2                                go-module  (+1 duplicate)   
+k8s.io/apimachinery                                                           v0.27.4                                go-module  (+1 duplicate)   
 k8s.io/apiserver                                                              v0.26.2                                go-module                   
 k8s.io/client-go                                                              v0.26.2                                go-module                   
 k8s.io/component-base                                                         v0.26.2                                go-module                   
@@ -639,27 +638,24 @@ sed                                                                           4.
 selenium                                                                      4.8.3                                  python                      
 sensible-utils                                                                0.0.22                                 deb                         
 shared-mime-info                                                              2.4-4                                  deb                         
-sigs.k8s.io/json                                                              v0.0.0-20220713155537-f223a00ba0e2     go-module                   
+sigs.k8s.io/json                                                              v0.0.0-20221116044647-bc3834ca7abd     go-module                   
 sigs.k8s.io/structured-merge-diff/v4                                          v4.2.3                                 go-module                   
 sigs.k8s.io/yaml                                                              v1.3.0                                 go-module  (+1 duplicate)   
 sigs.k8s.io/yaml                                                              v1.4.0                                 go-module                   
 six                                                                           1.17.0                                 python                      
 sniffio                                                                       1.3.1                                  python                      
 sortedcontainers                                                              2.4.0                                  python                      
-stdlib                                                                        go1.23.6                               go-module  (+5 duplicates)  
-stdlib                                                                        go1.23.7                               go-module  (+2 duplicates)  
+stdlib                                                                        go1.23.7                               go-module  (+8 duplicates)  
 systemd                                                                       255.4-1ubuntu8.6                       deb                         
 systemd-dev                                                                   255.4-1ubuntu8.6                       deb                         
 systemd-sysv                                                                  255.4-1ubuntu8.6                       deb                         
 sysvinit-utils                                                                3.08-6ubuntu3                          deb                         
-tags.cncf.io/container-device-interface                                       v0.7.2                                 go-module                   
-tags.cncf.io/container-device-interface                                       v0.8.1                                 go-module                   
-tags.cncf.io/container-device-interface/specs-go                              v0.7.0                                 go-module                   
-tags.cncf.io/container-device-interface/specs-go                              v0.8.0                                 go-module                   
+tags.cncf.io/container-device-interface                                       v0.8.1                                 go-module  (+1 duplicate)   
+tags.cncf.io/container-device-interface/specs-go                              v0.8.0                                 go-module  (+1 duplicate)   
 tar                                                                           1.35+dfsg-3build1                      deb                         
 trio                                                                          0.29.0                                 python                      
 trio-websocket                                                                0.12.2                                 python                      
-tzdata                                                                        2024b-0ubuntu0.24.04.1                 deb                         
+tzdata                                                                        2025a-0ubuntu0.24.04                   deb                         
 ubuntu-keyring                                                                2023.11.28.1                           deb                         
 ubuntu-mono                                                                   24.04-0ubuntu1                         deb                         
 unminimize                                                                    0.2.1                                  deb                         
@@ -674,7 +670,7 @@ x11-xkb-utils                                                                 7.
 xauth                                                                         1:1.1.2-1build1                        deb                         
 xdg-utils                                                                     1.1.3-4.1ubuntu3                       deb                         
 xkb-data                                                                      2.41-2ubuntu1.1                        deb                         
-xserver-common                                                                2:21.1.12-1ubuntu1.2                   deb                         
-xserver-xephyr                                                                2:21.1.12-1ubuntu1.2                   deb                         
-xvfb                                                                          2:21.1.12-1ubuntu1.2                   deb                         
+xserver-common                                                                2:21.1.12-1ubuntu1.3                   deb                         
+xserver-xephyr                                                                2:21.1.12-1ubuntu1.3                   deb                         
+xvfb                                                                          2:21.1.12-1ubuntu1.3                   deb                         
 zlib1g                                                                        1:1.3.dfsg-3.1ubuntu2.1                deb                         
