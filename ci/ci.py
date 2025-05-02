@@ -396,6 +396,8 @@ class CI(SetEnvs):
                 return "arm64"
             case "arm32":
                 return "arm"
+            case "riscv":
+                return "riscv64"
             case _:
                 return "amd64"
 
