@@ -133,7 +133,7 @@ github.com/davecgh/go-spew                                                    v1
 github.com/deckarep/golang-set/v2                                             v2.3.0                                 go-module                   
 github.com/dimchansky/utfbom                                                  v1.1.1                                 go-module                   
 github.com/distribution/reference                                             v0.6.0                                 go-module  (+2 duplicates)  
-github.com/docker/cli/cmd/docker                                              v28.1.1                                go-module                   
+github.com/docker/cli/cmd/docker                                              UNKNOWN                                go-module                   
 github.com/docker/distribution                                                v2.8.3+incompatible                    go-module                   
 github.com/docker/docker                                                      v28.1.1                                go-module  (+1 duplicate)   
 github.com/docker/go-connections                                              v0.5.0                                 go-module                   
@@ -235,7 +235,7 @@ github.com/opencontainers/cgroups                                             v0
 github.com/opencontainers/go-digest                                           v1.0.0                                 go-module  (+5 duplicates)  
 github.com/opencontainers/image-spec                                          v1.1.0                                 go-module  (+4 duplicates)  
 github.com/opencontainers/image-spec                                          v1.1.1                                 go-module                   
-github.com/opencontainers/runc                                                v1.2.5-0-g59923ef                      go-module                   
+github.com/opencontainers/runc                                                v0.0.0-20250213225849-59923ef18c98     go-module                   
 github.com/opencontainers/runtime-spec                                        v1.1.0                                 go-module  (+4 duplicates)  
 github.com/opencontainers/runtime-spec                                        v1.2.0                                 go-module  (+1 duplicate)   
 github.com/opencontainers/runtime-tools                                       v0.9.1-0.20221107090550-2e043c6bd626   go-module  (+1 duplicate)   
@@ -346,7 +346,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.24.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.11.0                                go-module                   
-google-chrome-stable                                                          136.0.7103.92-1                        deb                         
+google-chrome-stable                                                          136.0.7103.113-1                       deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
