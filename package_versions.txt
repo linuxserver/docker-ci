@@ -1,4 +1,5 @@
 NAME                                                                          VERSION                                TYPE                       
+Simple Launcher                                                               1.1.0.14                               binary     (+5 duplicates)  
 adduser                                                                       3.137ubuntu1                           deb                         
 adwaita-icon-theme                                                            46.0-1                                 deb                         
 ansi2html                                                                     1.8.0                                  python                      
@@ -642,6 +643,7 @@ resenje.org/singleflight                                                      v0
 s3transfer                                                                    0.6.2                                  python                      
 sed                                                                           4.9-2build1                            deb                         
 selenium                                                                      4.8.3                                  python                      
+selenium-manager                                                              UNKNOWN                                binary                      
 sensible-utils                                                                0.0.22                                 deb                         
 shared-mime-info                                                              2.4-4                                  deb                         
 sigs.k8s.io/json                                                              v0.0.0-20221116044647-bc3834ca7abd     go-module                   
