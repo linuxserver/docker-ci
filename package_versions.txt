@@ -4,8 +4,8 @@ adduser                                                                       3.
 adwaita-icon-theme                                                            46.0-1                                 deb                         
 ansi2html                                                                     1.8.0                                  python                      
 anybadge                                                                      1.14.0                                 python                      
-apt                                                                           2.7.14build2                           deb                         
-apt-utils                                                                     2.7.14build2                           deb                         
+apt                                                                           2.8.3                                  deb                         
+apt-utils                                                                     2.8.3                                  deb                         
 at-spi2-common                                                                2.52.0-1build1                         deb                         
 attrs                                                                         25.3.0                                 python                      
 base-files                                                                    13ubuntu10.2                           deb                         
@@ -350,7 +350,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.24.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.11.0                                go-module                   
-google-chrome-stable                                                          137.0.7151.55-1                        deb                         
+google-chrome-stable                                                          137.0.7151.68-1                        deb                         
 google.golang.org/api                                                         v0.155.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240123012728-ef4313101c80     go-module                   
@@ -394,10 +394,10 @@ k8s.io/klog/v2                                                                v2
 k8s.io/klog/v2                                                                v2.90.1                                go-module                   
 k8s.io/utils                                                                  v0.0.0-20230220204549-a5ecb0141aa5     go-module                   
 keyboxd                                                                       2.4.4-2ubuntu17.2                      deb                         
-krb5-locales                                                                  1.20.1-6ubuntu2.5                      deb                         
+krb5-locales                                                                  1.20.1-6ubuntu2.6                      deb                         
 libacl1                                                                       2.3.2-1build1.1                        deb                         
 libapparmor1                                                                  4.0.1really4.0.1-0ubuntu0.24.04.4      deb                         
-libapt-pkg6.0t64                                                              2.7.14build2                           deb                         
+libapt-pkg6.0t64                                                              2.8.3                                  deb                         
 libargon2-1                                                                   0~20190702+dfsg-4build1                deb                         
 libasound2-data                                                               1.2.11-1build2                         deb                         
 libasound2t64                                                                 1.2.11-1build2                         deb                         
@@ -466,7 +466,7 @@ libgmp10                                                                      2:
 libgnutls30t64                                                                3.8.3-1.1ubuntu3.3                     deb                         
 libgpg-error0                                                                 1.47-3build2.1                         deb                         
 libgraphite2-3                                                                1.3.14-2build1                         deb                         
-libgssapi-krb5-2                                                              1.20.1-6ubuntu2.5                      deb                         
+libgssapi-krb5-2                                                              1.20.1-6ubuntu2.6                      deb                         
 libgtk-3-0t64                                                                 3.24.41-4ubuntu1.3                     deb                         
 libgtk-3-common                                                               3.24.41-4ubuntu1.3                     deb                         
 libharfbuzz0b                                                                 8.3.0-2build2                          deb                         
@@ -481,11 +481,11 @@ libjpeg-turbo8                                                                2.
 libjpeg8                                                                      8c-2ubuntu11                           deb                         
 libjq1                                                                        1.7.1-3build1                          deb                         
 libjson-c5                                                                    0.17-1build1                           deb                         
-libk5crypto3                                                                  1.20.1-6ubuntu2.5                      deb                         
+libk5crypto3                                                                  1.20.1-6ubuntu2.6                      deb                         
 libkeyutils1                                                                  1.6.3-3build1                          deb                         
 libkmod2                                                                      31+20240202-2ubuntu7.1                 deb                         
-libkrb5-3                                                                     1.20.1-6ubuntu2.5                      deb                         
-libkrb5support0                                                               1.20.1-6ubuntu2.5                      deb                         
+libkrb5-3                                                                     1.20.1-6ubuntu2.6                      deb                         
+libkrb5support0                                                               1.20.1-6ubuntu2.6                      deb                         
 libksba8                                                                      1.6.6-1build1                          deb                         
 liblcms2-2                                                                    2.14-2build1                           deb                         
 libldap-common                                                                2.6.7+dfsg-1~exp1ubuntu8.2             deb                         
@@ -669,7 +669,7 @@ tags.cncf.io/container-device-interface/specs-go                              v1
 tar                                                                           1.35+dfsg-3build1                      deb                         
 trio                                                                          0.30.0                                 python                      
 trio-websocket                                                                0.12.2                                 python                      
-tzdata                                                                        2025b-0ubuntu0.24.04                   deb                         
+tzdata                                                                        2025b-0ubuntu0.24.04.1                 deb                         
 ubuntu-keyring                                                                2023.11.28.1                           deb                         
 ubuntu-mono                                                                   24.04-0ubuntu1                         deb                         
 unminimize                                                                    0.2.1                                  deb                         
