@@ -127,7 +127,7 @@ class SetEnvs():
         Docker Engine Version:  '{self.get_docker_engine_version()}'
         """)
         self.logger.info(env_data)
-        
+
     def get_docker_engine_version(self) -> str:
         """Get the Docker Engine version
 
@@ -452,7 +452,7 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         platform: str = self.get_platform(tag)
-        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:latest",command=f"{self.image}:{tag} --platform=linux/{platform}",
+        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:v1.26.1",command=f"{self.image}:{tag} --platform=linux/{platform}",
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info("Creating SBOM package list on %s",tag)
         test = "Create SBOM"
@@ -536,7 +536,7 @@ class CI(SetEnvs):
 
         Args:
             tag (str): The tag we are testing
-            
+
         Returns:
             dict: Returns a dictionary with the build url and container name
         """
@@ -722,9 +722,9 @@ class CI(SetEnvs):
     @testing
     def upload_file(self, file_path:str, object_name:str, content_type:dict) -> None:
         """Upload a file to an S3 bucket.
-        
+
         The file is uploaded to two directories in the bucket, one for the meta tag and one for the release tag.
-        
+
         e.g. `https://ci-tests.linuxserver.io/linuxserver/plex/1.40.5.8921-836b34c27-ls233/index.html` and `https://ci-tests.linuxserver.io/linuxserver/plex/latest/index.html`
 
         Args:
@@ -786,7 +786,7 @@ class CI(SetEnvs):
         Args:
             container (Container): Container object
             tag (str): The container tag we are testing.
-        
+
         Returns:
             bool: Return True if the screenshot was successful, otherwise False.
         """
@@ -926,7 +926,7 @@ class CI(SetEnvs):
                 aws_access_key_id=self.s3_key,
                 aws_secret_access_key=self.s3_secret)
         return s3_client
-    
+
     def create_docker_client(self) -> DockerClient|None:
         """Create and return a docker client object
 
@@ -937,7 +937,7 @@ class CI(SetEnvs):
             return docker.from_env()
         except Exception:
             self.logger.error("Failed to create Docker client!")
-    
+
 
 class CIError(Exception):
     pass
