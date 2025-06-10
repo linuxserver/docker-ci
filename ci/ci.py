@@ -87,6 +87,7 @@ class SetEnvs():
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
         self.release_tag: str = os.environ.get("RELEASE_TAG", "latest")
+        self.syft_image_tag: str = os.environ.get("SYFT_IMAGE_TAG", "v1.26.1")
 
         if os.environ.get("DELAY_START"):
             self.logger.warning("DELAY_START env is obsolete, and not in use anymore")
@@ -124,6 +125,7 @@ class SetEnvs():
         SSL:                    '{os.environ.get("SSL")}'
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
+        SYFT_IMAGE_TAG:         '{os.environ.get("SYFT_IMAGE_TAG")}'
         Docker Engine Version:  '{self.get_docker_engine_version()}'
         """)
         self.logger.info(env_data)
@@ -452,9 +454,9 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         platform: str = self.get_platform(tag)
-        syft:Container = self.client.containers.run(image="ghcr.io/anchore/syft:v1.26.1",command=f"{self.image}:{tag} --platform=linux/{platform}",
+        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=f"{self.image}:{tag} --platform=linux/{platform}",
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
-        self.logger.info("Creating SBOM package list on %s",tag)
+        self.logger.info("Creating SBOM package list on %s with syft version %s",tag,self.syft_image_tag)
         test = "Create SBOM"
         t_end: float = time.time() + self.sbom_timeout
         self.logger.info("Tailing the syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.sbom_timeout,tag)
