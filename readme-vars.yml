@@ -57,6 +57,7 @@ full_custom_readme: |
   -e DRY_RUN=<optional, Set to 'true' when you don't want to upload files to S3 when testing> \
   -e NODE_NAME=<optional, Name of the builder that runs the CI test.> \
   -e RELEASE_TAG=<optional, The release tag of the docker image. Used for upload location. Defaults to 'latest'> \
+  -e SYFT_IMAGE_TAG=<optional, The image tag of the syft docker image. Used for generating SBOM. Defaults to '1.26.1'> \
   -t lsiodev/ci:latest \
   python3 test_build.py
   ```
