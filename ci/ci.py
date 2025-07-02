@@ -454,8 +454,7 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         platform: str = self.get_platform(tag)
-        command_to_run = [f"{self.image}:{tag}", f"--platform=linux/{platform}"]
-        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}", command=command_to_run,
+        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=f"{self.image}:{tag} --platform=linux/{platform}",
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
         self.logger.info("Creating SBOM package list on %s with syft version %s",tag,self.syft_image_tag)
         test = "Create SBOM"
