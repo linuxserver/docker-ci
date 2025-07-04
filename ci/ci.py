@@ -300,6 +300,7 @@ class CI(SetEnvs):
         # Start the container
         self.logger.info("Starting test of: %s", tag)
         container: Container = self.client.containers.run(f"{self.image}:{tag}",
+                                               shm_size="1G",
                                                detach=True,
                                                environment=self.dockerenv)
         container_config: list[str] = container.attrs["Config"]["Env"]
