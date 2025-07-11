@@ -620,6 +620,17 @@
               <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
             </div>
           </details>
+          {% if report_containers[tag]["browser_logs"] %}
+          <summary class="summary">
+            <a href="{{ tag }}.browser.html" target="_blank">View Browser Console Logs</a>
+          </summary>
+          <details>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["browser_logs"] }}</code></pre>
+            </div>
+          </details>
+          {% endif %}
           {% if report_containers[tag]["has_warnings"]%}
           <details open>
           <summary class="warning-summary">Warnings</summary>

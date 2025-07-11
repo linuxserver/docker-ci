@@ -96,6 +96,18 @@ class SetEnvs():
         if os.environ.get("DOCKER_PRIVILEGED"):
             self.logger.warning("DOCKER_PRIVILEGED env is not in use")
 
+        if os.environ.get("CI_LOCAL_MODE", "false").lower() == "true":
+            self.logger.warning("--- LOCAL MODE ACTIVE ---")
+            self.logger.warning("S3 uploads will be skipped and dummy keys will be used.")
+            os.environ["DRY_RUN"] = "true"
+            # Set dummy ENVs to pass the check_env() validation
+            os.environ.setdefault("ACCESS_KEY", "local")
+            os.environ.setdefault("SECRET_KEY", "local")
+            # Use the first tag as the meta tag for a sensible output folder name
+            first_tag = os.environ.get("TAGS", "local").split("|")[0]
+            os.environ.setdefault("META_TAG", first_tag)
+            os.environ.setdefault("RELEASE_TAG", first_tag)
+
         self.check_env()
         self.validate_attrs()
 
@@ -331,17 +343,17 @@ class CI(SetEnvs):
             return
 
         # Screenshot the web interface and check connectivity
-        screenshot: bool = self.take_screenshot(container, tag)
-        if not screenshot and self.get_platform(tag) == "amd64": # Allow ARM tags to fail the screenshot test
+        screenshot_success, browser_logs = self.take_screenshot(container, tag)
+        if not screenshot_success and self.get_platform(tag) == "amd64":
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, build_info, sbom, False, start_time)
+            self._endtest(container, tag, build_info, sbom, False, start_time, browser_logs)
             return
 
-        self._endtest(container, tag, build_info, sbom, True, start_time)
+        self._endtest(container, tag, build_info, sbom, True, start_time, browser_logs)
         self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
         return
 
-    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool, start_time:float|int = 0.0) -> None:
+    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool, start_time:float|int = 0.0, browser_logs: str = "") -> None:
         """End the test with as much info as we have and append to the report.
 
         Args:
@@ -351,6 +363,7 @@ class CI(SetEnvs):
             `packages` (str): SBOM dump from the container
             `test_success` (bool): If the testing of the container failed or not
             `start_time` (float, optional): The start time of the test. Defaults to 0.0. Used to calculate the runtime of the test.
+            `browser_logs` (str, optional): The browser console logs.
         """
         if not start_time:
             runtime = "-"
@@ -370,6 +383,7 @@ class CI(SetEnvs):
         self.report_containers[tag] = {
             "logs": logblob,
             "sysinfo": packages,
+            "browser_logs": browser_logs,
             "warnings": {
                 "dotnet": warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
                 "uwsgi": warning_texts["uwsgi"] if "uwsgi" in packages and "arm" in tag else ""
@@ -382,6 +396,26 @@ class CI(SetEnvs):
             "platform": self.get_platform(tag).upper()
             }
         self.report_containers[tag]["has_warnings"] = any(warning[1] for warning in self.report_containers[tag]["warnings"].items())
+
+    def _get_browser_logs(self, driver: WebDriver, tag: str) -> str:
+        """Get browser console logs from the webdriver.
+
+        Args:
+            driver (WebDriver): The selenium webdriver instance.
+            tag (str): The container tag.
+
+        Returns:
+            str: The browser logs as a JSON formatted string.
+        """
+        try:
+            self.logger.info("Getting browser console logs for tag %s", tag)
+            browser_logs_list = driver.get_log('browser')
+            browser_logs_str = json.dumps(browser_logs_list, indent=4)
+            self.create_html_ansi_file(browser_logs_str, tag, "browser")
+            return browser_logs_str
+        except Exception:
+            self.logger.exception("Failed to get browser console logs for tag %s", tag)
+            return '{"error": "Failed to retrieve browser logs"}'
 
     def get_platform(self, tag: str) -> str:
         """Check the 5 first characters of the tag and return the platform.
@@ -750,6 +784,7 @@ class CI(SetEnvs):
         """
         self.logger.info("Uploading logs")
         try:
+            shutil.copyfile("ci.log", f"{self.outdir}/ci.log")
             self.upload_file(f"{self.outdir}/ci.log", "ci.log", {"ContentType": "text/plain", "ACL": "public-read"})
             with open(f"{self.outdir}/ci.log","r", encoding="utf-8") as logs:
                 blob: str = logs.read()
@@ -781,7 +816,7 @@ class CI(SetEnvs):
             "message":message,
             "runtime": runtime}.items())))
 
-    def take_screenshot(self, container: Container, tag:str) -> bool:
+    def take_screenshot(self, container: Container, tag:str) -> tuple[bool, str]:
         """Take a screenshot and save it to self.outdir if self.screenshot is True
 
         Takes a screenshot using a ChromiumDriver instance.
@@ -791,19 +826,21 @@ class CI(SetEnvs):
             tag (str): The container tag we are testing.
 
         Returns:
-            bool: Return True if the screenshot was successful, otherwise False.
+            tuple[bool, str]: Return (True, browser_logs) if successful, otherwise (False, browser_logs).
         """
         if not self.screenshot:
-            return True
+            return True, ""
         proto: Literal["https", "http"] = "https" if self.ssl.upper() == "TRUE" else "http"
         screenshot_timeout = time.time() + self.screenshot_timeout
         test = "Get screenshot"
         start_time = time.time()
+        driver: WebDriver | None = None
+        browser_logs: str = ""
         try:
-            driver: WebDriver = self.setup_driver()
+            driver = self.setup_driver()
             container.reload()
             ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
-            webauth: str = f"{self.webauth}@" if self.webauth else ""
+            webauth: str = f"{self.webauth}"
             endpoint: str = f"{proto}://{webauth}{ip_adr}:{self.port}{self.webpath}"
             self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             while time.time() < screenshot_timeout:
@@ -818,7 +855,7 @@ class CI(SetEnvs):
                         raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
                     self._add_test_result(tag, test, "PASS", "-", start_time)
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
-                    return True
+                    return True, self._get_browser_logs(driver, tag)
                 except Exception as error:
                     logger.debug("Failed to take screenshot of %s at %s, trying again in 3 seconds", tag, endpoint, exc_info=error)
                     time.sleep(3)
@@ -830,22 +867,29 @@ class CI(SetEnvs):
             self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL CONNECTION ERROR", tag)
             self.report_status = "FAIL"
-            return False
+            if driver:
+                browser_logs = self._get_browser_logs(driver, tag)
+            return False, browser_logs
         except TimeoutException as error:
             self._add_test_result(tag, test, "FAIL", f"TIMEOUT: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL TIMEOUT", tag)
             self.report_status = "FAIL"
-            return False
+            if driver:
+                browser_logs = self._get_browser_logs(driver, tag)
+            return False, browser_logs
         except (WebDriverException, Exception) as error:
             self._add_test_result(tag, test, "FAIL", f"UNKNOWN: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL UNKNOWN", tag)
             self.report_status = "FAIL"
-            return False
+            if driver:
+                browser_logs = self._get_browser_logs(driver, tag)
+            return False, browser_logs
         finally:
-            try:
-                driver.quit()
-            except Exception:
-                self.logger.exception("Failed to quit the driver")
+            if driver:
+                try:
+                    driver.quit()
+                except Exception:
+                    self.logger.exception("Failed to quit the driver")
 
     def _check_response(self, endpoint:str) -> bool:
         """Check if we can get a good response from the endpoint
@@ -910,7 +954,7 @@ class CI(SetEnvs):
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--ignore-certificate-errors")
-        chrome_options.add_argument("--disable-dev-shm-usage")  # https://developers.google.com/web/tools/puppeteer/troubleshooting#tips
+        chrome_options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
         driver.set_window_size(1920,1080)
