@@ -776,22 +776,22 @@ class CI(SetEnvs):
         self.s3_client.upload_file(file_path, self.bucket, f"{release_dir}/{object_name}", ExtraArgs=content_type)
 
     def log_upload(self) -> None:
-        """Upload the ci.log to S3
-
-        Raises:
-            Exception: S3UploadFailedError
-            Exception: ClientError
-        """
+        """Upload the ci.log to S3..."""
         self.logger.info("Uploading logs")
         try:
-            shutil.copyfile("ci.log", f"{self.outdir}/ci.log")
-            self.upload_file(f"{self.outdir}/ci.log", "ci.log", {"ContentType": "text/plain", "ACL": "public-read"})
-            with open(f"{self.outdir}/ci.log","r", encoding="utf-8") as logs:
+            log_source_path = "ci.log"
+            log_dest_path = f"{self.outdir}/ci.log"
+
+            if not os.path.exists(log_dest_path):
+                shutil.copyfile(log_source_path, log_dest_path)
+
+            self.upload_file(log_dest_path, "ci.log", {"ContentType": "text/plain", "ACL": "public-read"})
+            with open(log_dest_path, "r", encoding="utf-8") as logs:
                 blob: str = logs.read()
-                self.create_html_ansi_file(blob,"python","log")
+                self.create_html_ansi_file(blob, "python", "log")
                 self.upload_file(f"{self.outdir}/python.log.html", "python.log.html", {"ContentType": "text/html", "ACL": "public-read"})
-        except (S3UploadFailedError, ClientError):
-            self.logger.exception("Failed to upload the CI logs!")
+        except (S3UploadFailedError, ClientError, FileNotFoundError) as e:
+            self.logger.exception(f"Failed to upload the CI logs! Error: {e}")
 
     def _add_test_result(self, tag:str, test:str, status:str, message:str, start_time:float|int = 0.0) -> None:
         """Add a test result to the report
