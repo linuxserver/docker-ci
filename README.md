@@ -36,7 +36,7 @@ For local development and debugging, you can use `CI_LOCAL_MODE`. This mode runs
 
 Run this command from your terminal. It will test the `linuxserver/plex:latest` image and place the report in an `output` directory in your current folder.
 
-|||
+```
 docker run --rm -i \
  --shm-size=1gb \
  -v /var/run/docker.sock:/var/run/docker.sock \
@@ -54,15 +54,15 @@ docker run --rm -i \
  -e WEB_SCREENSHOT_DELAY=20 \
  -t lsiodev/ci:latest \
  python3 test_build.py
-|||
+```
 
 ### Viewing the Report
 
 Once the script finishes, you can view the detailed HTML report with this command:
 
-|||
+```
 chromium output/linuxserver/plex/latest/index.html
-|||
+```
 > **Note:** You can use any modern web browser (Firefox, Chrome, etc.).
 
 ### Key Local Variables
@@ -87,7 +87,7 @@ chromium output/linuxserver/plex/latest/index.html
 
 The following shows the full list of environment variables used when the container is run by our CI system, [linuxserver/pipeline-triggers][pipelineurl].
 
-|||
+```
 sudo docker run --rm -i \
 -v /var/run/docker.sock:/var/run/docker.sock \
 -v /host/path:/ci/output:rw `#Optional, will contain all the files the container creates.` \
@@ -117,7 +117,7 @@ sudo docker run --rm -i \
 -e SYFT_IMAGE_TAG=<optional, The image tag of the syft docker image. Used for generating SBOM. Defaults to '1.26.1'> \
 -t lsiodev/ci:latest \
 python3 test_build.py
-|||
+```
 
 The following line is only in this repo for loop testing:
 
