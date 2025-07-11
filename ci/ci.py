@@ -840,7 +840,7 @@ class CI(SetEnvs):
             driver = self.setup_driver()
             container.reload()
             ip_adr:str = container.attrs.get("NetworkSettings",{}).get("Networks",{}).get("bridge",{}).get("IPAddress","")
-            webauth: str = f"{self.webauth}"
+            webauth: str = f"{self.webauth}@"
             endpoint: str = f"{proto}://{webauth}{ip_adr}:{self.port}{self.webpath}"
             self.logger.info("Trying for %s seconds to take a screenshot of %s ",self.screenshot_timeout, tag)
             while time.time() < screenshot_timeout:
