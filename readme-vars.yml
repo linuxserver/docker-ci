@@ -1,6 +1,3 @@
----
-
-# project information
 project_name: ci
 project_categories: "Internal"
 full_custom_readme: |
@@ -41,7 +38,7 @@ full_custom_readme: |
 
   Run this command from your terminal. It will test the `linuxserver/plex:latest` image and place the report in an `output` directory in your current folder.
 
-  |||
+  ```
   docker run --rm -i \
    --shm-size=1gb \
    -v /var/run/docker.sock:/var/run/docker.sock \
@@ -59,15 +56,15 @@ full_custom_readme: |
    -e WEB_SCREENSHOT_DELAY=20 \
    -t lsiodev/ci:latest \
    python3 test_build.py
-  |||
+  ```
 
   ### Viewing the Report
 
   Once the script finishes, you can view the detailed HTML report with this command:
 
-  |||
+  ```
   chromium output/linuxserver/plex/latest/index.html
-  |||
+  ```
   > **Note:** You can use any modern web browser (Firefox, Chrome, etc.).
 
   ### Key Local Variables
@@ -92,7 +89,7 @@ full_custom_readme: |
 
   The following shows the full list of environment variables used when the container is run by our CI system, [linuxserver/pipeline-triggers][pipelineurl].
 
-  |||
+  ```
   sudo docker run --rm -i \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /host/path:/ci/output:rw `#Optional, will contain all the files the container creates.` \
@@ -122,9 +119,10 @@ full_custom_readme: |
   -e SYFT_IMAGE_TAG=<optional, The image tag of the syft docker image. Used for generating SBOM. Defaults to '1.26.1'> \
   -t lsiodev/ci:latest \
   python3 test_build.py
-  |||
+  ```
 
   The following line is only in this repo for loop testing:
 
   - { date: "01.01.50:", desc: "I am the release message for this internal repo." }
   {%- endraw %}
+
