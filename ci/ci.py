@@ -955,9 +955,9 @@ class CI(SetEnvs):
         chrome_options.add_argument("--disable-extensions")
         chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
+        chrome_options.add_argument("--window-size=1920,1080")
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
-        driver.set_window_size(1920,1080)
         return driver
 
     @testing
