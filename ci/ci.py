@@ -949,14 +949,16 @@ class CI(SetEnvs):
         self.logger.info("Init Chromedriver")
         # Selenium webdriver options
         chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--test-type")
-        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--disable-extensions")
-        chrome_options.add_argument("--ignore-certificate-errors")
         chrome_options.set_capability("goog:loggingPrefs", {"browser": "ALL"})
         chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.set_capability("acceptInsecureCerts", True)
         driver = webdriver.Chrome(options=chrome_options)
         driver.set_page_load_timeout(60)
         return driver
