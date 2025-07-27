@@ -352,7 +352,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.24.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.11.0                                go-module                   
-google-chrome-stable                                                          138.0.7204.157-1                       deb                         
+google-chrome-stable                                                          138.0.7204.168-1                       deb                         
 google.golang.org/api                                                         v0.160.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240227224415-6ceb2ff114de     go-module                   
@@ -386,7 +386,7 @@ init-system-helpers                                                           1.
 iptables                                                                      1.8.10-3ubuntu2                        deb                         
 jinja2                                                                        3.1.2                                  python                      
 jmespath                                                                      1.0.1                                  python                      
-jq                                                                            1.7.1-3build1                          deb                         
+jq                                                                            1.7.1-3ubuntu0.24.04.1                 deb                         
 k8s.io/api                                                                    v0.26.2                                go-module                   
 k8s.io/apimachinery                                                           v0.27.4                                go-module  (+1 duplicate)   
 k8s.io/apiserver                                                              v0.26.2                                go-module                   
@@ -456,8 +456,8 @@ libfribidi0                                                                   1.
 libgbm1                                                                       24.2.8-1ubuntu1~24.04.1                deb                         
 libgcc-s1                                                                     14.2.0-4ubuntu2~24.04                  deb                         
 libgcrypt20                                                                   1.10.3-2build1                         deb                         
-libgdk-pixbuf-2.0-0                                                           2.42.10+dfsg-3ubuntu3.1                deb                         
-libgdk-pixbuf2.0-common                                                       2.42.10+dfsg-3ubuntu3.1                deb                         
+libgdk-pixbuf-2.0-0                                                           2.42.10+dfsg-3ubuntu3.2                deb                         
+libgdk-pixbuf2.0-common                                                       2.42.10+dfsg-3ubuntu3.2                deb                         
 libgl1                                                                        1.7.0-1build1                          deb                         
 libgl1-mesa-dri                                                               24.2.8-1ubuntu1~24.04.1                deb                         
 libglapi-mesa                                                                 24.2.8-1ubuntu1~24.04.1                deb                         
@@ -482,7 +482,7 @@ libip6tc2                                                                     1.
 libjbig0                                                                      2.1-6.1ubuntu2                         deb                         
 libjpeg-turbo8                                                                2.1.5-2ubuntu2                         deb                         
 libjpeg8                                                                      8c-2ubuntu11                           deb                         
-libjq1                                                                        1.7.1-3build1                          deb                         
+libjq1                                                                        1.7.1-3ubuntu0.24.04.1                 deb                         
 libjson-c5                                                                    0.17-1build1                           deb                         
 libk5crypto3                                                                  1.20.1-6ubuntu2.6                      deb                         
 libkeyutils1                                                                  1.6.3-3build1                          deb                         
