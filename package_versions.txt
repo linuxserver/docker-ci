@@ -352,7 +352,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.24.0                                go-module                   
 golang.org/x/time                                                             v0.0.0-20220210224613-90d013bbcef8     go-module                   
 golang.org/x/time                                                             v0.11.0                                go-module                   
-google-chrome-stable                                                          139.0.7258.127-1                       deb                         
+google-chrome-stable                                                          139.0.7258.138-1                       deb                         
 google.golang.org/api                                                         v0.160.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240227224415-6ceb2ff114de     go-module                   
@@ -524,8 +524,8 @@ libpng16-16t64                                                                1.
 libproc2-0                                                                    2:4.0.4-4ubuntu3.2                     deb                         
 libpsl5t64                                                                    0.21.2-1.1build1                       deb                         
 libpython3-stdlib                                                             3.12.3-0ubuntu2                        deb                         
-libpython3.12-minimal                                                         3.12.3-1ubuntu0.7                      deb                         
-libpython3.12-stdlib                                                          3.12.3-1ubuntu0.7                      deb                         
+libpython3.12-minimal                                                         3.12.3-1ubuntu0.8                      deb                         
+libpython3.12-stdlib                                                          3.12.3-1ubuntu0.8                      deb                         
 libreadline8t64                                                               8.2-4build1                            deb                         
 librtmp1                                                                      2.4+20151223.gitfa8646d.1-2build7      deb                         
 libsasl2-2                                                                    2.1.28+dfsg1-5ubuntu3.1                deb                         
@@ -551,7 +551,7 @@ libsystemd0                                                                   25
 libtasn1-6                                                                    4.19.0-3ubuntu0.24.04.1                deb                         
 libthai-data                                                                  0.1.29-2build1                         deb                         
 libthai0                                                                      0.1.29-2build1                         deb                         
-libtiff6                                                                      4.5.1+git230720-4ubuntu2.2             deb                         
+libtiff6                                                                      4.5.1+git230720-4ubuntu2.3             deb                         
 libtinfo6                                                                     6.4+20240113-1ubuntu2                  deb                         
 libudev1                                                                      255.4-1ubuntu8.10                      deb                         
 libunistring5                                                                 1.1-2build1.1                          deb                         
@@ -596,7 +596,7 @@ libxi6                                                                        2:
 libxinerama1                                                                  2:1.1.4-3build1                        deb                         
 libxkbcommon0                                                                 1.6.0-1build1                          deb                         
 libxkbfile1                                                                   1:1.1.0-1build4                        deb                         
-libxml2                                                                       2.9.14+dfsg-1.3ubuntu3.3               deb                         
+libxml2                                                                       2.9.14+dfsg-1.3ubuntu3.4               deb                         
 libxmu6                                                                       2:1.1.3-3build2                        deb                         
 libxmuu1                                                                      2:1.1.3-3build2                        deb                         
 libxpm4                                                                       1:3.5.17-1build2                       deb                         
@@ -636,9 +636,9 @@ python3-minimal                                                               3.
 python3-pip-whl                                                               24.0+dfsg-1ubuntu1.2                   deb                         
 python3-setuptools-whl                                                        68.1.2-2ubuntu1.2                      deb                         
 python3-venv                                                                  3.12.3-0ubuntu2                        deb                         
-python3.12                                                                    3.12.3-1ubuntu0.7                      deb                         
-python3.12-minimal                                                            3.12.3-1ubuntu0.7                      deb                         
-python3.12-venv                                                               3.12.3-1ubuntu0.7                      deb                         
+python3.12                                                                    3.12.3-1ubuntu0.8                      deb                         
+python3.12-minimal                                                            3.12.3-1ubuntu0.8                      deb                         
+python3.12-venv                                                               3.12.3-1ubuntu0.8                      deb                         
 pyvirtualdisplay                                                              3.0                                    python                      
 readline-common                                                               8.2-4build1                            deb                         
 requests                                                                      2.28.2                                 python                      
