@@ -10,6 +10,7 @@ import logging
 from logging import Logger
 import mimetypes
 import json
+import subprocess
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from functools import wraps
@@ -320,10 +321,12 @@ class CI(SetEnvs):
 
         # Run these tests in parallel so the runtime data is more accurate.
         with ThreadPoolExecutor(max_workers=2,thread_name_prefix=thread_name) as executor:
+            future_buildx_sbom: Future[str] = executor.submit(self.generate_sbom_buildx, tag)
             future_sbom: Future[str] = executor.submit(self.generate_sbom, tag)
             future_logs: Future[bool] = executor.submit(self.watch_container_logs, container, tag)
 
         sbom: str = future_sbom.result(self.sbom_timeout + 5) # Set a thread timeout if the function for some reason hangs
+        buildx_sbom: str = future_buildx_sbom.result(self.sbom_timeout + 5) # Set a thread timeout if the function for some reason hangs
         logsfound: bool = future_logs.result(self.logs_timeout + 5) # Set a thread timeout if the function for some reason hangs
         build_info: dict = self.get_build_info(container,tag) # Get the image build info
 
@@ -520,6 +523,101 @@ class CI(SetEnvs):
             syft.remove(force=True)
         except Exception:
             self.logger.exception("Failed to remove the syft container, %s",tag)
+        return "ERROR"
+    
+    def get_sbom_buildx(self, tag: str) -> str:
+        """get the SBOM for the image tag using docker buildx imagetools inspect.
+
+        Args:
+            tag (str): The tag we are testing
+
+        Returns:
+            str: SBOM output if successful, otherwise "ERROR".
+        """
+        image_ref = f"{self.image}:{tag}"
+        platform: str = self.get_platform(tag)
+        cmd = [
+            "docker", "buildx", "imagetools", "inspect",
+            image_ref,
+            "--format", f'{{{{ json (index .SBOM "linux/{platform}").SPDX }}}}'
+        ]
+        try:
+            result: subprocess.CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, timeout=self.sbom_timeout, check=False)
+            if result.returncode == 0 and result.stdout.strip():
+                self.logger.info("SBOM generated for %s using buildx imagetools inspect.", image_ref)
+                return result.stdout.strip()
+            self.logger.error("Failed to generate SBOM for %s using buildx: %s", image_ref, result.stderr)
+            return "ERROR"
+        except Exception:
+            self.logger.exception("Exception while running buildx imagetools inspect for %s", image_ref)
+            return "ERROR"
+        
+    def parse_buildx_sbom(self, sbom: str) -> list[dict[str, str]]:
+        """Parse the buildx imagetools inspect SBOM string and extract package information.
+
+        Args:
+            sbom (str): The SBOM in JSON format.
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing package information.
+        """
+        try:
+            sbom_data: dict[str, Any] = json.loads(sbom)
+            packages: list[dict[str, str]] = []
+            package_list: list[dict[str, Any]] = sbom_data.get("packages", [])
+            for item in package_list:
+                package_info = {
+                    "name": item.get("name", ""),
+                    "version": item.get("versionInfo", ""),
+                }
+                packages.append(package_info)
+            return packages
+        except json.JSONDecodeError:
+            self.logger.error("Failed to parse buildx imagetools inspectSBOM.")
+            return []
+
+    def format_package_table(self, packages: list[dict[str, str]]) -> str:
+        """Format a list of package dicts into a padded string table.
+
+        Args:
+            packages (list[dict[str, str]]): List of package dicts with 'name' and 'version' keys.
+
+        Returns:
+            str: Padded string table of package names and versions.
+        """
+        name_width = 75
+        version_width = 25
+        lines: list[str] = []
+        header = f"{'NAME'.ljust(name_width)}{'VERSION'.ljust(version_width)}"
+        lines.append(header)
+        for pkg in packages:
+            name = pkg.get('name', '')[:name_width]
+            version = pkg.get('version', '')[:version_width]
+            lines.append(f"{name.ljust(name_width)}{version.ljust(version_width)}")
+        return "\n".join(lines)
+    
+    def generate_sbom_buildx(self, tag: str) -> str:
+        """Generate the SBOM for the image tag using docker buildx imagetools inspect.
+
+        Args:
+            tag (str): The tag we are testing
+        Returns:
+            str: Formatted package table if successful, otherwise "ERROR".
+        """
+        start_time = time.time()
+        self.logger.info("Generating SBOM for %s using buildx imagetools inspect", tag)
+        test = "Create SBOM (buildx)"
+        sbom_raw: str = self.get_sbom_buildx(tag)
+        if sbom_raw != "ERROR":
+            packages_list: list[dict[str, str]] = self.parse_buildx_sbom(sbom_raw)
+            if packages_list:
+                packages_formatted: str = self.format_package_table(packages_list)
+                self._add_test_result(tag, test, "PASS", "-", start_time)
+                self.logger.success("%s package list %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
+                self.create_html_ansi_file(packages_formatted, tag, "buildx_sbom")
+                return packages_formatted
+        self.logger.error("Failed to generate SBOM output on tag %s using buildx.", tag)
+        self.report_status = "FAIL"
+        self._add_test_result(tag, test, "FAIL", "Failed to generate SBOM using buildx", start_time)
         return "ERROR"
 
     @deprecated(reason="Use get_build_info instead")
