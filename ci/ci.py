@@ -568,7 +568,7 @@ class CI(SetEnvs):
         """
         start_time = time.time()
         sbom: str | CITestResult = self.get_sbom_buildx_blob(tag)
-        if isinstance(sbom, str) and sbom != CITestResult.ERROR:
+        if isinstance(sbom, str):
             packages: list[dict[str, str]] = self.parse_buildx_sbom(sbom)
             formatted_table: str | CITestResult = self.format_package_table(packages=packages)
             if packages and formatted_table != CITestResult.ERROR:
@@ -877,7 +877,7 @@ class CI(SetEnvs):
                                    "PASS": "green", "FAIL": "red"})
             badge.write_badge(f"{self.outdir}/badge.svg", overwrite=True)
             with open(f"{self.outdir}/ci-status.yml", "w", encoding="utf-8") as file:
-                file.write(f"CI: '{self.report_status.value}'\n")
+                file.write(f"CI: '{self.report_status.value}'")
         except (ValueError,RuntimeError,FileNotFoundError,OSError):
             self.logger.exception("Failed to render badge file!")
 
