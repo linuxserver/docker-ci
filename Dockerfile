@@ -23,6 +23,7 @@ RUN \
   apt-get update && \
   apt-get install -y --no-install-recommends \
     docker-ce \
+    docker-buildx-plugin \
     google-chrome-stable \
     python3-venv \
     unzip \

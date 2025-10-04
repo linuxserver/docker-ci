@@ -1,5 +1,5 @@
 import os
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 import json
 
 import pytest
@@ -8,7 +8,7 @@ import chromedriver_autoinstaller
 from docker import DockerClient
 from moto import mock_aws
 
-from ci.ci import CI, SetEnvs
+from ci.ci import CI, SetEnvs, CITestResult, CITests, Platform
 
 os.environ["DRY_RUN"] = "false"
 os.environ["IMAGE"] = "linuxserver/test"
@@ -30,6 +30,18 @@ def sbom_blob() -> bytes:
         yield f.read()
 
 @pytest.fixture
+def sbom_buildx_blob() -> str:
+    with open("tests/sbom_buildx_blob.txt", "rb") as f:
+        data = f.read()
+    yield data.decode("utf-8").strip()
+
+@pytest.fixture
+def sbom_buildx_formatted_blob() -> str:
+    with open("tests/sbom_buildx_formatted_blob.txt", "rb") as f:
+        data = f.read()
+    yield data.decode("utf-8").strip()
+
+@pytest.fixture
 def syft_mock_container(sbom_blob:bytes) -> Mock:
     container = Mock(spec=Container)
     container.logs = Mock(return_value=sbom_blob)
@@ -38,11 +50,12 @@ def syft_mock_container(sbom_blob:bytes) -> Mock:
     yield container
 
 @pytest.fixture
-def ci(tmpdir, syft_mock_container: Mock) -> CI:
+def ci(tmpdir, syft_mock_container: Mock, sbom_buildx_blob: str) -> CI:
     ci = CI()
     ci.client = Mock(DockerClient)
     ci.client.containers = Mock()
     ci.client.containers.run = Mock(return_value=syft_mock_container)
+    ci.get_sbom_buildx_blob = Mock(return_value=sbom_buildx_blob)
     ci.outdir = tmpdir
     yield ci
 
@@ -108,8 +121,8 @@ def test_convert_env(set_envs: SetEnvs):
 
 def test_add_test_result(ci: CI):
     for tag in ci.tags:
-        ci._add_test_result(tag=tag, test=f"test-{tag}", status="PASS", message="-", start_time="")
-        assert ci.tag_report_tests[tag] == {'test': {f"test-{tag}": {"status": "PASS", "message": "-", "runtime": "-"}}}
+        ci._add_test_result(tag=tag, test=CITests.CONTAINER_START, status=CITestResult.PASS, message="-", start_time="")
+        assert ci.tag_report_tests[tag] == {'test': {CITests.CONTAINER_START.value: {"status": "PASS", "message": "-", "runtime": "-"}}}
 
 def test_get_build_info(ci: CI, mock_container: Mock):
     info: dict[str, str] = ci.get_build_info(mock_container,ci.tags[0])
@@ -125,20 +138,20 @@ def test_get_build_info(ci: CI, mock_container: Mock):
     assert info == mock_info
 
 def test_get_platform(ci: CI):
-    assert ci.get_platform(ci.tags[0]) == "amd64"
-    assert ci.get_platform(ci.tags[1]) == "arm64"
+    assert ci.get_platform(ci.tags[0]) == Platform.AMD64.value
+    assert ci.get_platform(ci.tags[1]) == Platform.ARM64.value
 
 def test_watch_container_logs(ci: CI, mock_container: Mock):
     ci.watch_container_logs(mock_container, ci.tags[0])
-    assert ci.tag_report_tests[ci.tags[0]]["test"]["Container startup"]["status"] == "PASS"
+    assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CONTAINER_START.value]["status"] == CITestResult.PASS.value
 
 def test_take_screenshot(ci:CI,mock_container: Mock):
     screenshot: bool = ci.take_screenshot(mock_container, ci.tags[0])
     if screenshot:
         assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.png")) is True
-        assert ci.tag_report_tests[ci.tags[0]]["test"]["Get screenshot"]["status"] == "PASS"
+        assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.PASS.value
     else:
-        assert ci.tag_report_tests[ci.tags[0]]["test"]["Get screenshot"]["status"] == "FAIL"
+        assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.FAIL.value
 
 def test_create_html_ansi_file(ci:CI, log_blob:bytes):
     logs = log_blob.decode("utf-8")
@@ -159,9 +172,40 @@ def test_badge_render(ci:CI):
     ci.badge_render()
     assert os.path.isfile(os.path.join(ci.outdir,"ci-status.yml")) is True
 
-def test_generate_sbom(ci:CI, syft_mock_container:Mock, sbom_blob:bytes):
-    sbom = ci.generate_sbom(ci.tags[0])
+def test_get_sbom_syft(ci:CI, syft_mock_container:Mock, sbom_blob:bytes):
+    sbom = ci.get_sbom_syft(ci.tags[0])
     assert "VERSION" in sbom
+
+def test_parse_buildx_sbom(ci:CI, sbom_buildx_blob:str):
+    packages = ci.parse_buildx_sbom(sbom_buildx_blob)
+    assert len(packages) == 148
+    assert packages[0]["name"] == "adduser"
+    assert packages[0]["version"] == "3.137ubuntu1"
+
+def test_format_package_table(ci:CI, sbom_buildx_blob:str, sbom_buildx_formatted_blob: str):
+    packages = ci.parse_buildx_sbom(sbom_buildx_blob)
+    table = ci.format_package_table(packages)
+    assert "VERSION" in table
+    assert "cron" in table
+    assert "3.0pl1-184ubuntu2" in table
+
+def test_get_sbom_buildx_blob(ci: CI, sbom_buildx_blob: str) -> None:
+    expected_output = sbom_buildx_blob
+    mock_completed_process = Mock()
+    mock_completed_process.returncode = 0
+    mock_completed_process.stdout = expected_output
+
+    with patch("subprocess.run", return_value=mock_completed_process):
+        sbom = ci.get_sbom_buildx_blob(ci.tags[0])
+        assert sbom.strip() == expected_output.strip()
+
+def test_make_sbom(ci: CI, sbom_buildx_blob: str, sbom_buildx_formatted_blob: str) -> None:
+    with patch.object(ci, 'get_sbom_buildx_blob', return_value=sbom_buildx_blob):
+        packages = ci.make_sbom(ci.tags[0])
+        assert os.path.isfile(os.path.join(ci.outdir,"amd64-nightly-5.10.1.9109-ls85.sbom.html")) is True
+        assert "VERSION" in packages
+        assert "cron" in packages
+        assert "3.0pl1-184ubuntu2" in packages
 
 def test_create_s3_client(ci:CI):
     with mock_aws():
