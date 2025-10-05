@@ -43,9 +43,9 @@ debianutils                                                                   5.
 diffutils                                                                     1:3.10-1build1                         deb                         
 dirmngr                                                                       2.4.4-2ubuntu17.3                      deb                         
 docker                                                                        6.0.1                                  python                      
-docker-ce                                                                     5:28.4.0-1~ubuntu.24.04~noble          deb                         
-docker-ce-cli                                                                 5:28.4.0-1~ubuntu.24.04~noble          deb                         
-dpkg                                                                          1.22.6ubuntu6.2                        deb                         
+docker-ce                                                                     5:28.5.0-1~ubuntu.24.04~noble          deb                         
+docker-ce-cli                                                                 5:28.5.0-1~ubuntu.24.04~noble          deb                         
+dpkg                                                                          1.22.6ubuntu6.5                        deb                         
 e2fsprogs                                                                     1.47.0-2.4~exp1ubuntu4.1               deb                         
 findutils                                                                     4.9.0-5build1                          deb                         
 fontconfig                                                                    2.15.0-1.1ubuntu2                      deb                         
@@ -138,7 +138,7 @@ github.com/dimchansky/utfbom                                                  v1
 github.com/distribution/reference                                             v0.6.0                                 go-module  (+2 duplicates)  
 github.com/docker/cli/cmd/docker                                              UNKNOWN                                go-module                   
 github.com/docker/distribution                                                v2.8.3+incompatible                    go-module                   
-github.com/docker/docker                                                      v28.4.0                                go-module  (+1 duplicate)   
+github.com/docker/docker                                                      v28.5.0                                go-module  (+1 duplicate)   
 github.com/docker/go-connections                                              v0.5.0                                 go-module                   
 github.com/docker/go-events                                                   v0.0.0-20190806004212-e31b211e4f1c     go-module  (+3 duplicates)  
 github.com/docker/go-events                                                   v0.0.0-20250114142523-c867878c5e32     go-module                   
@@ -206,7 +206,7 @@ github.com/mistifyio/go-zfs/v3                                                v3
 github.com/mitchellh/copystructure                                            v1.2.0                                 go-module                   
 github.com/mitchellh/hashstructure/v2                                         v2.0.2                                 go-module                   
 github.com/mitchellh/reflectwalk                                              v1.0.2                                 go-module                   
-github.com/moby/buildkit                                                      v0.24.0                                go-module                   
+github.com/moby/buildkit                                                      v0.25.0                                go-module                   
 github.com/moby/docker-image-spec                                             v1.3.1                                 go-module                   
 github.com/moby/go-archive                                                    v0.1.0                                 go-module                   
 github.com/moby/ipvs                                                          v1.1.0                                 go-module                   
@@ -355,7 +355,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.27.0                                go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.11.0                                go-module                   
 golang.org/x/time                                                             v0.12.0                                go-module                   
-google-chrome-stable                                                          140.0.7339.207-1                       deb                         
+google-chrome-stable                                                          141.0.7390.54-1                        deb                         
 google.golang.org/api                                                         v0.160.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240227224415-6ceb2ff114de     go-module                   
@@ -367,7 +367,7 @@ google.golang.org/grpc                                                        v1
 google.golang.org/grpc                                                        v1.72.2                                go-module                   
 google.golang.org/protobuf                                                    v1.35.2                                go-module  (+4 duplicates)  
 google.golang.org/protobuf                                                    v1.36.5                                go-module                   
-google.golang.org/protobuf                                                    v1.36.6                                go-module                   
+google.golang.org/protobuf                                                    v1.36.9                                go-module                   
 gopkg.in/inf.v0                                                               v0.9.1                                 go-module  (+1 duplicate)   
 gopkg.in/yaml.v2                                                              v2.4.0                                 go-module  (+1 duplicate)   
 gopkg.in/yaml.v3                                                              v3.0.1                                 go-module  (+1 duplicate)   
@@ -547,14 +547,14 @@ libsmartcols1                                                                 2.
 libsqlite3-0                                                                  3.45.1-1ubuntu2.5                      deb                         
 libss2                                                                        1.47.0-2.4~exp1ubuntu4.1               deb                         
 libssh-4                                                                      0.10.6-2ubuntu0.1                      deb                         
-libssl3t64                                                                    3.0.13-0ubuntu3.5                      deb                         
+libssl3t64                                                                    3.0.13-0ubuntu3.6                      deb                         
 libstdc++6                                                                    14.2.0-4ubuntu2~24.04                  deb                         
 libsystemd-shared                                                             255.4-1ubuntu8.10                      deb                         
 libsystemd0                                                                   255.4-1ubuntu8.10                      deb                         
 libtasn1-6                                                                    4.19.0-3ubuntu0.24.04.1                deb                         
 libthai-data                                                                  0.1.29-2build1                         deb                         
 libthai0                                                                      0.1.29-2build1                         deb                         
-libtiff6                                                                      4.5.1+git230720-4ubuntu2.3             deb                         
+libtiff6                                                                      4.5.1+git230720-4ubuntu2.4             deb                         
 libtinfo6                                                                     6.4+20240113-1ubuntu2                  deb                         
 libudev1                                                                      255.4-1ubuntu8.10                      deb                         
 libunistring5                                                                 1.1-2build1.1                          deb                         
@@ -623,7 +623,7 @@ ncurses-base                                                                  6.
 ncurses-bin                                                                   6.4+20240113-1ubuntu2                  deb                         
 netbase                                                                       6.4                                    deb                         
 netcat-openbsd                                                                1.226-1ubuntu2                         deb                         
-openssl                                                                       3.0.13-0ubuntu3.5                      deb                         
+openssl                                                                       3.0.13-0ubuntu3.6                      deb                         
 outcome                                                                       1.3.0.post0                            python                      
 packaging                                                                     25.0                                   python                      
 passwd                                                                        1:4.13+dfsg1-4ubuntu3.2                deb                         
