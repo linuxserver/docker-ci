@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 import os
-import time
 from logging import Logger
-from ci.ci import CI, CIError
+from ci.ci import CI, CIError, Platform, CIReportResult
 from ci.logger import configure_logging
 
 def run_test() -> None:
@@ -10,15 +9,15 @@ def run_test() -> None:
     ci.run(ci.tags)
     # Don't set the whole report as failed if any of the ARM tag fails.
     for tag in ci.report_containers.keys():
-        if tag.startswith("amd64") and ci.report_containers[tag]['test_success'] == True:
-            ci.report_status = 'PASS' # Override the report_status if an ARM tag failed, but the amd64 tag passed.
-    if ci.report_status == 'PASS':
+        if tag.startswith(Platform.AMD64.value) and ci.report_containers[tag]['test_success'] == True:
+            ci.report_status = CIReportResult.PASS # Override the report_status if an ARM tag failed, but the amd64 tag passed.
+    if ci.report_status == CIReportResult.PASS:
         logger.success('All tests PASSED after %.2f seconds', ci.total_runtime)
     ci.report_render()
     ci.badge_render()
     ci.json_render()
     ci.report_upload()
-    if ci.report_status == 'PASS':  # Exit based on test results
+    if ci.report_status == CIReportResult.PASS:  # Exit based on test results
         ci.log_upload()
         return
     logger.error('Tests FAILED')
