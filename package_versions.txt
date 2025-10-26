@@ -401,7 +401,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.27.0                                go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.11.0                                go-module  (+1 duplicate)   
 golang.org/x/time                                                             v0.12.0                                go-module                   
-google-chrome-stable                                                          141.0.7390.107-1                       deb                         
+google-chrome-stable                                                          141.0.7390.122-1                       deb                         
 google.golang.org/api                                                         v0.160.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240227224415-6ceb2ff114de     go-module                   
@@ -681,7 +681,7 @@ packaging                                                                     25
 passwd                                                                        1:4.13+dfsg1-4ubuntu3.2                deb                         
 perl-base                                                                     5.38.2-3.2ubuntu0.2                    deb                         
 pinentry-curses                                                               1.2.1-3ubuntu5                         deb                         
-pip                                                                           25.2                                   python                      
+pip                                                                           25.3                                   python                      
 procps                                                                        2:4.0.4-4ubuntu3.2                     deb                         
 publicsuffix                                                                  20231001.0357-0.1                      deb                         
 pysocks                                                                       1.7.1                                  python                      
