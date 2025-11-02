@@ -355,7 +355,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.27.0                                go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.11.0                                go-module                   
 golang.org/x/time                                                             v0.12.0                                go-module                   
-google-chrome-stable                                                          141.0.7390.122-1                       deb                         
+google-chrome-stable                                                          142.0.7444.59-1                        deb                         
 google.golang.org/api                                                         v0.160.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20231211222908-989df2bf70f3     go-module  (+4 duplicates)  
 google.golang.org/genproto                                                    v0.0.0-20240227224415-6ceb2ff114de     go-module                   
@@ -599,7 +599,7 @@ libxi6                                                                        2:
 libxinerama1                                                                  2:1.1.4-3build1                        deb                         
 libxkbcommon0                                                                 1.6.0-1build1                          deb                         
 libxkbfile1                                                                   1:1.1.0-1build4                        deb                         
-libxml2                                                                       2.9.14+dfsg-1.3ubuntu3.5               deb                         
+libxml2                                                                       2.9.14+dfsg-1.3ubuntu3.6               deb                         
 libxmu6                                                                       2:1.1.3-3build2                        deb                         
 libxmuu1                                                                      2:1.1.3-3build2                        deb                         
 libxpm4                                                                       1:3.5.17-1build2                       deb                         
@@ -669,7 +669,7 @@ tags.cncf.io/container-device-interface                                       v1
 tags.cncf.io/container-device-interface/specs-go                              v0.8.0                                 go-module                   
 tags.cncf.io/container-device-interface/specs-go                              v1.0.0                                 go-module                   
 tar                                                                           1.35+dfsg-3build1                      deb                         
-trio                                                                          0.31.0                                 python                      
+trio                                                                          0.32.0                                 python                      
 trio-websocket                                                                0.12.2                                 python                      
 tzdata                                                                        2025b-0ubuntu0.24.04.1                 deb                         
 ubuntu-keyring                                                                2023.11.28.1                           deb                         
@@ -686,7 +686,7 @@ x11-xkb-utils                                                                 7.
 xauth                                                                         1:1.1.2-1build1                        deb                         
 xdg-utils                                                                     1.1.3-4.1ubuntu3                       deb                         
 xkb-data                                                                      2.41-2ubuntu1.1                        deb                         
-xserver-common                                                                2:21.1.12-1ubuntu1.4                   deb                         
-xserver-xephyr                                                                2:21.1.12-1ubuntu1.4                   deb                         
-xvfb                                                                          2:21.1.12-1ubuntu1.4                   deb                         
+xserver-common                                                                2:21.1.12-1ubuntu1.5                   deb                         
+xserver-xephyr                                                                2:21.1.12-1ubuntu1.5                   deb                         
+xvfb                                                                          2:21.1.12-1ubuntu1.5                   deb                         
 zlib1g                                                                        1:1.3.dfsg-3.1ubuntu2.1                deb                         
