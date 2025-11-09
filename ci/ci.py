@@ -93,6 +93,13 @@ class Platform(enum.Enum):
     RISCV64 = "riscv64"
     UNKNOWN = "amd64"
 
+class BuildCacheTag(enum.Enum):
+    """Enum for the different build cache tags"""
+    AMD64 = "amd64"
+    ARM64 = "arm64v8"
+    RISCV64 = "riscv64"
+    UNKNOWN = "amd64"
+
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
     def __init__(self) -> None:
@@ -119,6 +126,9 @@ class SetEnvs():
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
         self.release_tag: str = os.environ.get("RELEASE_TAG", "latest")
         self.syft_image_tag: str = os.environ.get("SYFT_IMAGE_TAG", "v1.26.1")
+        self.commit_sha: str = os.environ.get("COMMIT_SHA", "")
+        self.build_number: str = os.environ.get("BUILD_NUMBER", "")
+        self.build_cache_registry: str = os.environ.get("BUILD_CACHE_REGISTRY", "ghcr.io/linuxserver/lsiodev-buildcache")
 
         if os.environ.get("DELAY_START"):
             self.logger.warning("DELAY_START env is obsolete, and not in use anymore")
@@ -169,6 +179,9 @@ class SetEnvs():
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
         SYFT_IMAGE_TAG:         '{os.environ.get("SYFT_IMAGE_TAG")}'
+        COMMIT_SHA:             '{os.environ.get("COMMIT_SHA")}'
+        BUILD_NUMBER:           '{os.environ.get("BUILD_NUMBER")}'
+        BUILD_CACHE_REGISTRY:   '{os.environ.get("BUILD_CACHE_REGISTRY")}'
         Docker Engine Version:  '{self.get_docker_engine_version()}'
         """)
         self.logger.info(env_data)
@@ -630,6 +643,39 @@ class CI(SetEnvs):
             self.logger.exception("Failed to remove the Syft container, %s",tag)
         return CITestResult.ERROR
 
+    def get_build_cache_url(self, tag: str) -> str:
+        """Get the build cache URL for the given tag.
+
+        Args:
+            tag (str): The tag we are testing
+        Returns:
+            str: The build cache URL ex `ghcr.io/linuxserver/lsiodev-buildcache:arm64v8-<COMMIT_SHA>-<BUILD_NUMBER>`
+        """
+        platform: str = self.get_build_cache_platform(tag)
+        build_cache_url: str = f"{self.build_cache_registry}:{platform}-{self.commit_sha}-{self.build_number}"
+        return build_cache_url
+
+    def get_build_cache_platform(self, tag: str) -> str:
+        """Get the build cache platform for the given tag.
+
+        Args:
+            tag (str): The tag we are testing
+
+        Returns:
+            str: The build cache platform
+        """
+        
+        platform = self.get_platform(tag)
+        match platform:
+            case Platform.AMD64.value:
+                return BuildCacheTag.AMD64.value
+            case Platform.ARM64.value:
+                return BuildCacheTag.ARM64.value
+            case Platform.RISCV64.value:
+                return BuildCacheTag.RISCV64.value
+            case _:
+                return BuildCacheTag.UNKNOWN.value
+
     def get_sbom_buildx_blob(self, tag: str) -> str | CITestResult:
         """Get the SBOM for the image tag using docker buildx imagetools inspect.
 
@@ -640,7 +686,7 @@ class CI(SetEnvs):
             str: SBOM output if successful, otherwise "CITestResult.ERROR".
         """
         try:
-            image_ref = f"{self.image}:{tag}"
+            image_ref:str = self.get_build_cache_url(tag)
             self.logger.info("Generating SBOM for %s using buildx imagetools inspect", image_ref)
             cmd = f'docker buildx imagetools inspect {image_ref} --format "{{{{ json (index .SBOM).SPDX.packages }}}}"'
             result: subprocess.CompletedProcess[str] = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=self.sbom_timeout, check=False)

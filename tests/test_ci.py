@@ -8,7 +8,7 @@ import chromedriver_autoinstaller
 from docker import DockerClient
 from moto import mock_aws
 
-from ci.ci import CI, SetEnvs, CITestResult, CITests, Platform
+from ci.ci import CI, SetEnvs, CITestResult, CITests, Platform, BuildCacheTag
 
 os.environ["DRY_RUN"] = "false"
 os.environ["IMAGE"] = "linuxserver/test"
@@ -23,6 +23,8 @@ os.environ["SSL"] = "true"
 os.environ["PORT"] = "443"
 os.environ["WEB_SCREENSHOT"] = "true"
 os.environ["WEB_AUTH"] = ""
+os.environ["COMMIT_SHA"] = "test-commit-sha"
+os.environ["BUILD_NUMBER"] = "1234"
 
 @pytest.fixture
 def sbom_blob() -> bytes:
@@ -241,3 +243,13 @@ def test_get_image_name(ci: CI) -> None:
     assert ci.get_image_name() == "linuxserver/lspipepr-plex"
     ci.image = "lsiobase/ubuntu"
     assert ci.get_image_name() == "linuxserver/docker-baseimage-ubuntu"
+
+def test_get_build_cache_url(ci: CI) -> None:
+    for tag in ci.tags:
+        cache_tag = ci.get_build_cache_platform(tag)
+        expected_url = f"{ci.build_cache_registry}:{cache_tag}-{ci.commit_sha}-{ci.build_number}"
+        assert ci.get_build_cache_url(tag) == expected_url
+
+def test_get_build_cache_platform(ci: CI) -> None:
+    assert ci.get_build_cache_platform(ci.tags[0]) == BuildCacheTag.AMD64.value
+    assert ci.get_build_cache_platform(ci.tags[1]) == BuildCacheTag.ARM64.value
