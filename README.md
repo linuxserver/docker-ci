@@ -23,7 +23,7 @@ This container is an automated testing tool for Docker images. It's designed to 
 
 1.  **Spins up the container:** It runs the target Docker image with a specified tag.
 2.  **Checks for successful startup:** It tails the container's logs, waiting for the `[services.d] done.` message, which confirms the init system has finished and the services are running.
-3.  **Generates an SBOM:** It uses `syft` to create a Software Bill of Materials, providing a complete list of all packages inside the image.
+3.  **Generates an SBOM:** It uses `buildx imagetools inspect` or `syft`(fallback) to create a Software Bill of Materials, providing a complete list of all packages inside the image.
 4.  **Tests the Web UI (optional):** If the container runs a web service, it attempts to connect to the UI and take a screenshot to verify it's accessible and renders correctly.
 5.  **Generates a report:** It gathers all the results—container logs, build info, SBOM, screenshots, and test statuses—into a comprehensive HTML report.
 6.  **Uploads the report (CI only):** In a CI environment, it uploads the final report to an S3 bucket for review.
@@ -115,6 +115,8 @@ sudo docker run --rm -i \
 -e NODE_NAME=<optional, Name of the builder that runs the CI test.> \
 -e RELEASE_TAG=<optional, The release tag of the docker image. Used for upload location. Defaults to 'latest'> \
 -e SYFT_IMAGE_TAG=<optional, The image tag of the syft docker image. Used for generating SBOM. Defaults to '1.26.1'> \
+-e COMMIT_SHA=<commit sha, used for creating the sbom with buildx imagetool inspect> \
+-e BUILD_NUMBER=<jenkins build number, used for creating the sbom with buildx imagetool inspect>
 -t lsiodev/ci:latest \
 python3 test_build.py
 ```
