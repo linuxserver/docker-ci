@@ -10,11 +10,13 @@ import logging
 from logging import Logger
 import mimetypes
 import json
+import subprocess
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from functools import wraps
 from typing import Callable, Any, Literal
 from textwrap import dedent
+import enum
 
 import boto3
 import requests
@@ -62,6 +64,42 @@ def deprecated(reason: str):
         return wrapper
     return deprecated_decorator
 
+class CITests(enum.Enum):
+    """Enum for the different CI tests"""
+    CONTAINER_START = "Container Start"
+    CREATE_SBOM = "Create SBOM"
+    CREATE_BUILDX_SBOM = "Create Buildx SBOM"
+    CREATE_SYFT_SBOM = "Create Syft SBOM"
+    CAPTURE_SCREENSHOT = "Capture Screenshot"
+    GET_BUILD_INFO = "Get Build Info"
+
+class CITestResult(enum.Enum):
+    """Enum for the different CI test results"""
+    PASS = "PASS"
+    FAIL = "FAIL"
+    ERROR = "ERROR"
+
+class CIReportResult(enum.Enum):
+    """Enum for the different CI report results"""
+    PASS = "PASS"
+    FAIL = "FAIL"
+    ERROR = "ERROR"
+
+class Platform(enum.Enum):
+    """Enum for the different platforms"""
+    AMD64 = "amd64"
+    ARM64 = "arm64"
+    ARM32 = "arm"
+    RISCV64 = "riscv64"
+    UNKNOWN = "amd64"
+
+class BuildCacheTag(enum.Enum):
+    """Enum for the different build cache tags"""
+    AMD64 = "amd64"
+    ARM64 = "arm64v8"
+    RISCV64 = "riscv64"
+    UNKNOWN = "amd64"
+
 class SetEnvs():
     """Simple helper class that sets up the ENVs"""
     def __init__(self) -> None:
@@ -88,6 +126,9 @@ class SetEnvs():
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
         self.release_tag: str = os.environ.get("RELEASE_TAG", "latest")
         self.syft_image_tag: str = os.environ.get("SYFT_IMAGE_TAG", "v1.26.1")
+        self.commit_sha: str = os.environ.get("COMMIT_SHA", "")
+        self.build_number: str = os.environ.get("BUILD_NUMBER", "")
+        self.build_cache_registry: str = os.environ.get("BUILD_CACHE_REGISTRY", "ghcr.io/linuxserver/lsiodev-buildcache")
 
         if os.environ.get("DELAY_START"):
             self.logger.warning("DELAY_START env is obsolete, and not in use anymore")
@@ -138,6 +179,9 @@ class SetEnvs():
         S3_REGION:              '{os.environ.get("S3_REGION")}'
         S3_BUCKET:              '{os.environ.get("S3_BUCKET")}'
         SYFT_IMAGE_TAG:         '{os.environ.get("SYFT_IMAGE_TAG")}'
+        COMMIT_SHA:             '{os.environ.get("COMMIT_SHA")}'
+        BUILD_NUMBER:           '{os.environ.get("BUILD_NUMBER")}'
+        BUILD_CACHE_REGISTRY:   '{os.environ.get("BUILD_CACHE_REGISTRY")}'
         Docker Engine Version:  '{self.get_docker_engine_version()}'
         """)
         self.logger.info(env_data)
@@ -269,7 +313,7 @@ class CI(SetEnvs):
         self.tags = list(self.tags_env.split("|"))
         self.tag_report_tests:dict[str,dict[str,dict]] = {tag: {"test":{}} for tag in self.tags} # Adds all the tags as keys with an empty dict as value to the dict
         self.report_containers: dict[str,dict[str,dict]] = {}
-        self.report_status = "PASS"
+        self.report_status = CIReportResult.PASS
         self.outdir: str = f"{os.path.dirname(os.path.realpath(__file__))}/output/{self.image}/{self.meta_tag}"
         os.makedirs(self.outdir, exist_ok=True)
         self.s3_client = self.create_s3_client()
@@ -320,31 +364,31 @@ class CI(SetEnvs):
 
         # Run these tests in parallel so the runtime data is more accurate.
         with ThreadPoolExecutor(max_workers=2,thread_name_prefix=thread_name) as executor:
-            future_sbom: Future[str] = executor.submit(self.generate_sbom, tag)
+            future_sbom: Future[str|CITestResult] = executor.submit(self.make_sbom, tag)
             future_logs: Future[bool] = executor.submit(self.watch_container_logs, container, tag)
 
-        sbom: str = future_sbom.result(self.sbom_timeout + 5) # Set a thread timeout if the function for some reason hangs
+        sbom: str|CITestResult = future_sbom.result(self.sbom_timeout + 5) # Set a thread timeout if the function for some reason hangs
         logsfound: bool = future_logs.result(self.logs_timeout + 5) # Set a thread timeout if the function for some reason hangs
-        build_info: dict = self.get_build_info(container,tag) # Get the image build info
+        build_info: dict[str,str] = self.get_build_info(container,tag) # Get the image build info
 
         if not logsfound:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
-        if build_info["version"] == "ERROR":
+        if build_info["version"] == CITestResult.ERROR.value:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
-        if sbom == "ERROR":
+        if sbom == CITestResult.ERROR:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
         # Screenshot the web interface and check connectivity
         screenshot_success, browser_logs = self.take_screenshot(container, tag)
-        if not screenshot_success and self.get_platform(tag) == "amd64":
+        if not screenshot_success and self.get_platform(tag) == Platform.AMD64.value:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
             self._endtest(container, tag, build_info, sbom, False, start_time, browser_logs)
             return
@@ -353,7 +397,7 @@ class CI(SetEnvs):
         self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
         return
 
-    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str, test_success: bool, start_time:float|int = 0.0, browser_logs: str = "") -> None:
+    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str|CITestResult, test_success: bool, start_time:float|int = 0.0, browser_logs: str = "") -> None:
         """End the test with as much info as we have and append to the report.
 
         Args:
@@ -369,10 +413,12 @@ class CI(SetEnvs):
             runtime = "-"
         if isinstance(start_time,(float, int)):
             runtime = f"{time.time() - start_time:.2f}s"
+        if isinstance(packages, CITestResult):
+            packages = packages.value
         logblob: str = container.logs(timestamps=True).decode("utf-8")
         self.create_html_ansi_file(logblob, tag, "log") # Generate an html container log file based on the latest logs
         try:
-            container.remove(force="true")
+            container.remove(force=True)
         except APIError:
             self.logger.exception("Failed to remove container %s",tag)
         warning_texts: dict[str, str] = {
@@ -428,15 +474,15 @@ class CI(SetEnvs):
         platform: str = tag[:5]
         match platform:
             case "amd64":
-                return "amd64"
+                return Platform.AMD64.value
             case "arm64":
-                return "arm64"
+                return Platform.ARM64.value
             case "arm32":
-                return "arm"
+                return Platform.ARM32.value
             case "riscv":
-                return "riscv64"
+                return Platform.RISCV64.value
             case _:
-                return "amd64"
+                return Platform.UNKNOWN.value
 
     @deprecated(reason="Use generate_sbom instead")
     def export_package_info(self, container:Container, tag:str) -> str:
@@ -475,7 +521,8 @@ class CI(SetEnvs):
                 "message":str(error)}.items())))
             self.report_status = "FAIL"
         return packages
-
+    
+    @deprecated(reason="Use make_sbom instead")
     def generate_sbom(self, tag:str) -> str:
         """Generate the SBOM for the image tag.
 
@@ -521,6 +568,188 @@ class CI(SetEnvs):
         except Exception:
             self.logger.exception("Failed to remove the syft container, %s",tag)
         return "ERROR"
+
+    def make_sbom(self, tag: str) -> "str|CITestResult":
+        """Generate the SBOM for the image tag. It will first try to use buildx imagetools inspect, if that fails it will fallback to using syft.
+
+        Creates the output file in `{self.outdir}/{tag}.sbom.html`
+
+        Args:
+            tag (str): The tag we are testing
+        Returns:
+            str: Return the output if successful otherwise "ERROR".
+        """
+        start_time = time.time()
+        sbom: str | CITestResult = self.get_sbom_buildx_blob(tag)
+        if isinstance(sbom, str):
+            packages: list[dict[str, str]] = self.parse_buildx_sbom(sbom)
+            formatted_table: str | CITestResult = self.format_package_table(packages=packages)
+            if packages and formatted_table != CITestResult.ERROR:
+                self.create_html_ansi_file(formatted_table, tag, "sbom")
+                self._add_test_result(tag, CITests.CREATE_BUILDX_SBOM, CITestResult.PASS, "-", start_time)
+                self.logger.success("Create SBOM %s: PASSED after %.2f seconds", tag, time.time() - start_time)
+                return formatted_table
+            self.logger.error("No packages found in buildx SBOM for tag %s", tag)
+            self.report_status = CIReportResult.FAIL
+            self._add_test_result(tag, CITests.CREATE_BUILDX_SBOM, CITestResult.FAIL, "No packages found in buildx SBOM", start_time)
+        else:
+            self.logger.warning("Falling back to Syft for SBOM generation on tag %s", tag)
+        
+        # Fallback to syft if buildx failed
+        sbom = self.get_sbom_syft(tag)
+        if sbom != CITestResult.ERROR:
+            self._add_test_result(tag, CITests.CREATE_SBOM, CITestResult.PASS, "-", start_time)
+            self.logger.success("Create SBOM %s: PASSED after %.2f seconds", tag, time.time() - start_time)
+            self.create_html_ansi_file(str(sbom),tag,"sbom")
+            return sbom
+        self.report_status = CIReportResult.FAIL
+        self._add_test_result(tag, CITests.CREATE_SBOM, CITestResult.FAIL, "Failed to generate SBOM with both buildx and syft", start_time)
+        return CITestResult.ERROR
+    
+    def get_sbom_syft(self, tag: str) -> str | CITestResult:
+        """Get the SBOM for the image tag using Syft.
+
+        Args:
+            tag (str): The tag we are testing
+        Returns:
+            str: SBOM output if successful, otherwise "ERROR".
+        """
+        start_time = time.time()
+        platform: str = self.get_platform(tag)
+        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=f"{self.image}:{tag} --platform=linux/{platform}",
+            detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
+        self.logger.info("Creating SBOM package list on %s with syft version %s",tag,self.syft_image_tag)
+        logblob: str = ""
+        t_end: float = time.time() + self.sbom_timeout
+        self.logger.info("Tailing the Syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.sbom_timeout,tag)
+        while time.time() < t_end:
+            time.sleep(5)
+            try:
+                logblob: str = syft.logs().decode("utf-8")
+                if "VERSION" in logblob:
+                    self.logger.info("Get Syft package versions for %s completed", tag)
+                    self.logger.success("%s package list %s: PASSED after %.2f seconds", CITests.CREATE_SYFT_SBOM.value, tag, time.time() - start_time)
+                    try:
+                        syft.remove(force=True)
+                    except Exception:
+                        self.logger.exception("Failed to remove the Syft container, %s",tag)
+                    return logblob
+            except (APIError,ContainerError,ImageNotFound):
+                self.logger.exception("Creating Syft SBOM package list on %s: FAIL", tag)
+        self.logger.error("Failed to generate Syft SBOM output on tag %s. SBOM output:\n%s",tag, logblob)
+        try:
+            syft.remove(force=True)
+        except Exception:
+            self.logger.exception("Failed to remove the Syft container, %s",tag)
+        return CITestResult.ERROR
+
+    def get_build_cache_url(self, tag: str) -> str:
+        """Get the build cache URL for the given tag.
+
+        Args:
+            tag (str): The tag we are testing
+        Returns:
+            str: The build cache URL ex `ghcr.io/linuxserver/lsiodev-buildcache:arm64v8-<COMMIT_SHA>-<BUILD_NUMBER>`
+        """
+        platform: str = self.get_build_cache_platform(tag)
+        build_cache_url: str = f"{self.build_cache_registry}:{platform}-{self.commit_sha}-{self.build_number}"
+        return build_cache_url
+
+    def get_build_cache_platform(self, tag: str) -> str:
+        """Get the build cache platform for the given tag.
+
+        Args:
+            tag (str): The tag we are testing
+
+        Returns:
+            str: The build cache platform
+        """
+        
+        platform = self.get_platform(tag)
+        match platform:
+            case Platform.AMD64.value:
+                return BuildCacheTag.AMD64.value
+            case Platform.ARM64.value:
+                return BuildCacheTag.ARM64.value
+            case Platform.RISCV64.value:
+                return BuildCacheTag.RISCV64.value
+            case _:
+                return BuildCacheTag.UNKNOWN.value
+
+    def get_sbom_buildx_blob(self, tag: str) -> str | CITestResult:
+        """Get the SBOM for the image tag using docker buildx imagetools inspect.
+
+        Args:
+            tag (str): The tag we are testing
+
+        Returns:
+            str: SBOM output if successful, otherwise "CITestResult.ERROR".
+        """
+        try:
+            image_ref:str = self.get_build_cache_url(tag)
+            self.logger.info("Generating SBOM for %s using buildx imagetools inspect", image_ref)
+            cmd = f'docker buildx imagetools inspect {image_ref} --format "{{{{ json (index .SBOM).SPDX.packages }}}}"'
+            result: subprocess.CompletedProcess[str] = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=self.sbom_timeout, check=False)
+            if result.returncode == 0 and result.stdout.strip():
+                self.logger.success("SBOM generated for %s using buildx imagetools inspect.", tag)
+                return result.stdout.strip()
+            self.logger.error("Failed to generate buildx SBOM for %s: %s", tag, result.stderr)
+            return CITestResult.ERROR
+        except Exception:
+            self.logger.exception("Exception while running buildx imagetools inspect for %s", tag)
+            return CITestResult.ERROR
+
+    def parse_buildx_sbom(self, sbom: str) -> list[dict[str, str]]:
+        """Parse the buildx imagetools inspect SBOM string and extract package information.
+
+        Args:
+            sbom (str): The SBOM in JSON format.
+        Returns:
+            list[dict[str, str]]: A list of dictionaries containing package information.
+        """
+        try:
+            sbom_data: dict[str, Any] = json.loads(sbom)
+            packages: list[dict[str, str]] = []
+            for item in sbom_data:
+                package_info = {
+                    "name": item.get("name", ""),
+                    "version": item.get("versionInfo", ""),
+                }
+                if package_info in packages:
+                    continue
+                packages.append(package_info)
+            return packages
+        except json.JSONDecodeError:
+            self.logger.error("Failed to parse buildx imagetools inspect SBOM output.")
+            return []
+
+    def format_package_table(self, packages: list[dict[str, str]]) -> str | CITestResult:
+        """Format a list of package dicts into a padded string table.
+
+        Args:
+            packages (list[dict[str, str]]): List of package dicts with 'name' and 'version' keys.
+
+        Returns:
+            str: Padded string table of package names and versions.
+        """
+        try:
+            if not packages:
+                self.logger.error("No packages found to format.")
+                return CITestResult.ERROR
+            # Dynamically determine column widths based on longest name/version
+            name_width = max(len(pkg.get('name', '')) for pkg in packages) + 10
+            version_width = max(len(pkg.get('version', '')) for pkg in packages) + 10
+            lines: list[str] = []
+            header = f"{'NAME'.ljust(name_width)}{'VERSION'.ljust(version_width)}"
+            lines.append(header)
+            for pkg in packages:
+                name = pkg.get('name', '')[:name_width]
+                version = pkg.get('version', '')[:version_width]
+                lines.append(f"{name.ljust(name_width)}{version.ljust(version_width)}")
+            return "\n".join(lines)
+        except Exception:
+            self.logger.exception("Failed to format package table.")
+            return CITestResult.ERROR
 
     @deprecated(reason="Use get_build_info instead")
     def get_build_version(self,container:Container,tag:str) -> str:
@@ -568,7 +797,7 @@ class CI(SetEnvs):
             case _:
                 return self.image
 
-    def get_build_url(self, tag) -> str:
+    def get_build_url(self, tag: str) -> str:
         """Get the build url from the IMAGE env.
 
         Args:
@@ -610,7 +839,6 @@ class CI(SetEnvs):
             }
             ```
         """
-        test = "Get build info"
         start_time = time.time()
         try:
             self.logger.info("Fetching build info on tag: %s",tag)
@@ -623,15 +851,15 @@ class CI(SetEnvs):
                 "tag": tag,
                 "image": self.get_image_name()
             }
-            self._add_test_result(tag, test, "PASS", "-", start_time)
+            self._add_test_result(tag, CITests.GET_BUILD_INFO, CITestResult.PASS, "-", start_time)
             self.logger.success("Get build info on tag '%s': PASS", tag)
         except (APIError,KeyError) as error:
             self.logger.exception("Get build info on tag '%s': FAIL", tag)
-            build_info = {"version": "ERROR", "created": "ERROR", "size": "ERROR", "maintainer": "ERROR"}
+            build_info = {"version": CITestResult.ERROR.value, "created": CITestResult.ERROR.value, "size": CITestResult.ERROR.value, "maintainer": CITestResult.ERROR.value}
             if isinstance(error,KeyError):
                 error: str = f"KeyError: {error}"
-            self._add_test_result(tag, test, "FAIL", str(error), start_time)
-            self.report_status = "FAIL"
+            self._add_test_result(tag, CITests.GET_BUILD_INFO, CITestResult.FAIL, str(error), start_time)
+            self.report_status = CIReportResult.FAIL
         return build_info
 
     def watch_container_logs(self, container:Container, tag:str) -> bool:
@@ -645,7 +873,6 @@ class CI(SetEnvs):
         Returns:
             bool: Return True if the "done" message is found, otherwise False.
         """
-        test = "Container startup"
         start_time = time.time()
         t_end: float = time.time() + self.logs_timeout
         self.logger.info("Tailing the %s logs for %s seconds looking for the 'done' message", tag, self.logs_timeout)
@@ -653,20 +880,20 @@ class CI(SetEnvs):
             try:
                 logblob: str = container.logs().decode("utf-8")
                 if "[services.d] done." in logblob or "[ls.io-init] done." in logblob:
-                    self.logger.info("%s completed for %s",test, tag)
-                    self._add_test_result(tag, test, "PASS", "-", start_time)
-                    self.logger.success("%s %s: PASSED after %.2f seconds", test, tag, time.time() - start_time)
+                    self.logger.info("%s completed for %s",CITests.CONTAINER_START.value, tag)
+                    self._add_test_result(tag, CITests.CONTAINER_START, CITestResult.PASS, "-", start_time)
+                    self.logger.success("%s %s: PASSED after %.2f seconds", CITests.CONTAINER_START.value, tag, time.time() - start_time)
                     return True
                 time.sleep(1)
             except APIError as error:
-                self.logger.exception("%s %s: FAIL - INIT NOT FINISHED", test, tag)
-                self._add_test_result(tag, test, "FAIL", f"INIT NOT FINISHED: {str(error)}", start_time)
-                self.report_status = "FAIL"
+                self.logger.exception("%s %s: FAIL - INIT NOT FINISHED", CITests.CONTAINER_START.value, tag)
+                self._add_test_result(tag, CITests.CONTAINER_START, CITestResult.FAIL, f"INIT NOT FINISHED: {str(error)}", start_time)
+                self.report_status = CIReportResult.FAIL
                 return False
-        self.logger.error("%s failed for %s", test, tag)
-        self._add_test_result(tag, test, "FAIL", "INIT NOT FINISHED", start_time)
-        self.logger.error("%s %s: FAIL - INIT NOT FINISHED", test, tag)
-        self.report_status = "FAIL"
+        self.logger.error("%s failed for %s", CITests.CONTAINER_START.value, tag)
+        self._add_test_result(tag, CITests.CONTAINER_START, CITestResult.FAIL, "INIT NOT FINISHED", start_time)
+        self.logger.error("%s %s: FAIL - INIT NOT FINISHED", CITests.CONTAINER_START.value, tag)
+        self.report_status = CIReportResult.FAIL
         return False
 
     def report_render(self) -> None:
@@ -679,7 +906,7 @@ class CI(SetEnvs):
         with open(f"{self.outdir}/index.html", mode="w", encoding="utf-8") as file_:
             file_.write(template.render(
             report_containers=self.report_containers,
-            report_status=self.report_status,
+            report_status=self.report_status.value,
             meta_tag=self.meta_tag,
             image=self.get_image_name(),
             bucket=self.bucket,
@@ -692,11 +919,11 @@ class CI(SetEnvs):
         """Render the badge file for upload"""
         self.logger.info("Creating badge")
         try:
-            badge = anybadge.Badge("CI", self.report_status, thresholds={
+            badge = anybadge.Badge("CI", self.report_status.value, thresholds={
                                    "PASS": "green", "FAIL": "red"})
             badge.write_badge(f"{self.outdir}/badge.svg", overwrite=True)
             with open(f"{self.outdir}/ci-status.yml", "w", encoding="utf-8") as file:
-                file.write(f"CI: '{self.report_status}'")
+                file.write(f"CI: '{self.report_status.value}'")
         except (ValueError,RuntimeError,FileNotFoundError,OSError):
             self.logger.exception("Failed to render badge file!")
 
@@ -737,7 +964,7 @@ class CI(SetEnvs):
                 raise CIError(f"Upload Error: {error}") from error
         self.logger.info("Report available on https://%s/%s/%s/index.html",self.bucket, self.image, self.meta_tag)
 
-    def create_html_ansi_file(self, blob:str, tag:str, name:str, full:bool = True) -> None:
+    def create_html_ansi_file(self, blob:str|CITestResult, tag:str, name:str, full:bool = True) -> None:
         """Creates an HTML file in the "self.outdir" directory that we upload to S3
 
         Args:
@@ -748,6 +975,8 @@ class CI(SetEnvs):
 
         """
         try:
+            if isinstance(blob,CITestResult):
+                blob = blob.value
             self.logger.info("Creating %s.%s.html", tag, name)
             converter = Ansi2HTMLConverter(title=f"{tag}-{name}")
             html_logs: str = converter.convert(blob,full=full)
@@ -793,26 +1022,28 @@ class CI(SetEnvs):
         except (S3UploadFailedError, ClientError, FileNotFoundError) as e:
             self.logger.exception(f"Failed to upload the CI logs! Error: {e}")
 
-    def _add_test_result(self, tag:str, test:str, status:str, message:str, start_time:float|int = 0.0) -> None:
+    def _add_test_result(self, tag:str, test:CITests, status:CITestResult, message:str, start_time:float|int = 0.0) -> None:
         """Add a test result to the report
 
         Args:
             tag (str): The tag we are testing
-            test (str): The test we are running
-            status (str): The status of the test
+            test (CITests): The test we are running
+            status (CITestResult): The status of the test
             message (str): The message of the test
             start_time (str, optional): The start time of the test. Defaults to 0.0. Used to calculate the runtime of the test.
         """
-        if status not in ["PASS","FAIL"]:
-            raise ValueError("Status must be either PASS or FAIL")
+        if not isinstance(test, CITests):
+            raise ValueError("test must be an instance of CITests")
+        if not isinstance(status, CITestResult):
+            raise ValueError("status must be an instance of CITestResult")
         if tag not in self.tags:
             raise ValueError("Tag not in the list of tags")
         if not start_time:
             runtime = "-"
         if isinstance(start_time,(float, int)):
             runtime: str = f"{time.time() - start_time:.2f}s"
-        self.tag_report_tests[tag]["test"][test] = (dict(sorted({
-            "status":status,
+        self.tag_report_tests[tag]["test"][test.value] = (dict(sorted({
+            "status":status.value,
             "message":message,
             "runtime": runtime}.items())))
 
@@ -832,7 +1063,6 @@ class CI(SetEnvs):
             return True, ""
         proto: Literal["https", "http"] = "https" if self.ssl.upper() == "TRUE" else "http"
         screenshot_timeout = time.time() + self.screenshot_timeout
-        test = "Get screenshot"
         start_time = time.time()
         driver: WebDriver | None = None
         browser_logs: str = ""
@@ -853,7 +1083,7 @@ class CI(SetEnvs):
                     driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
                     if not os.path.isfile(f"{self.outdir}/{tag}.png"):
                         raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
-                    self._add_test_result(tag, test, "PASS", "-", start_time)
+                    self._add_test_result(tag, CITests.CAPTURE_SCREENSHOT, CITestResult.PASS, "-", start_time)
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
                     return True, self._get_browser_logs(driver, tag)
                 except Exception as error:
@@ -864,23 +1094,23 @@ class CI(SetEnvs):
                         raise error
             raise TimeoutException("Timeout taking screenshot")
         except (requests.Timeout, requests.ConnectionError, KeyError) as error:
-            self._add_test_result(tag, test, "FAIL", f"CONNECTION ERROR: {str(error)}", start_time)
+            self._add_test_result(tag, CITests.CAPTURE_SCREENSHOT, CITestResult.FAIL, f"CONNECTION ERROR: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL CONNECTION ERROR", tag)
-            self.report_status = "FAIL"
+            self.report_status = CIReportResult.FAIL
             if driver:
                 browser_logs = self._get_browser_logs(driver, tag)
             return False, browser_logs
         except TimeoutException as error:
-            self._add_test_result(tag, test, "FAIL", f"TIMEOUT: {str(error)}", start_time)
+            self._add_test_result(tag, CITests.CAPTURE_SCREENSHOT, CITestResult.FAIL, f"TIMEOUT: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL TIMEOUT", tag)
-            self.report_status = "FAIL"
+            self.report_status = CIReportResult.FAIL
             if driver:
                 browser_logs = self._get_browser_logs(driver, tag)
             return False, browser_logs
         except (WebDriverException, Exception) as error:
-            self._add_test_result(tag, test, "FAIL", f"UNKNOWN: {str(error)}", start_time)
+            self._add_test_result(tag, CITests.CAPTURE_SCREENSHOT, CITestResult.FAIL, f"UNKNOWN: {str(error)}", start_time)
             self.logger.exception("Screenshot %s FAIL UNKNOWN", tag)
-            self.report_status = "FAIL"
+            self.report_status = CIReportResult.FAIL
             if driver:
                 browser_logs = self._get_browser_logs(driver, tag)
             return False, browser_logs
