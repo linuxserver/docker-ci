@@ -16,7 +16,7 @@ botocore                                                                      1.
 bsdutils                                                                      1:2.39.3-9ubuntu6.4                    deb                         
 ca-certificates                                                               20240203                               deb                         
 catatonit                                                                     0.1.7-1                                deb                         
-certifi                                                                       2025.11.12                             python                      
+certifi                                                                       2026.1.4                               python                      
 charset-normalizer                                                            3.4.4                                  python                      
 cloud.google.com/go/auth                                                      v0.16.5                                go-module                   
 cloud.google.com/go/auth/oauth2adapt                                          v0.2.8                                 go-module                   
