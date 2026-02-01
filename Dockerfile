@@ -30,8 +30,13 @@ RUN \
     xserver-xephyr \
     xvfb && \
   echo "**** install chrome driver ****" && \
-  CHROME_RELEASE=$(curl -sLk https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE) && \
-  echo "Retrieving Chrome driver version ${CHROME_RELEASE}" && \
+  CHROME_VERSION=$(google-chrome --version | awk '{print $3}') && \
+  CHROME_MAJOR=${CHROME_VERSION%%.*} && \
+  CHROME_RELEASE=$(curl -fsSLk "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_MAJOR}" || true) && \
+  if [ -z "${CHROME_RELEASE}" ]; then \
+    CHROME_RELEASE=$(curl -fsSLk https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_STABLE); \
+  fi && \
+  echo "Installed Chrome ${CHROME_VERSION}; retrieving ChromeDriver ${CHROME_RELEASE}" && \
   curl -sk -o \
     /tmp/chrome.zip -L \
     "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_RELEASE}/linux64/chromedriver-linux64.zip" && \
