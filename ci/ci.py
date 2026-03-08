@@ -11,6 +11,8 @@ from logging import Logger
 import mimetypes
 import json
 import subprocess
+import io
+from PIL import Image
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from functools import wraps
@@ -125,6 +127,8 @@ class SetEnvs():
         self.region: str = os.environ.get("S3_REGION", "us-east-1")
         self.bucket: str = os.environ.get("S3_BUCKET", "ci-tests.linuxserver.io")
         self.release_tag: str = os.environ.get("RELEASE_TAG", "latest")
+        self.release_type: str = os.environ.get("RELEASE_TYPE", "stable")
+        self.ls_branch: str = os.environ.get("LS_BRANCH", "master")
         self.syft_image_tag: str = os.environ.get("SYFT_IMAGE_TAG", "v1.26.1")
         self.commit_sha: str = os.environ.get("COMMIT_SHA", "")
         self.build_number: str = os.environ.get("BUILD_NUMBER", "")
@@ -159,6 +163,7 @@ class SetEnvs():
         BASE:                   '{os.environ.get("BASE")}'
         META_TAG:               '{os.environ.get("META_TAG")}'
         RELEASE_TAG:            '{os.environ.get("RELEASE_TAG")}'
+        RELEASE_TYPE:           '{os.environ.get("RELEASE_TYPE")}'
         TAGS:                   '{os.environ.get("TAGS")}'
         S6_VERBOSITY:           '{os.environ.get("S6_VERBOSITY")}'
         CI_S6_VERBOSITY         '{os.environ.get("CI_S6_VERBOSITY")}'
@@ -386,18 +391,21 @@ class CI(SetEnvs):
             self._endtest(container, tag, build_info, sbom, False, start_time)
             return
 
+        # Calculate package diff
+        package_diff = self.get_package_diff(sbom)
+
         # Screenshot the web interface and check connectivity
         screenshot_success, browser_logs = self.take_screenshot(container, tag)
         if not screenshot_success and self.get_platform(tag) == Platform.AMD64.value:
             self.logger.error("Test of %s FAILED after %.2f seconds", tag, time.time() - start_time)
-            self._endtest(container, tag, build_info, sbom, False, start_time, browser_logs)
+            self._endtest(container, tag, build_info, sbom, False, start_time, browser_logs, package_diff)
             return
 
-        self._endtest(container, tag, build_info, sbom, True, start_time, browser_logs)
+        self._endtest(container, tag, build_info, sbom, True, start_time, browser_logs, package_diff)
         self.logger.success("Test of %s PASSED after %.2f seconds", tag, time.time() - start_time)
         return
 
-    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str|CITestResult, test_success: bool, start_time:float|int = 0.0, browser_logs: str = "") -> None:
+    def _endtest(self, container:Container, tag:str, build_info:dict[str,str], packages:str|CITestResult, test_success: bool, start_time:float|int = 0.0, browser_logs: str = "", package_diff: str = "") -> None:
         """End the test with as much info as we have and append to the report.
 
         Args:
@@ -408,6 +416,7 @@ class CI(SetEnvs):
             `test_success` (bool): If the testing of the container failed or not
             `start_time` (float, optional): The start time of the test. Defaults to 0.0. Used to calculate the runtime of the test.
             `browser_logs` (str, optional): The browser console logs.
+            `package_diff` (str, optional): The diff of packages between this build and the last release.
         """
         if not start_time:
             runtime = "-"
@@ -429,6 +438,7 @@ class CI(SetEnvs):
         self.report_containers[tag] = {
             "logs": logblob,
             "sysinfo": packages,
+            "package_diff": package_diff,
             "browser_logs": browser_logs,
             "warnings": {
                 "dotnet": warning_texts["dotnet"] if "icu-libs" in packages and "arm32" in tag else "",
@@ -596,6 +606,13 @@ class CI(SetEnvs):
             self.logger.warning("Falling back to Syft for SBOM generation on tag %s", tag)
         
         # Fallback to syft if buildx failed
+        if os.environ.get("CI_LOCAL_MODE", "false").lower() == "true":
+            self.logger.info("Local mode detected, attempting to generate SBOM from local 'testimage:latest'")
+            sbom = self.get_sbom_syft(tag, override_image="testimage:latest")
+            if sbom != CITestResult.ERROR:
+                 self._add_test_result(tag, CITests.CREATE_SBOM, CITestResult.PASS, "Generated from testimage:latest", start_time)
+                 self.create_html_ansi_file(str(sbom),tag,"sbom")
+                 return sbom
         sbom = self.get_sbom_syft(tag)
         if sbom != CITestResult.ERROR:
             self._add_test_result(tag, CITests.CREATE_SBOM, CITestResult.PASS, "-", start_time)
@@ -605,23 +622,26 @@ class CI(SetEnvs):
         self.report_status = CIReportResult.FAIL
         self._add_test_result(tag, CITests.CREATE_SBOM, CITestResult.FAIL, "Failed to generate SBOM with both buildx and syft", start_time)
         return CITestResult.ERROR
-    
-    def get_sbom_syft(self, tag: str) -> str | CITestResult:
+
+    def get_sbom_syft(self, tag: str, override_image: str = None) -> str | CITestResult:
         """Get the SBOM for the image tag using Syft.
 
         Args:
             tag (str): The tag we are testing
+            override_image (str, optional): Use this image name instead of self.image:tag. Defaults to None.
         Returns:
             str: SBOM output if successful, otherwise "ERROR".
         """
         start_time = time.time()
         platform: str = self.get_platform(tag)
-        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=f"{self.image}:{tag} --platform=linux/{platform}",
+        target_image = override_image if override_image else f"{self.image}:{tag}"
+        cmd = f"{target_image}" if override_image else f"{target_image} --platform=linux/{platform}"
+        syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=cmd,
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
-        self.logger.info("Creating SBOM package list on %s with syft version %s",tag,self.syft_image_tag)
+        self.logger.info("Creating SBOM package list on %s with syft version %s", target_image, self.syft_image_tag)
         logblob: str = ""
         t_end: float = time.time() + self.sbom_timeout
-        self.logger.info("Tailing the Syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.sbom_timeout,tag)
+        self.logger.info("Tailing the Syft container logs for %s seconds looking the 'VERSION' message on tag: %s",self.sbom_timeout,tag) 
         while time.time() < t_end:
             time.sleep(5)
             try:
@@ -809,9 +829,9 @@ class CI(SetEnvs):
         _, container_name = self.image.split("/")
         match self.image:
             case _ if "lspipepr" in self.image:
-                return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
+                return f"https://hub.docker.com/r/lspipepr/{container_name}/tags?page=1&name={tag}"
             case _ if "lsiodev" in self.image:
-                return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
+                return f"https://hub.docker.com/r/lsiodev/{container_name}/tags?page=1&name={tag}"
             case _ if "lsiobase" in self.image:
                 return f"https://ghcr.io/linuxserver/baseimage-{container_name}:{tag}"
             case _:
@@ -1047,6 +1067,68 @@ class CI(SetEnvs):
             "message":message,
             "runtime": runtime}.items())))
 
+    def get_package_diff(self, current_sbom: str | CITestResult) -> str:
+        """Fetch the last release/branch SBOM and generate a diff against the current SBOM."""
+        if isinstance(current_sbom, CITestResult):
+            return ""
+        try:
+            # Determine repo name
+            container_name = self.image.split("/")[-1]
+            for prefix in ["lspipepr-", "lsiodev-"]:
+                if container_name.startswith(prefix):
+                    container_name = container_name.replace(prefix, "")
+            if self.release_type == "stable":
+                repo_api = f"https://api.github.com/repos/linuxserver/docker-{container_name}/releases/latest"
+                resp = requests.get(repo_api, timeout=10)
+                if resp.status_code != 200:
+                    self.logger.warning("Could not fetch latest release info from GitHub: %s", resp.status_code)
+                    return ""
+                tag_name = resp.json().get("tag_name")
+                if not tag_name:
+                    return ""
+                raw_sbom_url = f"https://raw.githubusercontent.com/linuxserver/docker-{container_name}/refs/tags/{tag_name}/package_versions.txt"
+            else:
+                raw_sbom_url = f"https://raw.githubusercontent.com/linuxserver/docker-{container_name}/refs/heads/{self.ls_branch}/package_versions.txt"
+            # Get remote SBOM
+            resp_sbom = requests.get(raw_sbom_url, timeout=10)
+            if resp_sbom.status_code != 200:
+                self.logger.warning("Could not fetch remote SBOM from %s: %s", raw_sbom_url, resp_sbom.status_code)
+                return ""
+            remote_pkgs = self._parse_sbom_string(resp_sbom.text)
+            current_pkgs = self._parse_sbom_string(current_sbom)
+            return self._generate_diff_text(remote_pkgs, current_pkgs)
+        except Exception:
+            self.logger.exception("Failed to generate package diff")
+            return ""
+
+    def _parse_sbom_string(self, sbom_text: str) -> dict[str, str]:
+        """Parse the formatted SBOM table into a dictionary."""
+        pkgs = {}
+        lines = sbom_text.strip().splitlines()
+        # Skip header if present
+        if lines and "NAME" in lines[0] and "VERSION" in lines[0]:
+            lines = lines[1:]
+        for line in lines:
+            parts = line.split()
+            if len(parts) >= 2:
+                pkgs[parts[0]] = parts[1]
+        return pkgs
+
+    def _generate_diff_text(self, old_pkgs: dict[str, str], new_pkgs: dict[str, str]) -> str:
+        """Generate a text diff between two package lists."""
+        diff_lines = []
+        all_keys = set(old_pkgs.keys()) | set(new_pkgs.keys())
+        for pkg in sorted(all_keys):
+            old_ver = old_pkgs.get(pkg)
+            new_ver = new_pkgs.get(pkg)
+            if old_ver is None:
+                diff_lines.append(f"[+] {pkg}: {new_ver} (Added)")
+            elif new_ver is None:
+                diff_lines.append(f"[-] {pkg}: {old_ver} (Removed)")
+            elif old_ver != new_ver:
+                diff_lines.append(f"[*] {pkg}: {old_ver} -> {new_ver} (Changed)")
+        return "\n".join(diff_lines) if diff_lines else "No package changes found."
+
     def take_screenshot(self, container: Container, tag:str) -> tuple[bool, str]:
         """Take a screenshot and save it to self.outdir if self.screenshot is True
 
@@ -1080,9 +1162,14 @@ class CI(SetEnvs):
                     driver.get(endpoint)
                     time.sleep(self.screenshot_delay) # A grace period for the page to load
                     self.logger.debug("Trying to take screenshot of %s at %s", tag, endpoint)
-                    driver.get_screenshot_as_file(f"{self.outdir}/{tag}.png")
-                    if not os.path.isfile(f"{self.outdir}/{tag}.png"):
-                        raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.png' not found")
+                    
+                    png_data = driver.get_screenshot_as_png()
+                    image = Image.open(io.BytesIO(png_data))
+                    rgb_im = image.convert('RGB')
+                    rgb_im.save(f"{self.outdir}/{tag}.jpg", quality=80)
+                    
+                    if not os.path.isfile(f"{self.outdir}/{tag}.jpg"):
+                        raise FileNotFoundError(f"Screenshot '{self.outdir}/{tag}.jpg' not found")
                     self._add_test_result(tag, CITests.CAPTURE_SCREENSHOT, CITestResult.PASS, "-", start_time)
                     self.logger.success("Screenshot %s: PASSED after %.2f seconds", tag, time.time() - start_time)
                     return True, self._get_browser_logs(driver, tag)

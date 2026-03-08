@@ -564,8 +564,21 @@
     </header>
     <div id="results">
       <h1 style="margin-bottom: 0; text-align: center;">Test Results</h1>
-      <h2 style="margin-bottom: 0; text-align: center;"><strong>{{ image }}</strong></span></h2>
-      <h3 style="margin-top:0; margin-bottom: 0; text-align: center;"><strong>{{ meta_tag }}</strong></span></h2>
+      <div style="display: flex; justify-content: center; margin: 10px 0 20px;">
+        <div style="background: #1f1f1f; padding: 10px 15px; border-radius: 5px; border: 1px solid rgba(128,128,128,0.5); display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+          <code id="pull-cmd" style="color: #dce2ec; font-family: monospace; font-size: 1.1em;">docker pull {{ image }}:{{ meta_tag }}</code>
+          <i class="fas fa-copy" id="copy-btn" style="color: #da3b8a; cursor: pointer;" onclick="copyToClipboard()" title="Copy"></i>
+        </div>
+      </div>
+      <script>
+        function copyToClipboard() {
+          const text = document.getElementById('pull-cmd').innerText;
+          navigator.clipboard.writeText(text);
+          const btn = document.getElementById('copy-btn');
+          btn.className = 'fas fa-check';
+          setTimeout(() => { btn.className = 'fas fa-copy'; }, 2000);
+        }
+      </script>
       <h2 style="margin-bottom: 0">Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
       <span>Total Runtime: {{ total_runtime }}</span>
       <main>
@@ -586,8 +599,8 @@
             </h2>          </div>
           <div class="runtime build-section">Runtime: {{ report_containers[tag]["runtime"] }}</div>
           {% if screenshot %}
-          <a href="{{ tag }}.png">
-            <img src="{{ tag }}.png" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
+          <a href="{{ tag }}.jpg">
+            <img src="{{ tag }}.jpg" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
           </a>
           {% else %}
           <div class="tag-image">
@@ -620,6 +633,17 @@
               <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
             </div>
           </details>
+          {% if report_containers[tag]["package_diff"] %}
+          <summary class="summary">
+            Package changes from last release
+          </summary>
+          <details>
+            <summary>Expand</summary>
+            <div class="summary-container">
+              <pre><code>{{ report_containers[tag]["package_diff"] }}</code></pre>
+            </div>
+          </details>
+          {% endif %}
           {% if report_containers[tag]["browser_logs"] %}
           <summary class="summary">
             <a href="{{ tag }}.browser.html" target="_blank">View Browser Console Logs</a>
@@ -687,13 +711,15 @@
     fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-      pylogs = logs.replace(/\[38;20m/gi,"<span class='log-debug'>"
-        ).replace(/\[33;20m/gi,"<span class='log-warning'>"
-        ).replace(/\[31;20m/gi,"<span class='log-error'>"
-        ).replace(/\[36;20m/gi,"<span class='log-info'>"
-        ).replace(/\[32;20m/gi,"<span class='log-success'>"
-        ).replace(/\[0m/gi,"</span>")
+      pylogs = logs.replace(/ \[38;20m/gi,"<span class='log-debug'>"
+        ).replace(/ \[33;20m/gi,"<span class='log-warning'>"
+        ).replace(/ \[31;20m/gi,"<span class='log-error'>"
+        ).replace(/ \[36;20m/gi,"<span class='log-info'>"
+        ).replace(/ \[32;20m/gi,"<span class='log-success'>"
+        ).replace(/ \[0m/gi,"</span>")
         document.getElementById("logs").innerHTML = pylogs
+    }).catch(e => {
+        document.getElementById("logs").innerText = "Log file unavailable."
     })
   </script>
 </body>

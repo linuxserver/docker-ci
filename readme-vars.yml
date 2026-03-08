@@ -82,6 +82,9 @@ full_custom_readme: |
   | `WEB_AUTH` | Credentials for basic auth, format `user:password`. Leave empty for none. | `""` |
   | `WEB_SCREENSHOT_DELAY` | Seconds to wait after the page loads before taking the screenshot. | `20` |
 
+  ### Generating a package diff
+
+  In development mode you can build an actual comparison image by tagging it as `testimage:latest`. This will simulate the pacakge difference diff by dumping the SBOM of your test image and comparing it to the last release of the repo.
 
   ## Advanced Usage (CI Environment)
 
