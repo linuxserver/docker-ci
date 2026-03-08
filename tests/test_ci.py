@@ -150,7 +150,7 @@ def test_watch_container_logs(ci: CI, mock_container: Mock):
 def test_take_screenshot(ci:CI,mock_container: Mock):
     screenshot: bool = ci.take_screenshot(mock_container, ci.tags[0])
     if screenshot:
-        assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.png")) is True
+        assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.jpg")) is True
         assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.PASS.value
     else:
         assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.FAIL.value
@@ -228,9 +228,9 @@ def test_get_build_url(ci: CI) -> None:
     tag = "amd64-nightly-5.10.1.9109-ls85"
     assert ci.get_build_url(tag) == f"https://ghcr.io/{ci.image}:{tag}"
     ci.image = "lsiodev/plex"
-    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lsiodev-plex:{tag}"
+    assert ci.get_build_url(tag) == f"https://hub.docker.com/r/lsiodev/plex/tags?page=1&name={tag}"
     ci.image = "lspipepr/plex"
-    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lspipepr-plex:{tag}"
+    assert ci.get_build_url(tag) == f"https://hub.docker.com/r/lspipepr/plex/tags?page=1&name={tag}"
     ci.image = "lsiobase/ubuntu"
     assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/baseimage-ubuntu:{tag}"
 
