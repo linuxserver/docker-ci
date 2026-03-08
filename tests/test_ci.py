@@ -228,9 +228,9 @@ def test_get_build_url(ci: CI) -> None:
     tag = "amd64-nightly-5.10.1.9109-ls85"
     assert ci.get_build_url(tag) == f"https://ghcr.io/{ci.image}:{tag}"
     ci.image = "lsiodev/plex"
-    assert ci.get_build_url(tag) == f"https://hub.docker.com/r/lsiodev/plex/tags?page=1&name={tag}"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lsiodev-plex:{tag}"
     ci.image = "lspipepr/plex"
-    assert ci.get_build_url(tag) == f"https://hub.docker.com/r/lspipepr/plex/tags?page=1&name={tag}"
+    assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/lspipepr-plex:{tag}"
     ci.image = "lsiobase/ubuntu"
     assert ci.get_build_url(tag) == f"https://ghcr.io/linuxserver/baseimage-ubuntu:{tag}"
 

@@ -829,9 +829,9 @@ class CI(SetEnvs):
         _, container_name = self.image.split("/")
         match self.image:
             case _ if "lspipepr" in self.image:
-                return f"https://hub.docker.com/r/lspipepr/{container_name}/tags?page=1&name={tag}"
+                return f"https://ghcr.io/linuxserver/lspipepr-{container_name}:{tag}"
             case _ if "lsiodev" in self.image:
-                return f"https://hub.docker.com/r/lsiodev/{container_name}/tags?page=1&name={tag}"
+                return f"https://ghcr.io/linuxserver/lsiodev-{container_name}:{tag}"
             case _ if "lsiobase" in self.image:
                 return f"https://ghcr.io/linuxserver/baseimage-{container_name}:{tag}"
             case _:
