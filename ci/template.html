@@ -1,5 +1,4 @@
 <!doctype html>
-
 <html lang="en">
 
 <head>
@@ -30,528 +29,601 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css?family=Lato:400,700&display=swap" rel="stylesheet">
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome -->
   <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"
     integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc"
     crossorigin="anonymous"></script>
+
   <style>
+    :root {
+      --brand-primary: #da3b8a;
+      --brand-hover: #bc3478;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #3b82f6;
+      --font-sans: 'Inter', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition: all 0.2s ease-in-out;
+    }
+
     @media (prefers-color-scheme: dark) {
-      body {
-        background: linear-gradient(to right, rgba(34, 34, 34, 1), rgba(34, 34, 34, 1));
-        color: #96a2b4;
+      :root {
+        --bg-main: #0f172a;
+        --bg-card: #1e293b;
+        --bg-code: #0b1120;
+        --bg-hover: #334155;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --border-color: #334155;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        
+        /* Log Colors Dark */
+        --log-debug: #94a3b8;
+        --log-info: #38bdf8;
+        --log-warning: #fbbf24;
+        --log-error: #f87171;
+        --log-success: #34d399;
       }
-
-      h1 {
-        color: #dce2ec;
-      }
-
-      h1 span {
-        color: rgba(218, 59, 138);
-      }
-
-      a {
-        color: rgba(218, 59, 138);
-      }
-
-      a:hover {
-        color: rgb(188, 52, 120);
-      }
-
-      section {
-        background: rgba(44, 44, 44);
-        border: solid 1px rgb(255 255 255 / 10%);
-      }
-
-      .section-header {
-        background: rgba(44, 44, 44);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1)
-      }
-
-      .section-header-h2 {
-        color: #96a2b4;
-      }
-
-      section h3 {
-        color: rgba(218, 59, 138);
-      }
-
-      .summary {
-        color: rgba(218, 59, 138);
-      }
-
-      .summary:hover {
-        color: rgb(188, 52, 120);
-      }
-
-      .styled-table {
-        border: solid 1px rgb(255 255 255 / 10%);
-      }
-
-      .styled-table thead tr {
-        background-color: #1f1f1f;
-      }
-
-      .styled-table tbody tr {
-        border-bottom: 1px solid rgba(221, 221, 221, 0.1);
-      }
-
-      .styled-table tbody tr:nth-of-type(even) {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-
-      .summary-container {
-        background: #1f1f1f;
-      }
-
-      summary:hover {
-        color: #dce2ec;
-      }
-
-      pre {
-        background: #1f1f1f;
-      }
-
-      .build {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.25);
-      }
-
-      .build-header {
-        color:rgba(218, 59, 138);
-      }
-
-      .runtime {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(0, 0, 0, 0.25);
-      }
-
-      strong {
-        color: rgba(218, 59, 138);
-      }
-      .warning-note {
-        color: #96a2b4;
-      }
-
-      .log-debug {color:lightgray}
-      .log-info {color:lightskyblue}
-      .log-warning {color:darkorange}
-      .log-error {color:red;font-weight: bolder;}
-      .log-success{color:limegreen;font-weight: bolder;}
     }
 
     @media (prefers-color-scheme: light) {
-      body {
-        background: #e8e8e8;
-        color: #738694;
-      }
+      :root {
+        --bg-main: #f1f5f9;
+        --bg-card: #ffffff;
+        --bg-code: #f8fafc;
+        --bg-hover: #e2e8f0;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #cbd5e1;
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 
-      .warning-note {
-        color: #738694;
+        --log-debug: #64748b;
+        --log-info: #0284c7;
+        --log-warning: #d97706;
+        --log-error: #dc2626;
+        --log-success: #059669;
       }
-
-      h1 {
-        color: #738694;
-      }
-
-      h1 span {
-        color: #9bb0bf;
-      }
-
-      a {
-        color: #738694;
-      }
-
-      a:hover {
-        color: #9bb0bf;
-      }
-
-      section {
-        background: #efefef;
-        border: solid 1px rgb(0 0 0 / 15%);
-      }
-
-      .section-header {
-        background: #738694;
-      }
-
-      .section-header-h2 {
-        color: #FFFFFF;
-      }
-
-      .styled-table thead tr {
-        background-color: #738694;
-      }
-
-      .styled-table tbody tr {
-        border-bottom: 1px solid #dddddd;
-      }
-
-      .styled-table tbody tr:nth-of-type(even) {
-        background-color: #f3f3f3;
-      }
-
-      .section-header-status .report-status-pass {
-        color: #00c29a;
-      }
-      .summary-container {
-        background: #e8e8e8;
-      }
-
-      summary:hover {
-        color: #4b5d6a;
-      }
-
-      pre {
-        background: #e8e8e8;
-      }
-
-      .build {
-        border-bottom: 1px solid #dcdcdc;
-        background: #f5f5f5;
-      }
-
-      .runtime {
-        border-bottom: 1px solid #dcdcdc;
-        background: #f5f5f5;
-      }
-
-      .build-header {
-        color:#738694;
-      }
-
-      .log-debug {color:#9bb0bf}
-      .log-info {color:#60707c}
-      .log-warning {color:darkorange}
-      .log-error {color:red;font-weight: bolder;}
-      .log-success{color:#009879;font-weight: bolder;}
     }
 
-    body,
-    html {
+    /* Base Styles */
+    body, html {
       padding: 0;
       margin: 0;
-    }
-
-    body {
-      font-family: 'Lato', sans-serif;
-      font-weight: 400;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-sans);
       font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    body * {
+    * {
       box-sizing: border-box;
     }
 
-    #logohttpsrawgithubusercontentcomlinuxserverdockertemplatesmasterlinuxserverioimglinuxserver_mediumpng {
-      display: none;
+    a {
+      color: var(--brand-primary);
+      text-decoration: none;
+      transition: var(--transition);
     }
 
-    a {
-        text-decoration: none;
+    a:hover {
+      color: var(--brand-hover);
     }
 
     a[target="_blank"]::after {
-        content: " \2197";
-        font-size: 80%;
-        margin-left: 4px;
-        vertical-align: middle;
+      content: " \2197";
+      font-size: 80%;
+      margin-left: 4px;
+      vertical-align: middle;
+      opacity: 0.7;
     }
 
+    /* Layout */
     #app {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 15px;
+      padding: 1rem;
+      max-width: 1400px;
+      margin: 0 auto;
     }
 
+    /* Header */
+    header h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: 2px;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      color: var(--text-main);
+    }
+
+    header h1 span {
+      color: var(--brand-primary);
+    }
+
+    /* Results Dashboard */
     #results {
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 100%;
+      animation: fadeIn 0.6s ease-out;
     }
 
-    h1 {
-      font-size: 30px;
-      letter-spacing: 3px;
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .dashboard-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    /* Pull Command Box */
+    .pull-command-wrapper {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+      transition: var(--transition);
+    }
+
+    .pull-command-wrapper:hover {
+      border-color: var(--brand-primary);
+    }
+
+    #pull-cmd {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    #copy-btn {
+      color: var(--brand-primary);
+      cursor: pointer;
+      font-size: 1.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.5rem;
+      height: 1.5rem;
+      transition: var(--transition);
+    }
+
+    #copy-btn:hover {
+      transform: scale(1.1);
+    }
+
+    #copy-btn svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.875rem;
       text-transform: uppercase;
-      font-weight: 400;
+      letter-spacing: 0.5px;
     }
 
-    #results h1 {
-      font-size: 18px;
-      margin: 0 10px 25px;
-      word-break: break-all;
+    .status-pass {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
     }
 
-    #results table {
-      margin: auto;
-      width: 100%;
+    .status-fail {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
-    .styled-table th,
-    .styled-table td {
-      word-wrap: break-word;
-    }
-
-    table {
-      table-layout: fixed;
-    }
-
-    th {
-      text-align: left
-    }
-
-    section {
+    .cumulative-status {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
       display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .total-runtime {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    /* Main Grid */
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 600px), 1fr));
+      gap: 2rem;
       width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    /* Cards */
+    section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
       flex-direction: column;
-      margin: 10px;
-      min-width: 320px;
-      max-width: 50vw;
-      padding: 0 0 30px 0;
-      flex: 1 1 0;
-      border-radius: 10px;
+      transition: var(--transition);
     }
 
-    section>* {
-      padding: 0 30px;
+    section:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
 
-    .section-header {
-      border-radius: 10px 10px 0 0;
-      overflow-wrap: break-word;
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(0,0,0,0.02);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
     }
 
-    .section-header-h2 {
-      font-size: 17px;
-      padding: 15px 30px;
+    .card-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .card-header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .platform-tag {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--bg-code);
+      padding: 0.25rem 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
       margin: 0;
-      text-align: center;
-      flex-wrap: wrap;
-    }
-
-    .section-header-status {
-      font-size: 17px;
-      padding-top: .5rem;
-      margin: 0;
-      text-align: center;
-      flex-wrap: wrap;
-  }
-
-    em {
-      color: #32a7c1;
-    }
-
-    /* No image */
-    section h2+h3 {
-      border-bottom: 1px solid #dcdcdc;
-      padding-bottom: 20px;
-      background: #f5f5f5;
-      margin: 0;
-      font-size: 12px;
       word-break: break-all;
     }
 
-    /* Has an image */
-    section h2+p+h3 {
-      border-bottom: 1px solid #dcdcdc;
-      padding: 20px 30px;
-      background: #f5f5f5;
-      margin: 0;
-      font-size: 12px;
-      word-break: break-all;
+    .card-title a {
+      color: var(--text-main);
+    }
+    
+    .card-title a:hover {
+      color: var(--brand-primary);
     }
 
-    section h2+p {
-      margin: 0;
+    .runtime-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
 
-    section p:empty {
-      display: none;
+    /* Image / Screenshot */
+    .screenshot-container {
+      width: 100%;
+      background: var(--bg-code);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
     }
 
-    section h3 {
-      font-size: 16px;
-      padding: 0 30px;
-    }
-
-    .summary {
-      font-weight: bold;
-      margin-block-start: 1em;
-      margin-inline-start: 0px;
-      margin-inline-end: 0px;
-    }
-
-    section img {
-      width: calc(100% + 60px);
+    .screenshot-container img {
+      width: 100%;
       height: auto;
-      margin-left: -30px;
-      margin-right: -30px;
-      padding: 0;
       display: block;
     }
 
-    .debug-section {
-      max-width: 100%;
-    }
-
-    main {
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      flex-wrap: wrap;
-      max-width: 100%;
-    }
-
-    @media only screen and (min-width: 500px) {
-      h1 {
-        font-size: 50px;
-        letter-spacing: 5px;
-
-      }
-
-      #results h1 {
-        font-size: 25px;
-      }
-    }
-    @media only screen and (max-width: 500px) {
-    /*Mobile*/
-      section h3,
-      section details,
-      .warning-notice,
-      .table-container {
-          padding: 0 5px;
-      }
-      
-      .table-container {
-          padding-top: 10px;
-      }
-    }
-    .table-container {
-      padding-top: 1rem;
-    }
-
-    .styled-table {
-      border-collapse: collapse;
-      margin: 25px 0;
-      font-size: 0.9em;
-      font-family: sans-serif;
-      box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
-    }
-
-    .styled-table thead tr {
-      color: #ffffff;
-      text-align: left;
-    }
-
-    .styled-table th,
-    .styled-table td {
-      padding: 12px 15px;
-    }
-
-
-    .styled-table tbody tr.active-row {
-      font-weight: bold;
-      color: #738694;
-    }
-
-    .fa-check-circle {
-      color: rgb(0, 152, 121);
-      margin-left: 5px;
-    }
-
-    .fa-exclamation-circle {
-      color: #f44336;
-      margin-left: 5px;
-    }
-
-    .fa-exclamation-triangle {
-      color: darkorange;
-    }
-
-    .summary-container {
-      min-height: 100px;
-      height: 300px;
-      margin-top: 0.5em;
-      overflow: auto;
-      resize: vertical;
-    }
-
-    summary {
-      cursor: pointer;
-    }
-
-    #logs {
-      overflow: auto;
-    }
-
-    pre {
-      padding: 10px;
-    }
-
-    .build-section {
+    .no-screenshot {
+      padding: 3rem 1rem;
       text-align: center;
-      font-weight: bold;
-      padding: .3rem;
-      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
     }
-    
-    .build-info-section {
-      padding: 10px 30px;
-      margin: 0;
-      font-size: 12px;
+
+    .no-screenshot i {
+      font-size: 2.5rem;
+      opacity: 0.5;
     }
-    
-    .build-info {
-      padding-right: .3rem;
-      padding-left: .3rem;
+
+    /* Build Info */
+    .build-info-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.5rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .build-info-item {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      max-width: 100%;
+    }
+
+    .build-info-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .build-info-label::after {
+      content: ":";
+    }
+
+    .build-info-value {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-main);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .build-summary {
-     display: flex;
+    /* Accordions / Details */
+    .details-group {
+      padding: 1rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
 
-    .tag-image {
-      text-align: center;
+    details {
+      background: var(--bg-code);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: var(--transition);
     }
 
-    .report-status-pass {
-      color: rgb(0, 152, 121)
+    details[open] {
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
 
-    .report-status-fail {
-      color: #f44336;
+    summary {
+      padding: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      list-style: none;
     }
 
-    .warning-notice {
-      display: inline-flex;
+    summary::-webkit-details-marker {
+      display: none;
     }
 
-    .warning-note {
-      padding-left: .5rem;
-      padding-top: 0.5em;
-      font-weight: normal;
-  }
-
-    div.warning-notice > p {
-      margin-bottom: 0;
+    summary::after {
+      content: '\f078';
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      transition: transform 0.3s ease;
+      color: var(--text-muted);
     }
 
-    .warning-summary {
-      padding-right:5px;
-      padding-bottom:0;
-      margin-block-start: 1em;
-      color: darkorange;
-      font-weight: bold;
+    details[open] summary::after {
+      transform: rotate(180deg);
     }
 
-    .warning-summary:hover {
-      color: #ff8c00db;
+    summary:hover {
+      background: var(--bg-hover);
+    }
+
+    .summary-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-main);
+    }
+
+    .summary-link i {
+      color: var(--brand-primary);
+    }
+
+    .summary-content {
+      padding: 0;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    pre {
+      margin: 0;
+      padding: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-main);
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+
+    /* Custom Scrollbar for Pre blocks */
+    pre::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    pre::-webkit-scrollbar-track {
+      background: var(--bg-code);
+    }
+    pre::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    pre::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Warnings */
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1);
+      border-left: 4px solid var(--warning);
+      padding: 1rem;
+      margin: 0.5rem 1rem 1rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    .warning-text {
+      color: var(--warning);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      margin: 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .warning-text i {
+      margin-top: 0.2rem;
+    }
+
+    /* Tables */
+    .table-container {
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .styled-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.9rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .styled-table thead tr {
+      background-color: var(--bg-code);
+      color: var(--text-main);
+      text-align: left;
+    }
+
+    .styled-table th {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .styled-table th,
+    .styled-table td {
+      padding: 1rem;
+      word-wrap: break-word;
+    }
+
+    .styled-table tbody tr {
+      background-color: var(--bg-card);
+      transition: var(--transition);
+    }
+
+    .styled-table tbody tr:not(:last-child) td {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .styled-table tbody tr:hover {
+      background-color: var(--bg-hover);
+    }
+
+    .result-cell {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .result-pass { color: var(--success); }
+    .result-fail { color: var(--danger); }
+
+    /* Debug Section */
+    .debug-section {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 3rem;
+    }
+
+    /* Log Colors */
+    .log-debug { color: var(--log-debug); }
+    .log-info { color: var(--log-info); }
+    .log-warning { color: var(--log-warning); }
+    .log-error { color: var(--log-error); font-weight: 700; }
+    .log-success { color: var(--log-success); font-weight: 700; }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Utilities */
+    .mt-0 { margin-top: 0; }
+    .mb-0 { margin-bottom: 0; }
+    .w-100 { width: 100%; }
+
+    /* Mobile Adjustments */
+    @media only screen and (max-width: 768px) {
+      .card-header, .build-info-grid, .details-group, .table-container {
+        padding: 1rem;
+      }
+      .pull-command-wrapper {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+      }
     }
   </style>
 
@@ -559,118 +631,182 @@
 
 <body>
   <div id="app">
+    
     <header>
       <h1>Linux<span>Server</span>.io</h1>
     </header>
+
     <div id="results">
-      <h1 style="margin-bottom: 0; text-align: center;">Test Results</h1>
-      <div style="display: flex; justify-content: center; margin: 10px 0 20px;">
-        <div style="background: #1f1f1f; padding: 10px 15px; border-radius: 5px; border: 1px solid rgba(128,128,128,0.5); display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-          <code id="pull-cmd" style="color: #dce2ec; font-family: monospace; font-size: 1.1em;">docker pull {{ image }}:{{ meta_tag }}</code>
-          <i class="fas fa-copy" id="copy-btn" style="color: #da3b8a; cursor: pointer;" onclick="copyToClipboard()" title="Copy"></i>
+      <div class="dashboard-header">
+        <h2 class="dashboard-title">CI Test Results</h2>
+        
+        <div class="pull-command-wrapper">
+          <code id="pull-cmd"><i class="fab fa-docker" style="color: #2496ed; margin-right: 8px;"></i>docker pull {{ image }}:{{ meta_tag }}</code>
+          <span id="copy-btn" onclick="copyToClipboard()" title="Copy to clipboard">
+            <i class="fas fa-copy"></i>
+          </span>
         </div>
+        
+        <script>
+          function copyToClipboard() {
+            const text = document.getElementById('pull-cmd').innerText.trim();
+            navigator.clipboard.writeText(text);
+            const btnSpan = document.getElementById('copy-btn');
+            btnSpan.innerHTML = '<i class="fas fa-check"></i>';
+            btnSpan.style.color = 'var(--success)';
+            setTimeout(() => { 
+              btnSpan.innerHTML = '<i class="fas fa-copy"></i>'; 
+              btnSpan.style.color = 'var(--brand-primary)';
+            }, 2000);
+          }
+        </script>
+
+        <div class="cumulative-status">
+          Cumulative Status: 
+          {% if report_status.lower() == 'pass' %}
+            <span class="status-badge status-pass"><i class="fas fa-check-circle"></i> PASS</span>
+          {% else %}
+            <span class="status-badge status-fail"><i class="fas fa-times-circle"></i> FAIL</span>
+          {% endif %}
+        </div>
+        <div class="total-runtime"><i class="fas fa-clock"></i> Total Runtime: {{ total_runtime }}</div>
       </div>
-      <script>
-        function copyToClipboard() {
-          const text = document.getElementById('pull-cmd').innerText;
-          navigator.clipboard.writeText(text);
-          const btn = document.getElementById('copy-btn');
-          btn.className = 'fas fa-check';
-          setTimeout(() => { btn.className = 'fas fa-copy'; }, 2000);
-        }
-      </script>
-      <h2 style="margin-bottom: 0">Cumulative: <span class="report-status-{{ report_status.lower() }}">{{ report_status }}</span></h2>
-      <span>Total Runtime: {{ total_runtime }}</span>
+
       <main>
         {% for tag in report_containers %}
         <section>
-          <div class="section-header">
-            {% if report_containers[tag]["test_success"] %}
-            <h3 class="section-header-status"><span class="report-status-pass">{{ report_containers[tag]["platform"] }} PASS</span></h3>
-            {% else %}
-            <h3 class="section-header-status"><span class="report-status-fail">{{ report_containers[tag]["platform"] }} FAIL</span></h3>
-            {% endif %}
-            <h2 class="section-header-h2">
-              {% if report_status.lower() == "pass" %}
-                <a target="_blank" href="{{ report_containers[tag]['build_url'] }}">{{ image }}</a>
+          
+          <div class="card-header">
+            <div class="card-header-left">
+              <h3 class="card-title">
+                {% if report_status.lower() == "pass" %}
+                  <a target="_blank" href="{{ report_containers[tag]['build_url'] }}">{{ image }}</a>
+                {% else %}
+                  {{ image }}:{{ tag }}
+                {% endif %}
+              </h3>
+              <div class="runtime-badge"><i class="fas fa-stopwatch"></i> Runtime: {{ report_containers[tag]["runtime"] }}</div>
+            </div>
+            <div class="card-header-right">
+              <span class="platform-tag"><i class="fas fa-microchip"></i> {{ report_containers[tag]["platform"] }}</span>
+              {% if report_containers[tag]["test_success"] %}
+                <span class="status-badge status-pass"><i class="fas fa-check"></i> PASS</span>
               {% else %}
-                {{ image }}:{{ tag }}
+                <span class="status-badge status-fail"><i class="fas fa-times"></i> FAIL</span>
               {% endif %}
-            </h2>          </div>
-          <div class="runtime build-section">Runtime: {{ report_containers[tag]["runtime"] }}</div>
-          {% if screenshot %}
-          <a href="{{ tag }}.jpg">
-            <img src="{{ tag }}.jpg" alt="{{ tag }}" width="600" height="auto" onerror="this.onerror=null; this.src='404.jpg'; this.parentElement.setAttribute('href','#')">
-          </a>
-          {% else %}
-          <div class="tag-image">
-            <span>WEB_SCREENSHOT ENV Disabled</span><i class="fas fa-file-image"></i>
+            </div>
           </div>
-          {% endif %}
-          <div class="build-section">Build Information</div>
-          <div class="build-info-section build">
+
+          <div class="screenshot-container">
+            {% if screenshot %}
+            <img src="{{ tag }}.jpg" alt="Screenshot for {{ tag }}" onerror="this.onerror=null; this.src='404.jpg';">
+            {% else %}
+            <div class="no-screenshot">
+              <i class="fas fa-image"></i>
+              <span>WEB_SCREENSHOT ENV Disabled</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="build-info-grid">
             {% for key, value in report_containers[tag]["build_info"].items() %}
-              <div class="build-summary">
-                <span class="build-header">{{ key|capitalize }}:</span> <span class="build-info">{{ value }}</span>
+              <div class="build-info-item" title="{{ value }}">
+                <span class="build-info-label">{{ key }}</span>
+                <span class="build-info-value">{{ value }}</span>
               </div>
             {% endfor %}
           </div>
-          <summary class="summary">
-            <a href="{{ tag }}.log.html" target="_blank">View Container Logs</a>
-          </summary>
-          <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre><code>{{ report_containers[tag]["logs"] }}</code></pre>
-            </div>
-          </details>
-          <summary class="summary">
-            <a href="{{ tag }}.sbom.html" target="_blank">View SBOM output</a>
-          </summary>
-          <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
-            </div>
-          </details>
-          {% if report_containers[tag]["package_diff"] %}
-          <summary class="summary">
-            Package changes from last release
-          </summary>
-          <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre><code>{{ report_containers[tag]["package_diff"] }}</code></pre>
-            </div>
-          </details>
-          {% endif %}
-          {% if report_containers[tag]["browser_logs"] %}
-          <summary class="summary">
-            <a href="{{ tag }}.browser.html" target="_blank">View Browser Console Logs</a>
-          </summary>
-          <details>
-            <summary>Expand</summary>
-            <div class="summary-container">
-              <pre><code>{{ report_containers[tag]["browser_logs"] }}</code></pre>
-            </div>
-          </details>
-          {% endif %}
-          {% if report_containers[tag]["has_warnings"]%}
-          <details open>
-          <summary class="warning-summary">Warnings</summary>
-            {% for warning in report_containers[tag]["warnings"] %}
-              {% if report_containers[tag]["warnings"][warning] %}
-                <div class="warning-notice">
-                  <code class="warning-note"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> {{ report_containers[tag]["warnings"][warning] }}</code>
+
+          <div class="details-group">
+            
+            <!-- Container Logs -->
+            <details>
+              <summary>
+                <div class="summary-link">
+                  <i class="fas fa-terminal"></i> Container Logs
                 </div>
-              {% endif %}
-            {% endfor %}
-          </details>
-          {% endif %}
+              </summary>
+              <div class="summary-content">
+                <div style="padding: 10px 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-hover);">
+                  <a href="{{ tag }}.log.html" target="_blank" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-external-link-alt"></i> Open Full Log</a>
+                </div>
+                <pre><code>{{ report_containers[tag]["logs"] }}</code></pre>
+              </div>
+            </details>
+
+            <!-- SBOM -->
+            <details>
+              <summary>
+                <div class="summary-link">
+                  <i class="fas fa-box-open"></i> SBOM Output
+                </div>
+              </summary>
+              <div class="summary-content">
+                <div style="padding: 10px 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-hover);">
+                  <a href="{{ tag }}.sbom.html" target="_blank" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-external-link-alt"></i> Open Full SBOM</a>
+                </div>
+                <pre><code>{{ report_containers[tag]["sysinfo"] }}</code></pre>
+              </div>
+            </details>
+
+            <!-- Package Diff -->
+            {% if report_containers[tag]["package_diff"] %}
+            <details>
+              <summary>
+                <div class="summary-link">
+                  <i class="fas fa-exchange-alt"></i> Package Changes
+                </div>
+              </summary>
+              <div class="summary-content">
+                <pre><code>{{ report_containers[tag]["package_diff"] }}</code></pre>
+              </div>
+            </details>
+            {% endif %}
+
+            <!-- Browser Logs -->
+            {% if report_containers[tag]["browser_logs"] %}
+            <details>
+              <summary>
+                <div class="summary-link">
+                  <i class="fab fa-chrome"></i> Browser Console Logs
+                </div>
+              </summary>
+              <div class="summary-content">
+                <div style="padding: 10px 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-hover);">
+                  <a href="{{ tag }}.browser.html" target="_blank" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-external-link-alt"></i> Open Browser Logs</a>
+                </div>
+                <pre><code>{{ report_containers[tag]["browser_logs"] }}</code></pre>
+              </div>
+            </details>
+            {% endif %}
+
+            <!-- Warnings -->
+            {% if report_containers[tag]["has_warnings"] %}
+            <details open style="border-color: var(--warning);">
+              <summary style="color: var(--warning);">
+                <div class="summary-link" style="color: var(--warning);">
+                  <i class="fas fa-exclamation-triangle"></i> Warnings Detected
+                </div>
+              </summary>
+              <div class="summary-content" style="padding-top: 1rem;">
+                {% for warning in report_containers[tag]["warnings"] %}
+                  {% if report_containers[tag]["warnings"][warning] %}
+                    <div class="warning-box">
+                      <p class="warning-text"><i class="fas fa-exclamation-triangle"></i> {{ report_containers[tag]["warnings"][warning] }}</p>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </details>
+            {% endif %}
+
+          </div>
+
+          <!-- Test Results Table -->
           <div class="table-container">
             <table class="styled-table">
               <thead>
-                <tr class="active-row">
+                <tr>
                   <th>Test</th>
                   <th>Result</th>
                   <th>Message</th>
@@ -680,48 +816,63 @@
               <tbody>
                 {% for test in report_containers[tag]["test_results"] %}
                 <tr>
-                  <td>{{ test }}</td>
+                  <td style="font-weight: 500;">{{ test }}</td>
+                  
                   {% if report_containers[tag]["test_results"][test]['status'] == 'PASS' %}
-                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-check-circle"></i></td>
+                  <td><span class="result-cell result-pass">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-check-circle"></i></span></td>
                   {% else %}
-                  <td class="result-cell">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></td>
+                  <td><span class="result-cell result-fail">{{ report_containers[tag]["test_results"][test]['status'] }} <i class="fas fa-exclamation-circle"></i></span></td>
                   {% endif %}
-                  <td>{{ report_containers[tag]["test_results"][test]["message"] }}</td>
-                  <td>{{ report_containers[tag]["test_results"][test]["runtime"] }}</td>
+                  
+                  <td style="font-family: var(--font-mono); font-size: 0.85rem;">{{ report_containers[tag]["test_results"][test]["message"] }}</td>
+                  <td style="color: var(--text-muted); font-size: 0.9rem;">{{ report_containers[tag]["test_results"][test]["runtime"] }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
+          
         </section>
         {% endfor %}
       </main>
     </div>
+
+    <!-- Debug Python Logs -->
     <section class="debug-section">
-      <summary class="summary">
-        <a href="python.log.html" target="_blank">View Python Logs</a>
-      </summary>
       <details>
-        <summary>Expand</summary>
-        <pre id="logs"></pre>
+        <summary>
+          <div class="summary-link">
+            <i class="fas fa-bug"></i> View Python CI Logs
+          </div>
+        </summary>
+        <div class="summary-content">
+          <div style="padding: 10px 1.25rem; border-bottom: 1px solid var(--border-color); background: var(--bg-hover);">
+            <a href="python.log.html" target="_blank" style="font-size: 0.85rem; font-weight: 600;"><i class="fas fa-external-link-alt"></i> Open Full Python Log</a>
+          </div>
+          <pre id="logs"><i class="fas fa-spinner fa-spin"></i> Loading logs...</pre>
+        </div>
       </details>
     </section>
+
   </div>
+
   <script type="text/javascript" charset="utf-8">
+    // Fetch and parse ANSI colors to CSS classes
     fetch("ci.log")
       .then(response => response.text())
       .then(logs => {
-      pylogs = logs.replace(/ \[38;20m/gi,"<span class='log-debug'>"
-        ).replace(/ \[33;20m/gi,"<span class='log-warning'>"
-        ).replace(/ \[31;20m/gi,"<span class='log-error'>"
-        ).replace(/ \[36;20m/gi,"<span class='log-info'>"
-        ).replace(/ \[32;20m/gi,"<span class='log-success'>"
-        ).replace(/ \[0m/gi,"</span>")
-        document.getElementById("logs").innerHTML = pylogs
-    }).catch(e => {
-        document.getElementById("logs").innerText = "Log file unavailable."
-    })
+        const pylogs = logs
+          .replace(/ \[38;20m/gi, "<span class='log-debug'>")
+          .replace(/ \[33;20m/gi, "<span class='log-warning'>")
+          .replace(/ \[31;20m/gi, "<span class='log-error'>")
+          .replace(/ \[36;20m/gi, "<span class='log-info'>")
+          .replace(/ \[32;20m/gi, "<span class='log-success'>")
+          .replace(/ \[0m/gi, "</span>");
+        document.getElementById("logs").innerHTML = pylogs;
+      })
+      .catch(e => {
+        document.getElementById("logs").innerHTML = "<span class='log-error'><i class='fas fa-exclamation-triangle'></i> Log file unavailable.</span>";
+      });
   </script>
 </body>
-
 </html>
