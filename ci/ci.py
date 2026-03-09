@@ -635,6 +635,14 @@ class CI(SetEnvs):
         start_time = time.time()
         platform: str = self.get_platform(tag)
         target_image = override_image if override_image else f"{self.image}:{tag}"
+        try:
+            self.client.images.get(target_image)
+        except ImageNotFound:
+            self.logger.error("Image %s not found, cannot generate Syft SBOM", target_image)
+            return CITestResult.ERROR
+        except APIError as error:
+            self.logger.error("API error while checking for image %s: %s", target_image, error)
+            return CITestResult.ERROR
         cmd = f"{target_image}" if override_image else f"{target_image} --platform=linux/{platform}"
         syft:Container = self.client.containers.run(image=f"ghcr.io/anchore/syft:{self.syft_image_tag}",command=cmd,
             detach=True, volumes={"/var/run/docker.sock": {"bind": "/var/run/docker.sock", "mode": "rw"}})
@@ -1080,6 +1088,9 @@ class CI(SetEnvs):
             if self.release_type == "stable":
                 repo_api = f"https://api.github.com/repos/linuxserver/docker-{container_name}/releases/latest"
                 resp = requests.get(repo_api, timeout=10)
+                if resp.status_code == 404:
+                    self.logger.info("No release found for %s, skipping package diff", container_name)
+                    return ""
                 if resp.status_code != 200:
                     self.logger.warning("Could not fetch latest release info from GitHub: %s", resp.status_code)
                     return ""
@@ -1091,6 +1102,9 @@ class CI(SetEnvs):
                 raw_sbom_url = f"https://raw.githubusercontent.com/linuxserver/docker-{container_name}/refs/heads/{self.ls_branch}/package_versions.txt"
             # Get remote SBOM
             resp_sbom = requests.get(raw_sbom_url, timeout=10)
+            if resp_sbom.status_code == 404:
+                self.logger.info("No package_versions.txt found at %s, skipping package diff", raw_sbom_url)
+                return ""
             if resp_sbom.status_code != 200:
                 self.logger.warning("Could not fetch remote SBOM from %s: %s", raw_sbom_url, resp_sbom.status_code)
                 return ""
