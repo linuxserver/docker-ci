@@ -372,6 +372,10 @@
       opacity: 0.5;
     }
 
+    .screenshot-container a[target="_blank"]::after {
+      content: none;
+    }
+
     /* Build Info */
     .build-info-grid {
       display: flex;
@@ -699,7 +703,9 @@
 
           <div class="screenshot-container">
             {% if screenshot %}
-            <img src="{{ tag }}.jpg" alt="Screenshot for {{ tag }}" onerror="this.onerror=null; this.src='404.jpg';">
+            <a href="{{ tag }}.jpg" target="_blank">
+              <img src="{{ tag }}.jpg" alt="Screenshot for {{ tag }}" onerror="this.onerror=null; this.src='404.jpg';">
+            </a>
             {% else %}
             <div class="no-screenshot">
               <i class="fas fa-image"></i>
