@@ -150,7 +150,7 @@ def test_watch_container_logs(ci: CI, mock_container: Mock):
 def test_take_screenshot(ci:CI,mock_container: Mock):
     screenshot: bool = ci.take_screenshot(mock_container, ci.tags[0])
     if screenshot:
-        assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.png")) is True
+        assert os.path.isfile(os.path.join(ci.outdir, f"{ci.tags[0]}.jpg")) is True
         assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.PASS.value
     else:
         assert ci.tag_report_tests[ci.tags[0]]["test"][CITests.CAPTURE_SCREENSHOT.value]["status"] == CITestResult.FAIL.value
