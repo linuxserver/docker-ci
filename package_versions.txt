@@ -17,18 +17,18 @@ bsdutils                                                                      1:
 ca-certificates                                                               20260601~24.04.1                       deb                         
 catatonit                                                                     0.1.7-1                                deb                         
 certifi                                                                       2026.6.17                              python                      
-charset-normalizer                                                            3.4.7                                  python                      
+charset-normalizer                                                            3.4.9                                  python                      
 cloud.google.com/go/auth                                                      v0.20.0                                go-module                   
 cloud.google.com/go/auth/oauth2adapt                                          v0.2.8                                 go-module                   
 cloud.google.com/go/compute/metadata                                          v0.9.0                                 go-module                   
 cloud.google.com/go/logging                                                   v1.18.0                                go-module                   
 cloud.google.com/go/longrunning                                               v1.0.0                                 go-module                   
 code.cloudfoundry.org/clock                                                   v1.60.0                                go-module                   
-containerd.io                                                                 2.2.5-1~ubuntu.24.04~noble             deb                         
+containerd.io                                                                 2.2.6-1~ubuntu.24.04~noble             deb                         
 coreutils                                                                     9.4-3ubuntu6.2                         deb                         
 cron                                                                          3.0pl1-184ubuntu2                      deb                         
 cron-daemon-common                                                            3.0pl1-184ubuntu2                      deb                         
-curl                                                                          8.5.0-2ubuntu10.9                      deb                         
+curl                                                                          8.5.0-2ubuntu10.10                     deb                         
 dario.cat/mergo                                                               v1.0.2                                 go-module  (+1 duplicate)   
 dash                                                                          0.5.12-6ubuntu5                        deb                         
 dbus                                                                          1.14.10-4ubuntu4.1                     deb                         
@@ -112,7 +112,8 @@ github.com/containerd/cgroups/v3                                              v3
 github.com/containerd/console                                                 v1.0.5                                 go-module  (+5 duplicates)  
 github.com/containerd/containerd/api                                          v1.10.0                                go-module  (+4 duplicates)  
 github.com/containerd/containerd/v2                                           v2.2.4                                 go-module                   
-github.com/containerd/containerd/v2                                           v2.2.5                                 go-module  (+3 duplicates)  
+github.com/containerd/containerd/v2                                           v2.2.5                                 go-module                   
+github.com/containerd/containerd/v2                                           v2.2.6                                 go-module  (+2 duplicates)  
 github.com/containerd/continuity                                              v0.4.5                                 go-module  (+2 duplicates)  
 github.com/containerd/continuity                                              v0.5.0                                 go-module  (+1 duplicate)   
 github.com/containerd/errdefs                                                 v1.0.0                                 go-module  (+4 duplicates)  
@@ -457,7 +458,7 @@ golang.org/x/text                                                             v0
 golang.org/x/text                                                             v0.38.0                                go-module  (+2 duplicates)  
 golang.org/x/time                                                             v0.14.0                                go-module                   
 golang.org/x/time                                                             v0.15.0                                go-module  (+1 duplicate)   
-google-chrome-stable                                                          150.0.7871.46-1                        deb                         
+google-chrome-stable                                                          150.0.7871.114-1                       deb                         
 google.golang.org/api                                                         v0.280.0                               go-module                   
 google.golang.org/genproto                                                    v0.0.0-20260526163538-3dc84a4a5aaa     go-module                   
 google.golang.org/genproto/googleapis/api                                     v0.0.0-20251029180050-ab9386a59fda     go-module                   
@@ -479,7 +480,7 @@ gpgsm                                                                         2.
 gpgv                                                                          2.4.4-2ubuntu17.4                      deb                         
 grep                                                                          3.11-4build1                           deb                         
 gtk-update-icon-cache                                                         3.24.41-4ubuntu1.3                     deb                         
-gzip                                                                          1.12-1ubuntu3.1                        deb                         
+gzip                                                                          1.12-1ubuntu3.2                        deb                         
 h11                                                                           0.16.0                                 python                      
 hicolor-icon-theme                                                            0.17-2                                 deb                         
 hostname                                                                      3.23+nmu2ubuntu2                       deb                         
@@ -535,7 +536,7 @@ libcom-err2                                                                   1.
 libcrypt1                                                                     1:4.4.36-4build1                       deb                         
 libcryptsetup12                                                               2:2.7.0-1ubuntu4.2                     deb                         
 libcups2t64                                                                   2.4.7-1.2ubuntu7.14                    deb                         
-libcurl4t64                                                                   8.5.0-2ubuntu10.9                      deb                         
+libcurl4t64                                                                   8.5.0-2ubuntu10.10                     deb                         
 libdatrie1                                                                    0.2.13-3build1                         deb                         
 libdb5.3t64                                                                   5.3.28+dfsg2-7                         deb                         
 libdbus-1-3                                                                   1.14.10-4ubuntu4.1                     deb                         
@@ -605,13 +606,13 @@ liblzma5                                                                      5.
 libmd0                                                                        1.1.0-2build1.1                        deb                         
 libmnl0                                                                       1.0.5-2build1                          deb                         
 libmount1                                                                     2.39.3-9ubuntu6.5                      deb                         
-libncursesw6                                                                  6.4+20240113-1ubuntu2                  deb                         
+libncursesw6                                                                  6.4+20240113-1ubuntu2.1                deb                         
 libnetfilter-conntrack3                                                       1.0.9-6build1                          deb                         
 libnettle8t64                                                                 3.9.1-2.2build1.1                      deb                         
 libnfnetlink0                                                                 1.0.2-2build1                          deb                         
 libnftables1                                                                  1.0.9-1ubuntu0.1                       deb                         
 libnftnl11                                                                    1.2.6-2build1                          deb                         
-libnghttp2-14                                                                 1.59.0-1ubuntu0.3                      deb                         
+libnghttp2-14                                                                 1.59.0-1ubuntu0.4                      deb                         
 libnpth0t64                                                                   1.6-3.1build1                          deb                         
 libnspr4                                                                      2:4.35-1.1build1                       deb                         
 libnss3                                                                       2:3.98-1ubuntu0.2                      deb                         
@@ -632,8 +633,8 @@ libpng16-16t64                                                                1.
 libproc2-0                                                                    2:4.0.4-4ubuntu3.2                     deb                         
 libpsl5t64                                                                    0.21.2-1.1build1                       deb                         
 libpython3-stdlib                                                             3.12.3-0ubuntu2.1                      deb                         
-libpython3.12-minimal                                                         3.12.3-1ubuntu0.13                     deb                         
-libpython3.12-stdlib                                                          3.12.3-1ubuntu0.13                     deb                         
+libpython3.12-minimal                                                         3.12.3-1ubuntu0.15                     deb                         
+libpython3.12-stdlib                                                          3.12.3-1ubuntu0.15                     deb                         
 libreadline8t64                                                               8.2-4build1                            deb                         
 librtmp1                                                                      2.4+20151223.gitfa8646d.1-2build7      deb                         
 libsasl2-2                                                                    2.1.28+dfsg1-5ubuntu3.1                deb                         
@@ -660,7 +661,7 @@ libtasn1-6                                                                    4.
 libthai-data                                                                  0.1.29-2build1                         deb                         
 libthai0                                                                      0.1.29-2build1                         deb                         
 libtiff6                                                                      4.5.1+git230720-4ubuntu2.5             deb                         
-libtinfo6                                                                     6.4+20240113-1ubuntu2                  deb                         
+libtinfo6                                                                     6.4+20240113-1ubuntu2.1                deb                         
 libudev1                                                                      255.4-1ubuntu8.16                      deb                         
 libunistring5                                                                 1.1-2build1.1                          deb                         
 libunwind8                                                                    1.6.2-3build1.1                        deb                         
@@ -723,8 +724,8 @@ mawk                                                                          1.
 media-types                                                                   10.1.0                                 deb                         
 mesa-libgallium                                                               25.2.8-0ubuntu0.24.04.2                deb                         
 mount                                                                         2.39.3-9ubuntu6.5                      deb                         
-ncurses-base                                                                  6.4+20240113-1ubuntu2                  deb                         
-ncurses-bin                                                                   6.4+20240113-1ubuntu2                  deb                         
+ncurses-base                                                                  6.4+20240113-1ubuntu2.1                deb                         
+ncurses-bin                                                                   6.4+20240113-1ubuntu2.1                deb                         
 netbase                                                                       6.4                                    deb                         
 netcat-openbsd                                                                1.226-1ubuntu2                         deb                         
 nftables                                                                      1.0.9-1ubuntu0.1                       deb                         
@@ -744,9 +745,9 @@ python3-minimal                                                               3.
 python3-pip-whl                                                               24.0+dfsg-1ubuntu1.3                   deb                         
 python3-setuptools-whl                                                        68.1.2-2ubuntu1.2                      deb                         
 python3-venv                                                                  3.12.3-0ubuntu2.1                      deb                         
-python3.12                                                                    3.12.3-1ubuntu0.13                     deb                         
-python3.12-minimal                                                            3.12.3-1ubuntu0.13                     deb                         
-python3.12-venv                                                               3.12.3-1ubuntu0.13                     deb                         
+python3.12                                                                    3.12.3-1ubuntu0.15                     deb                         
+python3.12-minimal                                                            3.12.3-1ubuntu0.15                     deb                         
+python3.12-venv                                                               3.12.3-1ubuntu0.15                     deb                         
 pyvirtualdisplay                                                              3.0                                    python                      
 readline-common                                                               8.2-4build1                            deb                         
 requests                                                                      2.28.2                                 python                      
@@ -765,7 +766,7 @@ sigs.k8s.io/yaml                                                              v1
 six                                                                           1.17.0                                 python                      
 sniffio                                                                       1.3.1                                  python                      
 sortedcontainers                                                              2.4.0                                  python                      
-stdlib                                                                        go1.25.11                              go-module  (+3 duplicates)  
+stdlib                                                                        go1.25.12                              go-module  (+3 duplicates)  
 stdlib                                                                        go1.26.4                               go-module  (+3 duplicates)  
 systemd                                                                       255.4-1ubuntu8.16                      deb                         
 systemd-dev                                                                   255.4-1ubuntu8.16                      deb                         
@@ -773,7 +774,7 @@ systemd-sysv                                                                  25
 sysvinit-utils                                                                3.08-6ubuntu3                          deb                         
 tags.cncf.io/container-device-interface                                       v1.1.0                                 go-module  (+2 duplicates)  
 tags.cncf.io/container-device-interface/specs-go                              v1.1.0                                 go-module  (+2 duplicates)  
-tar                                                                           1.35+dfsg-3ubuntu0.1                   deb                         
+tar                                                                           1.35+dfsg-3ubuntu0.2                   deb                         
 trio                                                                          0.33.0                                 python                      
 trio-websocket                                                                0.12.2                                 python                      
 tzdata                                                                        2026a-0ubuntu0.24.04.1                 deb                         
